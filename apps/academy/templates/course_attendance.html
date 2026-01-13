@@ -1,0 +1,160 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Presensi - {{ agenda.title }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/bootstrap-select/bootstrap-select.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/bootstrap-select/bootstrap-select.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    
+    <div class="card mb-6">
+      <div class="card-header d-flex justify-content-between align-items-center">
+         <h5 class="mb-0">Informasi Agenda</h5>
+         <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="ri-arrow-go-back-line me-1"></i> Kembali
+         </a>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          
+          <div class="col-md-6 mb-6">
+            <div class="form-floating form-floating-outline">
+              <input type="text" class="form-control" value="{{ course.name }} ({{ course.code }})" disabled>
+              <label>Mata Kuliah</label>
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-6">
+            <div class="form-floating form-floating-outline">
+              <input type="text" class="form-control" value="{{ agenda.agenda_date|date:'l, d F Y' }} - {{ agenda.agenda_date|time:'H:i' }}" disabled>
+              <label>Waktu Pertemuan</label>
+            </div>
+          </div>
+
+        </div> 
+      </div>
+    </div>
+
+    <hr class="my-5">
+
+    <form method="post">
+    {% csrf_token %}
+    
+    <div class="card">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Daftar Presensi Mahasiswa</h5>
+            
+            <button type="button" class="btn btn-label-success btn-sm" onclick="setAllPresent()">
+                <i class="ri-check-double-line me-1"></i> Set Semua Hadir
+            </button>
+        </div>
+
+        <div class="card-datatable table-responsive">
+            <table id="tableAttendance" class="dt-responsive table table-bordered">
+                <thead>
+                    <tr>
+                        <th width="5%">No</th>
+                        <th width="25%">Mahasiswa</th>
+                        <th width="45%" class="text-center">Status Kehadiran</th>
+                        <th width="25%">Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in student_data %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="fw-medium">{{ item.participant.mahasiswa.nim.first_name }}</span>
+                                <small class="text-muted">{{ item.participant.mahasiswa.nim }}</small>
+                            </div>
+                        </td>
+                        
+                        <td class="text-center">
+                            <div class="btn-group w-100" role="group">
+                                {% for radio in item.form.status %}
+                                    {{ radio.tag }}
+                                    
+                                    <label class="btn btn-sm flex-grow-1
+                                        {% if radio.data.value == 'present' %}btn-outline-success{% endif %}
+                                        {% if radio.data.value == 'late' %}btn-outline-warning{% endif %}
+                                        {% if radio.data.value == 'excused' %}btn-outline-info{% endif %}
+                                        {% if radio.data.value == 'sick' %}btn-outline-secondary{% endif %}
+                                        {% if radio.data.value == 'absent' %}btn-outline-danger{% endif %}
+                                    " for="{{ radio.id_for_label }}">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="form-floating form-floating-outline">
+                                {{ item.form.notes }}
+                                </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card-footer d-flex justify-content-end border-top">
+             <button type="submit" class="btn btn-primary btn-lg">
+                <i class="ri-save-3-line me-1"></i> Simpan Data Presensi
+            </button>
+        </div>
+
+    </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Inisialisasi DataTables
+    $('#tableAttendance').DataTable({
+        responsive: true,
+        paging: false, // PENTING: Matikan paging agar form bisa mensubmit SEMUA data mahasiswa sekaligus
+        info: false,   // Sembunyikan info "Showing 1 of X" agar lebih bersih
+        searching: true, // Tetap boleh search
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t',
+        language: {
+            search: "",
+            searchPlaceholder: "Cari nama/nim...",
+        }
+    });
+
+});
+
+// Fungsi Helper untuk Set Semua Hadir
+function setAllPresent() {
+    // Cari semua input radio dengan value="present" dan centang
+    document.querySelectorAll('input[type="radio"][value="present"]').forEach(el => {
+        el.checked = true;
+        // Trigger change event jika ada listener lain (opsional)
+        el.dispatchEvent(new Event('change'));
+    });
+}
+</script>
+
+{% endblock %}

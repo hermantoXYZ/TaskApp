@@ -1,0 +1,167 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Periksa Tugas: {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <h4 class="fw-bold mb-1">
+                <span class="text-muted fw-light">Penilaian /</span> {{ assignment.title }}
+            </h4>
+            <div class="text-muted small">
+                <i class="ri-calendar-event-line me-1"></i> Deadline: <strong>{{ assignment.due_date|date:"d M Y, H:i" }}</strong> 
+                <span class="mx-2">|</span> 
+                <i class="ri-award-line me-1"></i> Max Score: <strong>{{ assignment.max_score }}</strong>
+            </div>
+        </div>
+        <a href="{% url 'manage-curriculum' course.id %}" class="btn btn-outline-secondary">
+            <i class="ri-arrow-left-line me-1"></i> Kembali
+        </a>
+    </div>
+
+    <div class="row mb-4 g-4">
+        <div class="col-sm-6 col-xl-4">
+            <div class="card bg-label-primary">
+                <div class="card-body d-flex align-items-center">
+                    <div class="avatar me-3"><span class="avatar-initial rounded bg-primary"><i class="ri-group-line"></i></span></div>
+                    <div>
+                        <h5 class="mb-0">{{ stats.total }}</h5>
+                        <small>Total Mahasiswa</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card bg-label-warning">
+                <div class="card-body d-flex align-items-center">
+                    <div class="avatar me-3"><span class="avatar-initial rounded bg-warning"><i class="ri-upload-cloud-line"></i></span></div>
+                    <div>
+                        <h5 class="mb-0">{{ stats.submitted }}</h5>
+                        <small>Sudah Mengumpulkan</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card bg-label-success">
+                <div class="card-body d-flex align-items-center">
+                    <div class="avatar me-3"><span class="avatar-initial rounded bg-success"><i class="ri-checkbox-circle-line"></i></span></div>
+                    <div>
+                        <h5 class="mb-0">{{ stats.graded }}</h5>
+                        <small>Selesai Dinilai</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">Daftar Pengumpulan</h5>
+        </div>
+        <div class="table-responsive text-nowrap">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mahasiswa</th>
+                        <th>Status</th>
+                        <th>File Jawaban</th>
+                        <th width="30%">Input Nilai</th>
+                    </tr>
+                </thead>
+                <tbody class="table-border-bottom-0">
+                    {% for item in grading_list %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3">
+                                    {% if item.student.photo %}
+                                        <img src="{{ item.student.photo.url }}" alt class="rounded-circle">
+                                    {% else %}
+                                        <span class="avatar-initial rounded-circle bg-label-secondary">{{ item.student.nim.first_name|first }}</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ item.student.nim.first_name }} {{ item.student.nim.last_name }}</h6>
+                                    <small class="text-muted">{{ item.student.nim.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if item.status == 'missing' %}
+                                <span class="badge bg-label-secondary">Belum Submit</span>
+                            {% elif item.status == 'submitted' %}
+                                <span class="badge bg-label-warning">Perlu Dinilai</span>
+                            {% elif item.status == 'graded' %}
+                                <span class="badge bg-label-success">Selesai</span>
+                            {% endif %}
+                            
+                            {% if item.is_late %}
+                                <br><small class="text-danger fw-bold" style="font-size: 10px;">TERLAMBAT</small>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.submission %}
+                                <div class="d-flex flex-column gap-1">
+                                    <small class="text-muted" style="font-size: 0.75rem;">
+                                        <i class="ri-time-line me-1"></i> {{ item.submission.updated_at|date:"d M, H:i" }}
+                                    </small>
+                                    
+                                    {% if item.submission.submitted_file %}
+                                        <a href="{{ item.submission.submitted_file.url }}" target="_blank" class="btn btn-sm btn-label-primary">
+                                            <i class="ri-download-line me-1"></i> Download File
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if item.submission.submitted_text %}
+                                        <button type="button" class="btn btn-sm btn-icon btn-label-info" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ item.submission.submitted_text }}">
+                                            <i class="ri-text"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.submission %}
+                                <form action="{% url 'update-grade-submission' item.submission.id %}" method="POST" class="d-flex flex-column gap-2">
+                                    {% csrf_token %}
+                                    
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text fw-bold">Nilai</span>
+                                        <input type="number" name="score" class="form-control" 
+                                               placeholder="0" 
+                                               value="{{ item.submission.score|default:'' }}" 
+                                               max="{{ assignment.max_score }}" required>
+                                        <button class="btn btn-primary" type="submit" title="Simpan"><i class="ri-save-line"></i></button>
+                                    </div>
+
+                                    <textarea name="feedback" class="form-control form-control-sm" rows="1" 
+                                              placeholder="Catatan Feedback...">{{ item.submission.feedback|default:'' }}</textarea>
+                                </form>
+                            {% else %}
+                                <small class="text-muted fst-italic">Menunggu submisi.</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="ri-user-unfollow-line ri-2x text-muted mb-2"></i>
+                            <p class="mb-0">Belum ada mahasiswa di kelas ini.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

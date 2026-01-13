@@ -1,0 +1,250 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Tambah Course - FindTask{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/bootstrap-select/bootstrap-select.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/tagify/tagify.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/@form-validation/form-validation.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/bootstrap-select/bootstrap-select.js' %}"></script>
+<script src="{% static 'vendor/libs/moment/moment.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+<script src="{% static 'vendor/libs/tagify/tagify.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/popular.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/auto-focus.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'js/form-validation.js' %}"></script>
+<script src="{% static 'js/forms-selects.js' %}"></script>
+<script src="{% static 'js/forms-tagify.js' %}"></script>
+<script src="{% static 'js/forms-typeahead.js' %}"></script>
+{% endblock page_js %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <h5 class="card-header">Add New Course</h5>
+      <div class="card-body">
+        
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          <div class="row">
+            
+            <div class="col-md-6 p-4">
+                <h6 class="mb-4 text-muted">Informasi Umum</h6>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="text"
+                        name="{{ form.code.html_name }}"
+                        id="{{ form.code.id_for_label }}"
+                        value="{{ form.code.value|default_if_none:'' }}"
+                        class="form-control {% if form.code.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Code Mata Kuliah"
+                        required>
+                    <label for="{{ form.code.id_for_label }}">Code Mata Kuliah</label>
+                    {% if form.code.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.code.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="text"
+                        name="{{ form.name.html_name }}"
+                        id="{{ form.name.id_for_label }}"
+                        value="{{ form.name.value|default_if_none:'' }}"
+                        class="form-control {% if form.name.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Nama Mata Kuliah"
+                        required>
+                    <label for="{{ form.name.id_for_label }}">Nama Mata Kuliah</label>
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.name.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="text"
+                        name="{{ form.description.html_name }}"
+                        id="{{ form.description.id_for_label }}"
+                        value="{{ form.description.value|default_if_none:'' }}"
+                        class="form-control {% if form.description.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Deskripsi Mata Kuliah"
+                        style="height: 100px;"
+                        required>
+                    <label for="{{ form.description.id_for_label }}">Deskripsi Mata Kuliah</label>
+                    {% if form.description.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.description.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <div class="select2-primary">
+                        <select name="{{ form.coaches.html_name }}"
+                                id="{{ form.coaches.id_for_label }}"
+                                class="select2 form-select {% if form.coaches.errors %}is-invalid{% endif %}"
+                                multiple="multiple">
+                            {% for value, label in form.fields.coaches.choices %}
+                                <option value="{{ value }}" 
+                                    {% if form.coaches.value and value|stringformat:"s" in form.coaches.value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <label for="{{ form.coaches.id_for_label }}">Dosen Pengampu (Coaches)</label>
+                    {% if form.coaches.errors %}
+                        <div class="invalid-feedback" style="display:block;">
+                            {% for error in form.coaches.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <select name="{{ form.prodi.html_name }}"
+                            id="{{ form.prodi.id_for_label }}"
+                            class="form-select {% if form.prodi.errors %}is-invalid{% endif %}"
+                            required>
+                        {% for value, label in form.fields.prodi.choices %}
+                            <option value="{{ value }}" 
+                                {% if form.prodi.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label for="{{ form.prodi.id_for_label }}">Program Studi</label>
+                    {% if form.prodi.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.prodi.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6 p-4">
+                <h6 class="mb-4 text-muted">Detail Akademik</h6>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <select name="{{ form.period.html_name }}"
+                            id="{{ form.period.id_for_label }}"
+                            class="form-select {% if form.period.errors %}is-invalid{% endif %}"
+                            required>
+                        {% for value, label in form.fields.period.choices %}
+                            <option value="{{ value }}" 
+                                {% if form.period.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label for="{{ form.period.id_for_label }}">Periode</label>
+                    {% if form.period.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.period.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="number" 
+                        name="{{ form.credit_t.html_name }}" 
+                        id="{{ form.credit_t.id_for_label }}" 
+                        value="{{ form.credit_t.value|default_if_none:'' }}" 
+                        class="form-control {% if form.credit_t.errors %}is-invalid{% endif %}" 
+                        placeholder="SKS Teori"
+                        required>
+                    <label for="{{ form.credit_t.id_for_label }}">SKS Teori</label>
+                    {% if form.credit_t.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.credit_t.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="number" 
+                        name="{{ form.credit_p.html_name }}" 
+                        id="{{ form.credit_p.id_for_label }}" 
+                        value="{{ form.credit_p.value|default_if_none:'' }}" 
+                        class="form-control {% if form.credit_p.errors %}is-invalid{% endif %}" 
+                        placeholder="SKS Praktek"
+                        required>
+                    <label for="{{ form.credit_p.id_for_label }}">SKS Praktek</label>
+                    {% if form.credit_p.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.credit_p.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="number" 
+                        name="{{ form.duration_weeks.html_name }}" 
+                        id="{{ form.duration_weeks.id_for_label }}" 
+                        value="{{ form.duration_weeks.value|default_if_none:'' }}" 
+                        class="form-control {% if form.duration_weeks.errors %}is-invalid{% endif %}" 
+                        placeholder="Durasi Minggu"
+                        required>
+                    <label for="{{ form.duration_weeks.id_for_label }}">Durasi Minggu</label>
+                    {% if form.duration_weeks.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.duration_weeks.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="text" 
+                        name="{{ form.group.html_name }}" 
+                        id="{{ form.group.id_for_label }}" 
+                        value="{{ form.group.value|default_if_none:'' }}" 
+                        class="form-control {% if form.group.errors %}is-invalid{% endif %}" 
+                        placeholder="Durasi Minggu"
+                        required>
+                    <label for="{{ form.group.id_for_label }}">Kelas/Group</label>
+                    {% if form.group.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.group.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-check form-switch mb-2">
+                    {{ form.is_active }}
+                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Aktif Mata Kuliah Ini</label>
+                    {% if form.is_active.errors %}
+                        <div class="text-danger small">
+                            {{ form.is_active.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            </div> <div class="row mt-4">
+            <div class="col-12 d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary btn-lg">Submit Course</button>
+            </div>
+          </div>
+
+        </form>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

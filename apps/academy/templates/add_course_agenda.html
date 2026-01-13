@@ -1,0 +1,344 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Agenda Kegiatan - {{ course.code }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    
+    <div class="card mb-6">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            {% if is_edit %} Edit Agenda Kegiatan {% else %} Tambah Agenda Kegiatan {% endif %}
+        </h5>
+        
+        {% if is_edit %}
+            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="ri-close-line me-1"></i> Batal Edit
+            </a>
+        {% else %}
+         <a href="{% url 'edit-all-academy-course' course.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="ri-arrow-go-back-line me-1"></i> Kembali
+         </a>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row">
+            
+            <div class="col-md-6 p-4 border-end">
+                <h6 class="mb-4 text-primary"><i class="ri-book-open-line me-2"></i>Informasi Materi</h6>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="text" class="form-control" value="{{ course.name }} ({{ course.code }})" disabled>
+                    <label>Mata Kuliah</label>
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="text"
+                        name="{{ form.title.html_name }}"
+                        id="{{ form.title.id_for_label }}"
+                        value="{{ form.title.value|default_if_none:'' }}"
+                        class="form-control {% if form.title.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Contoh: Prilaku Konsumen / UAS"
+                        required>
+                    <label for="{{ form.title.id_for_label }}">Judul Agenda</label>
+                    {% if form.title.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.title.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+
+                 <div class="form-floating form-floating-outline mb-4">
+                    <input type="text"
+                        name="{{ form.agenda_type.html_name }}"
+                        id="{{ form.agenda_type.id_for_label }}"
+                        value="{{ form.agenda_type.value|default_if_none:'' }}"
+                        class="form-control {% if form.agenda_type.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Contoh: Bab 1/ Pertemuan 1/ Bagian 1"
+                        required>
+                    <label for="{{ form.agenda_type.id_for_label }}">Type Agenda</label>
+                    {% if form.agenda_type.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.agenda_type.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                
+                <div class="form-floating form-floating-outline mb-4">
+                    <textarea 
+                        name="{{ form.description.html_name }}"
+                        id="{{ form.description.id_for_label }}"
+                        class="form-control {% if form.description.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Deskripsi singkat kegiatan"
+                        style="height: 100px;">{{ form.description.value|default_if_none:'' }}</textarea>
+                    <label for="{{ form.description.id_for_label }}">Deskripsi Kegiatan</label>
+                    {% if form.description.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.description.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <textarea 
+                        name="{{ form.learning_outcome.html_name }}"
+                        id="{{ form.learning_outcome.id_for_label }}"
+                        class="form-control {% if form.learning_outcome.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Capaian pembelajaran"
+                        style="height: 100px;">{{ form.learning_outcome.value|default_if_none:'' }}</textarea>
+                    <label for="{{ form.learning_outcome.id_for_label }}">Capaian Pembelajaran (Learning Outcome)</label>
+                    {% if form.learning_outcome.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.learning_outcome.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6 p-4">
+                <h6 class="mb-4 text-primary"><i class="ri-time-line me-2"></i>Waktu & Pelaksanaan</h6>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="text" 
+                        name="{{ form.agenda_date.html_name }}" 
+                        id="{{ form.agenda_date.id_for_label }}" 
+                        
+                        {# Value format khusus untuk edit #}
+                        value="{% if form.agenda_date.value %}{{ form.agenda_date.value|date:'Y-m-d H:i' }}{% endif %}"
+                        
+                        class="form-control flatpickr-datetime {% if form.agenda_date.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
+                        
+                        autocomplete="off" 
+                        placeholder="Pilih Tanggal & Jam"
+                        required>
+                    <label for="{{ form.agenda_date.id_for_label }}">Tanggal & Jam Pelaksanaan</label>
+                    
+                    {% if form.agenda_date.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.agenda_date.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="text" 
+                        name="{{ form.teaching_method.html_name }}" 
+                        id="{{ form.teaching_method.id_for_label }}" 
+                        value="{{ form.teaching_method.value|default_if_none:'' }}"
+                        class="form-control {% if form.teaching_method.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
+                        placeholder="Contoh: Diskusi Kelompok">
+                    <label for="{{ form.teaching_method.id_for_label }}">Metode Pengajaran</label>
+                    {% if form.teaching_method.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.teaching_method.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="text" 
+                        name="{{ form.location.html_name }}" 
+                        id="{{ form.location.id_for_label }}" 
+                        value="{{ form.location.value|default_if_none:'' }}"
+                        class="form-control {% if form.location.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
+                        placeholder="Contoh: Gedung A Ruang 101">
+                    <label for="{{ form.location.id_for_label }}">Lokasi (Ruangan/Gedung)</label>
+                    {% if form.location.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.location.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                 <div class="form-check form-switch mb-4">
+                    {% if form.is_online.value %}
+                        <input type="checkbox" name="{{ form.is_online.html_name }}" class="form-check-input" id="{{ form.is_online.id_for_label }}" checked onchange="toggleMeetingUrl()">
+                     {% else %}
+                        <input type="checkbox" name="{{ form.is_online.html_name }}" class="form-check-input" id="{{ form.is_online.id_for_label }}" onchange="toggleMeetingUrl()">
+                     {% endif %}
+                    <label class="form-check-label" for="{{ form.is_online.id_for_label }}">Set sebagai Kegiatan Online</label>
+                </div>
+
+                <div id="meetingUrlContainer" class="form-floating form-floating-outline mb-4" style="display: none;">
+                    <input type="url" 
+                        name="{{ form.meeting_url.html_name }}" 
+                        id="{{ form.meeting_url.id_for_label }}" 
+                        value="{{ form.meeting_url.value|default_if_none:'' }}"
+                        class="form-control {% if form.meeting_url.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
+                        placeholder="https://zoom.us/...">
+                    <label for="{{ form.meeting_url.id_for_label }}">Link Meeting (Zoom/GMeet)</label>
+                    <div class="form-text">Wajib diisi jika kegiatan online.</div>
+                    {% if form.meeting_url.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.meeting_url.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+          </div> 
+          
+          <div class="row mt-2">
+            <div class="col-12 d-flex justify-content-end border-top pt-3">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="ri-save-line me-1"></i> 
+                    {% if is_edit %} Update Agenda {% else %} Simpan Agenda {% endif %}
+                </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h5 class="card-header">Daftar Agenda & Absensi</h5>
+      <div class="table-responsive text-nowrap">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th width="15%">Waktu</th>
+            <th width="15%">Section</th>
+              <th width="25%">Nama Agenda</th>
+              <th width="25%">Presensi Kehadiran</th> 
+              <th width="15%">Mode</th>
+              <th width="20%">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="table-border-bottom-0">
+            {% for agenda in agendas %}
+            <tr class="{% if is_edit and edit_id == agenda.id %}table-primary{% endif %}"> 
+              
+              <td>
+                <span class="fw-bold">{{ agenda.agenda_date|date:"d M Y" }}</span>
+                <br><small class="text-muted">{{ agenda.agenda_date|time:"H:i" }}</small>
+              </td>
+
+              <td>
+                <span class="fw-bold text-heading">{{ agenda.agenda_type }}</span>
+              </td>
+
+              <td>
+                <span class="fw-bold text-heading">{{ agenda.title }}</span>
+                <br><small class="text-muted">{{ agenda.description|truncatewords:10 }}</small>
+              </td>
+
+              <td>
+                 <div class="d-flex flex-column w-100">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="fw-medium">{{ agenda.percent }}% Hadir</small>
+                        <small class="text-muted">{{ agenda.hadir_count }} / {{ agenda.total_students }} Mhs</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar 
+                            {% if agenda.percent >= 80 %}bg-success
+                            {% elif agenda.percent >= 50 %}bg-warning
+                            {% else %}bg-danger{% endif %}" 
+                            role="progressbar" 
+                            style="width: {{ agenda.percent }}%" 
+                            aria-valuenow="{{ agenda.percent }}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+              </td>
+              
+               <td>
+                {% if agenda.is_online %}
+                    <span class="badge rounded-pill bg-label-primary mb-1">Online</span>
+                    {% if agenda.meeting_url %}
+                        <br><a href="{{ agenda.meeting_url }}" target="_blank" class="small"><i class="ri-link-m"></i> Join Link</a>
+                    {% endif %}
+                {% else %}
+                    <span class="badge rounded-pill bg-label-secondary">Offline</span>
+                {% endif %}
+              </td>
+
+              <td>
+                <a href="{% url 'course-attendance' agenda.id %}" class="btn btn-sm btn-primary me-2">
+                    <i class="ri-file-list-3-line me-1"></i> Absensi
+                </a>
+
+                <div class="dropdown d-inline-block">
+                  <button type="button" class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
+                  <div class="dropdown-menu">
+                    
+                    <a class="dropdown-item" href="{% url 'edit-course-agenda' course.id agenda.id %}">
+                        <i class="ri-pencil-line me-1"></i> Edit Agenda
+                    </a>
+                    
+                    <a class="dropdown-item text-danger" href="{% url 'delete-course-agenda' course.id agenda.id %}" onclick="return confirm('Apakah Anda yakin ingin menghapus agenda ini? Data absensi terkait juga akan terhapus.');">
+                        <i class="ri-delete-bin-7-line me-1"></i> Hapus
+                    </a>
+
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center py-5">
+                    <div class="d-flex flex-column align-items-center">
+                        <span class="avatar-initial rounded-circle bg-label-secondary mb-3 p-3">
+                            <i class="ri-calendar-event-line ri-2x"></i>
+                        </span>
+                        <h6 class="mb-1 text-muted">Belum ada agenda</h6>
+                        <small class="text-muted">Buat agenda baru untuk mulai mencatat presensi.</small>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Init Flatpickr
+    flatpickr(".flatpickr-datetime", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i", // Format data yang dikirim ke server (Value asli)
+        time_24hr: true,
+        altInput: true,          // Mengaktifkan tampilan "cantik" untuk user
+        altFormat: "j F Y, H:i", // User melihat: 9 January 2026, 14:00
+        placeholder: "Pilih Tanggal & Jam"
+    });
+
+    // 2. Init Toggle Link Meeting (Panggil saat load page untuk cover mode Edit)
+    toggleMeetingUrl();
+});
+
+// Fungsi untuk show/hide input link meeting
+function toggleMeetingUrl() {
+    var isOnlineCheckbox = document.getElementById('{{ form.is_online.id_for_label }}');
+    var meetingDiv = document.getElementById('meetingUrlContainer');
+    
+    if (isOnlineCheckbox && isOnlineCheckbox.checked) {
+        meetingDiv.style.display = 'block';
+    } else {
+        meetingDiv.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

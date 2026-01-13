@@ -1,0 +1,249 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Learning Flow - {{ course.code }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/bootstrap-select/bootstrap-select.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/@form-validation/form-validation.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/bootstrap-select/bootstrap-select.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/popular.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/auto-focus.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'js/forms-selects.js' %}"></script>
+{% endblock page_js %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    
+    <div class="card mb-6">
+      <h5 class="card-header">Buat Rencana Pembelajaran (Learning Flow)</h5>
+      <div class="card-body">
+        
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          
+          <div class="row">
+            
+            <div class="col-md-6 p-4">
+                <h6 class="mb-4 text-muted">Materi Utama</h6>
+
+                <div class="row">
+                    <div class="form-floating form-floating-outline mb-6">
+                        <input type="text" class="form-control" value="{{ course.name }} ({{ course.code }})" disabled>
+                        <label>Mata Kuliah</label>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-floating form-floating-outline mb-6">
+                            <input type="number" 
+                                   name="{{ form.week.html_name }}" 
+                                   value="{{ form.week.value|default_if_none:'' }}"
+                                   class="form-control {% if form.week.errors %}is-invalid{% endif %}" 
+                                   placeholder="1" required>
+                            <label>Minggu Ke-</label>
+                            {% if form.week.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.week.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                         <div class="form-floating form-floating-outline mb-6">
+                            <input type="number" 
+                                   name="{{ form.duration_minutes.html_name }}" 
+                                   value="{{ form.duration_minutes.value|default_if_none:'' }}"
+                                   class="form-control {% if form.duration_minutes.errors %}is-invalid{% endif %}" 
+                                   placeholder="100">
+                            <label>Durasi (Menit)</label>
+                            {% if form.duration_minutes.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.duration_minutes.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="text" 
+                           name="{{ form.topic.html_name }}" 
+                           value="{{ form.topic.value|default_if_none:'' }}"
+                           class="form-control {% if form.topic.errors %}is-invalid{% endif %}" 
+                           placeholder="Topik Pembahasan" required>
+                    <label>Topik / Judul Materi</label>
+                    {% if form.topic.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.topic.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <textarea name="{{ form.learning_outcome.html_name }}" 
+                              class="form-control {% if form.learning_outcome.errors %}is-invalid{% endif %}" 
+                              style="height: 100px;" 
+                              placeholder="Mahasiswa mampu...">{{ form.learning_outcome.value|default_if_none:'' }}</textarea>
+                    <label>Capaian Pembelajaran (Outcome)</label>
+                    {% if form.learning_outcome.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.learning_outcome.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="col-md-6 p-4">
+                <h6 class="mb-4 text-muted">Metode & Sumber Daya</h6>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <textarea name="{{ form.content.html_name }}" 
+                              class="form-control {% if form.content.errors %}is-invalid{% endif %}" 
+                              style="height: 120px;" 
+                              placeholder="Ringkasan materi...">{{ form.content.value|default_if_none:'' }}</textarea>
+                    <label>Deskripsi / Isi Materi</label>
+                    {% if form.content.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.content.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="text" 
+                           name="{{ form.teaching_method.html_name }}" 
+                           value="{{ form.teaching_method.value|default_if_none:'' }}"
+                           class="form-control {% if form.teaching_method.errors %}is-invalid{% endif %}" 
+                           placeholder="Ceramah, Diskusi, Studi Kasus">
+                    <label>Metode Pengajaran</label>
+                    {% if form.teaching_method.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.teaching_method.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="text" 
+                           name="{{ form.assessment_method.html_name }}" 
+                           value="{{ form.assessment_method.value|default_if_none:'' }}"
+                           class="form-control {% if form.assessment_method.errors %}is-invalid{% endif %}" 
+                           placeholder="Quiz, Tugas Individu">
+                    <label>Metode Asesmen (Penilaian)</label>
+                    {% if form.assessment_method.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.assessment_method.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-check form-switch mb-2">
+                    {{ form.is_published }}
+                    <label class="form-check-label" for="{{ form.is_published.id_for_label }}">Publish Materi Ini (Tampilkan ke Mahasiswa)</label>
+                </div>
+            </div>
+
+          </div> 
+
+          <div class="row mt-4">
+            <div class="col-12 d-flex justify-content-end">
+                <a href="{% url 'list-academy-course' %}" class="btn btn-label-secondary me-3">Kembali</a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="ri-save-line me-1"></i> Simpan Learning Flow
+                </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h5 class="card-header">Daftar Silabus & Materi</h5>
+      <div class="table-responsive text-nowrap">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th width="5%">Minggu</th>
+              <th>Topik & Outcome</th>
+              <th>Metode</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody class="table-border-bottom-0">
+            {% for flow in flows %}
+            <tr>
+              <td class="text-center">
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="avatar-initial rounded bg-label-primary p-2 fw-bold fs-5">
+                        {{ flow.week }}
+                    </span>
+                </div>
+              </td>
+
+              <td>
+                <span class="fw-bold d-block">{{ flow.topic }}</span>
+                <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;">
+                   Outcome: {{ flow.learning_outcome|truncatechars:50 }}
+                </small>
+              </td>
+
+              <td>
+                <div class="d-flex flex-column">
+                    <span class="badge bg-label-info mb-1 w-px-100">{{ flow.teaching_method|default:"-" }}</span>
+                    <span class="badge bg-label-warning w-px-100">{{ flow.assessment_method|default:"-" }}</span>
+                </div>
+              </td>
+
+              <td>
+                {% if flow.is_published %}
+                    <span class="badge rounded-pill bg-label-success">Published</span>
+                {% else %}
+                    <span class="badge rounded-pill bg-label-secondary">Draft</span>
+                {% endif %}
+              </td>
+
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item" href="javascript:void(0);"><i class="ri-pencil-line me-1"></i> Edit</a>
+                    <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="return confirm('Hapus materi minggu ke-{{ flow.week }}?');">
+                        <i class="ri-delete-bin-7-line me-1"></i> Delete
+                    </a>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-4 text-muted">Belum ada rencana pembelajaran (Learning Flow) yang dibuat.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+</div>
+{% endblock %}

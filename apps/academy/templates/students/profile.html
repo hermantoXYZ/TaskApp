@@ -1,0 +1,170 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Profile Mahasiswa{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/sweetalert2/sweetalert2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/@form-validation/form-validation.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/sweetalert2/sweetalert2.js' %}"></script>
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+<script src="{% static 'vendor/libs/moment/moment.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/popular.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/auto-focus.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/pages/page-user-view.css' %}" />
+{% endblock page_css %}
+
+{% block content %}
+<div class="row gy-6 gy-md-0">
+  
+  <div class="col-xl-4 col-lg-5 col-md-5 order-1 order-md-0">
+    <div class="card mb-6">
+      <div class="card-body pt-12">
+        <div class="user-avatar-section">
+          <div class="d-flex align-items-center flex-column">
+            {% if usermhs.photo %}
+                <img class="img-fluid rounded-3 mb-4" src="{{ usermhs.photo.url }}" height="120" width="120" alt="User avatar" style="object-fit: cover;" />
+            {% else %}
+                <img class="img-fluid rounded-3 mb-4" src="{% static 'img/avatars/1.png' %}" height="120" width="120" alt="Default avatar" />
+            {% endif %}
+            
+            <div class="user-info text-center">
+              <h5>{{ usermhs.nim.first_name }}</h5>
+              <span class="badge bg-label-primary rounded-pill">Mahasiswa</span>
+            </div>
+          </div>
+        </div>
+
+        <h5 class="pb-4 border-bottom mb-4">Details</h5>
+        <div class="info-container">
+          <ul class="list-unstyled mb-6">
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">NIM:</span>
+              <span>{{ usermhs.nim.username }}</span>
+            </li>
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">Email:</span>
+              <span>{{ usermhs.nim.email|default:"-" }}</span>
+            </li>
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">Status:</span>
+              <span class="badge bg-label-success rounded-pill">Aktif</span>
+            </li>
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">No. HP:</span>
+              <span>{{ usermhs.telp|default:"-" }}</span>
+            </li>
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">Gender:</span>
+              <span>{{ usermhs.gender }}</span>
+            </li>
+          </ul>
+          
+        </div>
+      </div>
+    </div>
+    </div>
+  <div class="col-xl-8 col-lg-7 col-md-7 order-0 order-md-1">
+    
+    <div class="nav-align-top">
+      <ul class="nav nav-pills flex-column flex-md-row mb-6 row-gap-2">
+        <li class="nav-item"><a class="nav-link active" href="javascript:void(0);"><i class="ri-user-edit-line me-2"></i>Edit Profile</a></li>
+        </ul>
+    </div>
+    <div class="card mb-6">
+      <h5 class="card-header">Perbarui Informasi Profil</h5>
+      <div class="card-body">
+        
+        <form method="POST" enctype="multipart/form-data" class="row g-4">
+            {% csrf_token %}
+            
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.tempat_lahir }}
+                    <label for="{{ form.tempat_lahir.id_for_label }}">Tempat Lahir</label>
+                </div>
+                <div class="text-danger small">{{ form.tempat_lahir.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.tgl_lahir }}
+                    <label for="{{ form.tgl_lahir.id_for_label }}">Tanggal Lahir</label>
+                </div>
+                <div class="text-danger small">{{ form.tgl_lahir.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.gender }}
+                    <label for="{{ form.gender.id_for_label }}">Jenis Kelamin</label>
+                </div>
+                <div class="text-danger small">{{ form.gender.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.telp }}
+                    <label for="{{ form.telp.id_for_label }}">Nomor HP/WA</label>
+                </div>
+                <div class="text-danger small">{{ form.telp.errors }}</div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-floating form-floating-outline">
+                    {{ form.alamat }}
+                    <label for="{{ form.alamat.id_for_label }}">Alamat Domisili</label>
+                </div>
+                <div class="text-danger small">{{ form.alamat.errors }}</div>
+            </div>
+
+            <div class="col-12">
+                <div class="card shadow-none bg-label-primary border border-primary mb-3">
+                    <div class="card-body">
+                        <h6 class="mb-1"><i class="ri-upload-2-line me-2"></i>Ganti Foto Profil</h6>
+                        <small class="d-block mb-3">Format JPG, GIF atau PNG. Maksimal 800K.</small>
+                        {{ form.photo }}
+                    </div>
+                </div>
+                <div class="text-danger small">{{ form.photo.errors }}</div>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap justify-content-end gap-3">
+                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            </div>
+        </form>
+
+      </div>
+    </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block page_js %}
+{{ block.super }}
+<script>
+    // Inisialisasi Flatpickr untuk tanggal lahir jika belum otomatis jalan
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr(".flatpickr-date", {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d F Y",
+            allowInput: true
+        });
+    });
+</script>
+{% endblock page_js %}

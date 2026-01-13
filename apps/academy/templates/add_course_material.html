@@ -1,0 +1,154 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Tambah Materi - {{ course.code }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/bootstrap-select/bootstrap-select.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/bootstrap-select/bootstrap-select.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'js/forms-selects.js' %}"></script>
+{% endblock page_js %}
+
+{% block content %}
+<div class="row mb-6">
+  <div class="col-md mb-6 mb-md-0">
+    <div class="card">
+      <h5 class="card-header">Tambah Materi Pembelajaran</h5>
+      <div class="card-body">
+        
+        <form method="post" enctype="multipart/form-data" class="row g-5">
+          {% csrf_token %}
+          
+          <div class="col-12">
+            <h6 class="mb-0">1. Informasi Dasar</h6>
+            <small class="text-muted">{{ course.name }} ({{ course.code }})</small>
+            <hr class="mt-2" />
+          </div>
+
+          <div class="col-md-12">
+            <div class="form-floating form-floating-outline">
+              {{ form.agenda }}
+              <label for="{{ form.agenda.id_for_label }}">Pilih Pertemuan (Agenda)</label>
+            </div>
+            {% if form.agenda.errors %}
+                <div class="text-danger small mt-1">{{ form.agenda.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-8">
+            <div class="form-floating form-floating-outline">
+              {{ form.title }}
+              <label for="{{ form.title.id_for_label }}">Judul Materi</label>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="form-floating form-floating-outline">
+              {{ form.order }}
+              <label for="{{ form.order.id_for_label }}">Urutan</label>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <h6 class="mt-2">2. Konten Materi</h6>
+            <hr class="mt-0" />
+          </div>
+
+          <div class="col-md-12">
+            <div class="form-floating form-floating-outline">
+              {{ form.material_type }}
+              <label for="{{ form.material_type.id_for_label }}">Tipe Materi</label>
+            </div>
+          </div>
+
+          <div class="col-md-12" id="field-video-container" style="display:none;">
+            <div class="form-floating form-floating-outline">
+              {{ form.video_url }}
+              <label for="{{ form.video_url.id_for_label }}">Link Video (Youtube/Vimeo)</label>
+            </div>
+            <small class="text-muted">Contoh: <code>https://www.youtube.com/watch?v=xxxxx</code></small>
+          </div>
+
+          <div class="col-md-12" id="field-file-container" style="display:none;">
+            <div class="form-floating form-floating-outline">
+              {{ form.file_attachment }}
+              <label for="{{ form.file_attachment.id_for_label }}">Upload File</label>
+            </div>
+            <small class="text-muted">PDF, DOCX, PPTX (Max 10MB)</small>
+          </div>
+
+          <div class="col-md-12">
+            <div class="form-floating form-floating-outline">
+              {{ form.text_content }}
+              <label for="{{ form.text_content.id_for_label }}">Deskripsi / Teks Bacaan</label>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <h6 class="mt-2">3. Pengaturan Tambahan</h6>
+            <hr class="mt-0" />
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-floating form-floating-outline">
+              {{ form.duration_seconds }}
+              <label for="{{ form.duration_seconds.id_for_label }}">Estimasi Durasi (Detik)</label>
+            </div>
+          </div>
+
+          <div class="col-md-6 d-flex align-items-center">
+             <div class="form-check form-switch mt-2">
+              {{ form.is_preview }}
+              <label class="form-check-label" for="{{ form.is_preview.id_for_label }}">Set sebagai Preview Gratis</label>
+            </div>
+          </div>
+
+          <div class="col-12 mt-4 d-flex justify-content-end">
+            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-outline-secondary me-3">Batal</a>
+            <button type="submit" class="btn btn-primary">Simpan Materi</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Kita gunakan jQuery bawaan template untuk event listener select2
+    const typeSelect = $('#id_material_type'); 
+    
+    function toggleFields() {
+        const val = typeSelect.val();
+        // Reset display
+        $('#field-video-container, #field-file-container').hide();
+
+        if (val === 'video') {
+            $('#field-video-container').fadeIn();
+        } else if (val === 'reading' || val === 'assignment') {
+            $('#field-file-container').fadeIn();
+        }
+    }
+
+    // Event Listener khusus Select2 (karena Select2 mengubah DOM standar)
+    typeSelect.on('select2:select change', toggleFields);
+    
+    // Run on load
+    toggleFields();
+});
+</script>
+{% endblock %}

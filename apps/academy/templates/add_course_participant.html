@@ -1,0 +1,169 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Kelola Partisipan - {{ course.code }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/bootstrap-select/bootstrap-select.css' %}" />
+
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/bootstrap-select/bootstrap-select.js' %}"></script>
+
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_js %}
+{{ block.super }}
+{% endblock page_js %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    
+    <form method="post">
+    {% csrf_token %}
+    
+    <div class="card mb-6">
+         <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+           Tambah Mahasiswa Baru
+        </h5>
+         <a href="{% url 'edit-all-academy-course' course.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="ri-arrow-go-back-line me-1"></i> Kembali
+         </a>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          
+          <div class="col-md-6 mb-6">
+            <div class="form-floating form-floating-outline">
+              <select id="select2Disabled" class="select2 form-select" disabled>
+                <option value="{{ course.id }}" selected>{{ course.name }} ({{ course.code }} - {{ course.group}})</option>
+              </select>
+              <label for="select2Disabled">Mata Kuliah</label>
+            </div>
+          </div>
+
+
+          <div class="col-md-6 mb-6">
+            <div class="form-floating form-floating-outline">
+              {{ form.list_mahasiswa }} 
+              <label for="{{ form.list_mahasiswa.id_for_label }}">Pilih Mahasiswa</label>
+            </div>
+            {% if form.list_mahasiswa.errors %}
+                <div class="text-danger small mt-1">{{ form.list_mahasiswa.errors }}</div>
+            {% endif %}
+          </div>
+          
+        </div> 
+        
+        <div class="row mt-4">
+            <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ri-user-add-line me-1"></i> Simpan Partisipan
+                </button>
+            </div>
+        </div>
+
+      </div>
+    </div>
+    </form> 
+
+    <hr class="my-5">
+
+    <div class="card">
+        <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">Daftar Mahasiswa di Kelas Ini</h5>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table id="tableParticipant" class="dt-responsive table table-bordered">
+                <thead>
+                    <tr>
+                        <th>NIM</th>
+                        <th>Nama Mahasiswa</th>
+                        <th>Tanggal Join</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in participants %}
+                    <tr>
+                        <td>{{ p.mahasiswa.nim.username }}</td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="fw-medium">{{ p.mahasiswa.nim.first_name }}</span>
+                                <small class="text-muted">{{ p.mahasiswa.nim.email }}</small>
+                            </div>
+                        </td>
+                        <td>{{ p.joined_at|date:"d M Y" }}</td>
+                        <td>
+                            {% if p.is_active %}
+                                <span class="badge bg-label-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-label-secondary">Non-Aktif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus mahasiswa ini dari kelas?')">
+                                <i class="ri-delete-bin-line"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // 1. INISIALISASI SELECT2 (Untuk Form)
+    var studentSelect = $('select[name="list_mahasiswa"]'); // Sesuaikan nama field form Anda
+    if (studentSelect.length) {
+        studentSelect.select2({
+            placeholder: "Cari dan pilih nama mahasiswa...",
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false 
+        });
+    }
+    $('#select2Disabled').select2(); // Untuk field course readonly
+
+    // 2. INISIALISASI DATATABLES (Untuk Tabel)
+    $('#tableParticipant').DataTable({
+        responsive: true,
+        // Opsi tambahan agar tampilan lebih rapi
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+        language: {
+            search: "",
+            searchPlaceholder: "Cari mahasiswa...",
+            lengthMenu: "Tampil _MENU_",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ mahasiswa",
+            paginate: {
+                first: "Pertama",
+                last: "Terakhir",
+                next: ">",
+                previous: "<"
+            }
+        }
+    });
+
+});
+</script>
+
+{% endblock %}

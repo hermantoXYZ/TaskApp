@@ -1,0 +1,167 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Keamanan Akun{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/sweetalert2/sweetalert2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/@form-validation/form-validation.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/sweetalert2/sweetalert2.js' %}"></script>
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/popular.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/auto-focus.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/pages/page-user-view.css' %}" />
+{% endblock page_css %}
+
+{% block content %}
+<div class="row gy-6 gy-md-0">
+  <div class="col-xl-4 col-lg-5 col-md-5 order-1 order-md-0">
+    <div class="card mb-6">
+      <div class="card-body pt-12">
+        <div class="user-avatar-section">
+          <div class="d-flex align-items-center flex-column">
+             {% if usermhs.photo %}
+                <img class="img-fluid rounded-3 mb-4" src="{{ usermhs.photo.url }}" height="120" width="120" alt="User avatar" style="object-fit: cover;" />
+            {% else %}
+                <img class="img-fluid rounded-3 mb-4" src="{% static 'img/avatars/1.png' %}" height="120" width="120" alt="Default avatar" />
+            {% endif %}
+            <div class="user-info text-center">
+              <h5>{{ usermhs.nim.first_name }}</h5>
+              <span class="badge bg-label-primary rounded-pill">Mahasiswa</span>
+            </div>
+          </div>
+        </div>
+
+        <h5 class="pb-4 border-bottom mb-4">Details</h5>
+        <div class="info-container">
+          <ul class="list-unstyled mb-6">
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">NIM:</span>
+              <span>{{ usermhs.nim.username }}</span>
+            </li>
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">Prodi:</span>
+              <span>{{ usermhs.prodi }}</span>
+            </li>
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">Status:</span>
+              <span class="badge bg-label-success rounded-pill">Aktif</span>
+            </li>
+             <li class="mb-2">
+              <span class="fw-medium text-heading me-2">No. HP:</span>
+              <span>{{ usermhs.telp|default:"-" }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    </div>
+  <div class="col-xl-8 col-lg-7 col-md-7 order-0 order-md-1">
+    <div class="nav-align-top">
+      <ul class="nav nav-pills flex-column flex-md-row mb-6 row-gap-2">
+        <li class="nav-item"><a class="nav-link" href="{% url 'acd:profile_mhs' %}"><i class="ri-user-edit-line me-2"></i>Profile</a></li>
+        <li class="nav-item"><a class="nav-link active" href="javascript:void(0);"><i class="ri-lock-2-line me-2"></i>Security</a></li>
+      </ul>
+    </div>
+    <div class="card mb-6">
+      <h5 class="card-header">Ganti Password</h5>
+      <div class="card-body">
+        
+        <form id="formChangePassword" method="POST" action="">
+          {% csrf_token %}
+          
+          <div class="alert alert-warning alert-dismissible" role="alert">
+            <h5 class="alert-heading mb-1">Persyaratan Password</h5>
+            <span>Minimal 8 karakter. Kombinasi huruf dan angka disarankan.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+
+          <div class="row gx-5">
+            
+            <div class="mb-3 col-12 form-password-toggle">
+              <div class="input-group input-group-merge">
+                <div class="form-floating form-floating-outline">
+                  <input class="form-control" type="password" name="old_password" id="id_old_password" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" />
+                  <label for="id_old_password">Password Saat Ini</label>
+                </div>
+                <span class="input-group-text cursor-pointer text-heading"><i class="ri-eye-off-line"></i></span>
+              </div>
+              {% if form.old_password.errors %}
+                 <div class="text-danger small mt-1">{{ form.old_password.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3 col-12 col-sm-6 form-password-toggle">
+              <div class="input-group input-group-merge">
+                <div class="form-floating form-floating-outline">
+                  <input class="form-control" type="password" id="id_new_password1" name="new_password1" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" />
+                  <label for="id_new_password1">Password Baru</label>
+                </div>
+                <span class="input-group-text cursor-pointer text-heading"><i class="ri-eye-off-line"></i></span>
+              </div>
+               {% if form.new_password1.errors %}
+                 <div class="text-danger small mt-1">{{ form.new_password1.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3 col-12 col-sm-6 form-password-toggle">
+              <div class="input-group input-group-merge">
+                <div class="form-floating form-floating-outline">
+                  <input class="form-control" type="password" name="new_password2" id="id_new_password2" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" />
+                  <label for="id_new_password2">Konfirmasi Password Baru</label>
+                </div>
+                <span class="input-group-text cursor-pointer text-heading"><i class="ri-eye-off-line"></i></span>
+              </div>
+               {% if form.new_password2.errors %}
+                 <div class="text-danger small mt-1">{{ form.new_password2.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div>
+              <button type="submit" class="btn btn-primary me-2">Simpan Password Baru</button>
+            </div>
+          </div>
+          
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger mt-3 mb-0">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+          {% endif %}
+
+        </form>
+      </div>
+    </div>
+    <div class="card mb-6">
+      <div class="card-header">
+        <h5 class="mb-0">Two-steps verification</h5>
+        <span class="card-subtitle">Fitur keamanan tambahan (Segera Hadir).</span>
+      </div>
+      <div class="card-body pt-0">
+         <p class="text-muted">Untuk saat ini, keamanan akun Anda bergantung pada kekuatan password Anda. Mohon jaga kerahasiaan password.</p>
+      </div>
+    </div>
+    
+  </div>
+  </div>
+{% endblock %}
+
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'js/app-user-view-security.js' %}"></script>
+{% endblock page_js %}

@@ -1,0 +1,191 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Pengumuman - {{ course.code }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/@form-validation/form-validation.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/animate-css/animate.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/popular.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/auto-focus.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'js/forms-selects.js' %}"></script>
+{% endblock page_js %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+         Course Announcements
+        </h5>
+         <a href="{% url 'edit-all-academy-course' course.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="ri-arrow-go-back-line me-1"></i> Kembali
+         </a>
+      </div>
+      <div class="card-body">
+        
+        <div class="row">
+            
+            <div class="col-md-5 p-4 border-end">
+                <h6 class="mb-4 text-muted">Buat Pengumuman Baru</h6>
+                
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="form-floating form-floating-outline mb-6">
+                        <input type="text" class="form-control" value="{{ course.name }} ({{ course.code }})" disabled>
+                        <label>Mata Kuliah</label>
+                    </div>
+
+                    <div class="form-floating form-floating-outline mb-6">
+                        <input type="text"
+                            name="{{ form.title.html_name }}"
+                            id="{{ form.title.id_for_label }}"
+                            value="{{ form.title.value|default_if_none:'' }}"
+                            class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                            placeholder="Judul Pengumuman"
+                            required>
+                        <label for="{{ form.title.id_for_label }}">Judul Pengumuman</label>
+                        {% if form.title.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.title.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-floating form-floating-outline mb-6">
+                        <select name="{{ form.priority.html_name }}"
+                                id="{{ form.priority.id_for_label }}"
+                                class="select2 form-select {% if form.priority.errors %}is-invalid{% endif %}">
+                            {% for value, label in form.fields.priority.choices %}
+                                <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <label for="{{ form.priority.id_for_label }}">Tingkat Prioritas</label>
+                        {% if form.priority.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.priority.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-floating form-floating-outline mb-6">
+                        <textarea name="{{ form.content.html_name }}"
+                                  id="{{ form.content.id_for_label }}"
+                                  class="form-control {% if form.content.errors %}is-invalid{% endif %}"
+                                  style="height: 150px;"
+                                  placeholder="Isi pengumuman..."
+                                  required>{{ form.content.value|default_if_none:'' }}</textarea>
+                        <label for="{{ form.content.id_for_label }}">Isi Pesan / Informasi</label>
+                        {% if form.content.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.content.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-check form-switch mb-6">
+                        {{ form.is_pinned }}
+                        <label class="form-check-label" for="{{ form.is_pinned.id_for_label }}">Pin Pengumuman (Tampilkan Paling Atas)</label>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                         <a href="{% url 'list-academy-course' %}" class="btn btn-label-secondary me-3">Kembali</a>
+                        <button type="submit" class="btn btn-primary">Publikasikan</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-md-7 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="mb-0 text-muted">Papan Pengumuman</h6>
+                    <span class="badge bg-label-primary rounded-pill">{{ announcements.count }} Post</span>
+                </div>
+
+                <div class="announcement-list" style="max-height: 600px; overflow-y: auto; padding-right: 5px;">
+                    {% for ann in announcements %}
+                    <div class="card shadow-none border mb-4 {% if ann.is_pinned %}border-primary bg-label-primary-subtle{% endif %}">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="avatar me-2">
+                                        <span class="avatar-initial rounded-circle {% if ann.is_pinned %}bg-primary{% else %}bg-label-secondary{% endif %}">
+                                            {% if ann.is_pinned %}<i class="ri-pushpin-fill"></i>{% else %}<i class="ri-notification-3-line"></i>{% endif %}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">{{ ann.created_by.get_full_name|default:"Dosen" }}</h6>
+                                        <small class="text-muted" style="font-size: 0.75rem;">{{ ann.created_at|date:"d M Y, H:i" }}</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-center">
+                                    {% if ann.priority == 'urgent' %}
+                                        <span class="badge bg-danger me-2">URGENT</span>
+                                    {% elif ann.priority == 'high' %}
+                                        <span class="badge bg-warning me-2">High</span>
+                                    {% endif %}
+
+                                    <div class="dropdown">
+                                        <button class="btn p-0" type="button" data-bs-toggle="dropdown">
+                                            <i class="ri-more-2-fill text-muted"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="#" onclick="return confirm('Hapus pengumuman ini?')">
+                                                    <i class="ri-delete-bin-line me-2"></i> Delete
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="card-title mt-3 mb-2 text-primary">{{ ann.title }}</h5>
+                            <p class="card-text text-secondary" style="white-space: pre-wrap;">{{ ann.content }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5 mt-5">
+                        <div class="avatar avatar-xl bg-label-secondary rounded-circle mb-3 mx-auto">
+                            <i class="ri-chat-voice-line ri-48px"></i>
+                        </div>
+                        <h6 class="mb-1 text-muted">Belum ada pengumuman</h6>
+                        <small class="text-muted">Pengumuman yang Anda buat akan muncul di sini.</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div> </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi Select2 untuk Prioritas
+    $('.select2').select2({
+        minimumResultsForSearch: Infinity, // Matikan search box karena opsi sedikit
+        width: '100%'
+    });
+});
+</script>
+{% endblock %}

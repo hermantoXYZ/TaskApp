@@ -1,0 +1,145 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Manage Course Period{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4">
+      <h5 class="card-header">
+        {% if is_edit %} Edit Course Period {% else %} Add New Course Period {% endif %}
+      </h5>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="form-floating form-floating-outline">
+                    <input type="text"
+                        name="{{ form.name.html_name }}"
+                        id="{{ form.name.id_for_label }}"
+                        value="{{ form.name.value|default_if_none:'' }}"
+                        class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                        placeholder="Contoh: Semester Ganjil 2024/2025"
+                        required>
+                    <label for="{{ form.name.id_for_label }}">Nama Periode</label>
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3 d-flex align-items-center">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" 
+                           name="{{ form.is_active.html_name }}" 
+                           id="{{ form.is_active.id_for_label }}"
+                           {% if form.is_active.value %}checked{% endif %}>
+                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                      Set as Active Period
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="form-floating form-floating-outline">
+                    <input type="date"
+                        name="{{ form.start_date.html_name }}"
+                        id="{{ form.start_date.id_for_label }}"
+                        value="{{ form.start_date.value|date:'Y-m-d' }}"
+                        class="form-control {% if form.start_date.errors %}is-invalid{% endif %}"
+                        required>
+                    <label for="{{ form.start_date.id_for_label }}">Tanggal Mulai</label>
+                    {% if form.start_date.errors %}
+                        <div class="invalid-feedback">{{ form.start_date.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="form-floating form-floating-outline">
+                    <input type="date"
+                        name="{{ form.end_date.html_name }}"
+                        id="{{ form.end_date.id_for_label }}"
+                        value="{{ form.end_date.value|date:'Y-m-d' }}"
+                        class="form-control {% if form.end_date.errors %}is-invalid{% endif %}"
+                        required>
+                    <label for="{{ form.end_date.id_for_label }}">Tanggal Selesai</label>
+                    {% if form.end_date.errors %}
+                        <div class="invalid-feedback">{{ form.end_date.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+          </div>
+
+          <div class="mt-3 d-flex justify-content-end">
+            {% if is_edit %}
+                <a href="{% url 'list-course-period' %}" class="btn btn-label-secondary me-2">Cancel</a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary">Save Period</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <h5 class="card-header">Daftar Course Period</h5>
+      <div class="table-responsive text-nowrap">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Periode</th>
+              <th>Mulai</th>
+              <th>Selesai</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="table-border-bottom-0">
+            {% for item in data_list %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><strong>{{ item.name }}</strong></td>
+              <td>{{ item.start_date|date:"d M Y" }}</td>
+              <td>{{ item.end_date|date:"d M Y" }}</td>
+              <td>
+                {% if item.is_active %}
+                    <span class="badge bg-label-success">Active</span>
+                {% else %}
+                    <span class="badge bg-label-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                    <i class="ri-more-2-line"></i>
+                  </button>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'edit-course-period' item.id %}">
+                        <i class="ri-pencil-line me-1"></i> Edit
+                    </a>
+                    <a class="dropdown-item" href="{% url 'delete-course-period' item.id %}"
+                       onclick="return confirm('Hapus periode {{ item.name }}?');">
+                        <i class="ri-delete-bin-6-line me-1"></i> Delete
+                    </a>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">Belum ada data periode.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

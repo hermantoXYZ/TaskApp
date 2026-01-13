@@ -1,0 +1,112 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Tambah Tugas - {{ course.code }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="row mb-6">
+  <div class="col-md-8 offset-md-2">
+    <div class="card">
+      <h5 class="card-header">Buat Tugas Baru</h5>
+      <div class="card-body">
+        
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          
+          <div class="mb-4">
+             <small class="text-muted d-block mb-2">Mata Kuliah</small>
+             <h6>{{ course.name }} ({{ course.code }})</h6>
+             <hr>
+          </div>
+
+          <div class="form-floating form-floating-outline mb-4">
+            {{ form.agenda }}
+            <label for="{{ form.agenda.id_for_label }}">Pilih Pertemuan (Agenda)</label>
+            {% if form.agenda.errors %}<div class="text-danger small">{{ form.agenda.errors }}</div>{% endif %}
+          </div>
+
+          <div class="form-floating form-floating-outline mb-4">
+            {{ form.title }}
+            <label for="{{ form.title.id_for_label }}">Judul Tugas</label>
+          </div>
+
+          <div class="form-floating form-floating-outline mb-4">
+            {{ form.description }}
+            <label for="{{ form.description.id_for_label }}">Deskripsi / Instruksi</label>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label text-muted small">File Soal / Panduan (Opsional)</label>
+            {{ form.file_instruction }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline mb-4">
+                    {{ form.due_date }}
+                    <label for="{{ form.due_date.id_for_label }}">Batas Waktu (Deadline)</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline mb-4">
+                    {{ form.max_score }}
+                    <label for="{{ form.max_score.id_for_label }}">Nilai Maksimal</label>
+                </div>
+            </div>
+          </div>
+
+          <div class="form-check form-switch mb-4">
+            {{ form.allow_late_submission }}
+            <label class="form-check-label" for="{{ form.allow_late_submission.id_for_label }}">
+                Izinkan Pengumpulan Telat
+            </label>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <a href="{% url 'manage-curriculum' course.id %}" class="btn btn-outline-secondary me-3">Batal</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="ri-save-line me-1"></i> Simpan Tugas
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Init Select2
+    $('.select2').select2({
+        width: '100%',
+        placeholder: "Pilih Pertemuan...",
+        allowClear: true
+    });
+
+    // Init Flatpickr (Date Time)
+    flatpickr(".flatpickr-datetime", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        altInput: true,
+        altFormat: "j F Y, H:i",
+        minDate: "today",
+        placeholder: "Pilih Tanggal & Jam Deadline"
+    });
+});
+</script>
+{% endblock %}

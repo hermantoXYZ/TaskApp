@@ -1,0 +1,211 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Kelola Kurikulum - {{ course.code }}{% endblock %}
+
+{% block content %}
+
+<div class="card bg-transparent shadow-none border-0 mb-6">
+  <div class="card-body row g-6 p-0 pb-5">
+    <div class="col-12 col-md-8 card-separator">
+      <h5 class="mb-2">Welcome back,<span class="h4 fw-semibold"> Kelola Kurikulum & Materi 👋🏻</span></h5>
+      <div class="col-12 col-lg-5">
+        <p>{{ course.name }} ({{ course.code }}) !</p>
+      </div>
+      <div class="d-flex justify-content-between flex-wrap gap-4 me-12">
+        <div class="d-flex align-items-center gap-4 me-6 me-sm-0">
+          <div class="avatar avatar-lg">
+            <div class="avatar-initial bg-label-primary rounded-3">
+              <div>
+                <img src="{% static 'svg/icons/laptop.svg' %}" alt="paypal" class="img-fluid">
+              </div>
+            </div>
+          </div>
+          <div class="content-right">
+            <p class="mb-1 fw-medium">Hours Spent</p>
+            <span class="text-primary mb-0 h5">34h</span>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-4">
+          <div class="avatar avatar-lg">
+            <div class="avatar-initial bg-label-info rounded-3">
+              <div>
+                <img src="{% static 'svg/icons/lightbulb.svg' %}" alt="Lightbulb" class="img-fluid">
+              </div>
+            </div>
+          </div>
+          <div class="content-right">
+            <p class="mb-1 fw-medium">Test Results</p>
+            <span class="text-info mb-0 h5">82%</span>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-4">
+          <div class="avatar avatar-lg">
+            <div class="avatar-initial bg-label-warning rounded-3">
+              <div>
+                <img src="{% static 'svg/icons/check.svg' %}" alt="Check" class="img-fluid">
+              </div>
+            </div>
+          </div>
+          <div class="content-right">
+            <p class="mb-1 fw-medium">Course Completed </p>
+            <span class="text-warning mb-0 h5">14</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4 ps-md-4 ps-lg-6 d-flex align-items-center"> 
+         <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-primary">
+                <i class="ri-folder-add-line me-1"></i> Bab Baru
+            </a>
+
+            <a href="{% url 'add-course-material' course.id %}" class="btn btn-outline-primary">
+                <i class="ri-file-add-line me-1"></i> Materi Baru
+            </a>
+        </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+        <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">Struktur Pembelajaran</h5>
+        </div>
+        <div class="card-body pt-4">
+            
+            {% if not sections %}
+                <div class="text-center py-5">
+                    <div class="avatar-initial rounded-circle bg-label-secondary mb-3 p-3 d-inline-block">
+                        <i class="ri-layout-masonry-line ri-2x"></i>
+                    </div>
+                    <h6>Belum ada Agenda / Bab Pembelajaran</h6>
+                    <p class="text-muted">Silakan buat Bab (Agenda) pertama Anda terlebih dahulu.</p>
+                </div>
+            {% else %}
+            
+            <div class="accordion accordion-header-primary" id="curriculumAccordion">
+                {% for section in sections %}
+                <div class="accordion-item card mb-2 border shadow-none">
+
+                    <h2 class="accordion-header d-flex bg-lighter" id="heading-{{ section.id }}">
+                        <button class="accordion-button collapsed bg-lighter flex-grow-1 shadow-none" 
+                                type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#collapse-{{ section.id }}">
+                            <span class="d-flex align-items-center justify-content-between w-100 me-3">
+                                <span class="fw-bold text-heading">
+                                    <i class="ri-drag-move-2-line me-2 handle cursor-move"></i>
+                                    <span class="badge bg-label-primary me-2">{{ section.agenda_date|date:"d M" }}</span>
+                                    {{ section.title }}
+                                </span>
+                                <div>
+                                    <span class="badge bg-label-secondary rounded-pill me-1">{{ section.materials.count }} Materi</span>
+                                    <span class="badge bg-label-warning rounded-pill">{{ section.assignments.count }} Tugas</span>
+                                </div>
+                            </span>
+                        </button>
+                        
+                        <div class="d-flex align-items-center bg-lighter px-2 border-start flex-shrink-0">
+                            <a href="{% url 'edit-course-agenda' course.id section.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1">
+                                <i class="ri-pencil-line"></i>
+                            </a>
+                            <a href="{% url 'delete-course-agenda' course.id section.id %}" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus agenda ini?');">
+                                <i class="ri-delete-bin-line"></i>
+                            </a>
+                        </div>
+                    </h2>
+                    
+                    <div id="collapse-{{ section.id }}" class="accordion-collapse collapse" data-bs-parent="#curriculumAccordion">
+                        <div class="accordion-body p-0">
+                            <ul class="list-group list-group-flush">
+                                
+                                {% if section.materials.all %}
+                                    <li class="list-group-item bg-lighter small fw-bold text-uppercase text-muted ps-4 py-2">
+                                        <i class="ri-book-open-line me-1"></i> Materi Pembelajaran
+                                    </li>
+                                    {% for material in section.materials.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center ps-5">
+                                        <div class="d-flex align-items-center">
+                                            {% if material.material_type == 'video' %}
+                                                <i class="ri-video-line text-danger me-3 fs-4"></i>
+                                            {% elif material.material_type == 'reading' %}
+                                                <i class="ri-article-line text-info me-3 fs-4"></i>
+                                            {% else %}
+                                                <i class="ri-file-text-line text-secondary me-3 fs-4"></i>
+                                            {% endif %}
+                                            
+                                            <div>
+                                                <span class="fw-medium text-heading">{{ material.title }}</span>
+                                                <div class="small text-muted">
+                                                    {{ material.get_material_type_display }}
+                                                    {% if material.duration_seconds > 0 %} • {{ material.duration_seconds }} Detik {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <a href="{% url 'edit-course-material' course.id material.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1"><i class="ri-pencil-line"></i></a>
+                                            <a href="{% url 'delete-course-material' course.id material.id %}" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus materi ini?');"><i class="ri-delete-bin-line"></i></a>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% if section.assignments.all %}
+                                    <li class="list-group-item bg-lighter small fw-bold text-uppercase text-muted ps-4 py-2">
+                                        <i class="ri-task-line me-1"></i> Tugas & Evaluasi
+                                    </li>
+                                    {% for tugas in section.assignments.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center ps-5">
+                                        <div class="d-flex align-items-center">
+                                            <i class="ri-checkbox-circle-line text-warning me-3 fs-4"></i>
+                                            <div>
+                                                <span class="fw-medium text-heading">{{ tugas.title }}</span>
+                                                <div class="small text-muted">
+                                                    <span class="text-danger">Deadline: {{ tugas.due_date|date:"d M, H:i" }}</span>
+                                                    • Max Score: {{ tugas.max_score }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex align-items-center">
+                                            <a href="{% url 'assignment-grading' tugas.id %}" class="btn btn-sm btn-label-primary rounded-pill me-2">
+                                                <i class="ri-file-list-3-line me-1"></i> Periksa
+                                            </a>
+
+                                            <a href="#" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1"><i class="ri-pencil-line"></i></a>
+                                            <a href="#" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus tugas ini?');"><i class="ri-delete-bin-line"></i></a>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                {% endif %}
+
+                                <li class="list-group-item p-3 text-center bg-transparent dashed-border-top">
+                                    <span class="text-muted small d-block mb-2 fst-italic">Tambahkan konten ke dalam bab ini:</span>
+                                    
+                                    <a href="{% url 'add-course-material' course.id %}?agenda={{section.id}}" class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="ri-file-add-line me-1"></i> Materi Baru
+                                    </a>
+                                    
+                                    <a href="{% url 'add-course-assignment' course.id %}?agenda={{section.id}}" class="btn btn-sm btn-outline-warning">
+                                        <i class="ri-task-line me-1"></i> Tugas Baru
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

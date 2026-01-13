@@ -1,0 +1,257 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Academy - Edit Course - App{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-checkboxes-jquery/datatables.checkboxes.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/@form-validation/form-validation.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/popular.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/@form-validation/auto-focus.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'js/app-access-roles.js' %}"></script>
+<script src="{% static 'js/modal-add-role.js' %}"></script>
+{% endblock page_js %}
+{% block content %}
+<div class="row mb-6">
+    <div class="col-12">
+        <div class="card bg-label-primary h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1 text-primary">{{ course.name }} ({{ course.code }})</h4>
+                    <p class="mb-0">{{ course.description|truncatechars:250 }}</p>
+                    <div class="mt-2">
+                        <span class="badge bg-white text-primary me-2">
+                            <i class="ri-time-line me-1"></i> {{ course.duration_weeks }} Weeks
+                        </span>
+                        <span class="badge bg-white text-primary me-2">
+                            <i class="ri-group-line me-1"></i> {{ course.participants.count }} Students
+                        </span>
+                         <span class="badge bg-white text-primary">
+                            <i class="ri-calendar-check-line me-1"></i> {{ course.period }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-6">
+  
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Info Terbaru</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-danger rounded">
+                <i class="ri-megaphone-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Announcements</h5>
+            <small class="d-block mb-3">Buat pengumuman penting untuk seluruh kelas.</small>
+            <a href="{% url 'add-course-announcement' course.id %}" class="btn btn-sm btn-label-danger text-nowrap">Manage News</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">{{ course.participants.count }} Students</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-info rounded">
+                <i class="ri-group-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Participants</h5>
+            <small class="d-block mb-3">Kelola data mahasiswa dan absensi.</small>
+            <a href="{% url 'add-course-participant' course.id %}" class="btn btn-sm btn-label-info text-nowrap">Manage Students</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">{{ course.agendas.count }} Upcoming</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-success rounded">
+                <i class="ri-calendar-event-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Class Agenda</h5>
+            <small class="d-block mb-3">Jadwal perkuliahan dan deadline.</small>
+            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-sm btn-label-success text-nowrap">Manage Schedule</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Ujian Online</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-danger rounded">
+                <i class="ri-questionnaire-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Tes & Quiz</h5>
+            <small class="d-block mb-3">Bank soal, kuis mingguan, dan ujian akhir.</small>
+            <a href="#" class="btn btn-sm btn-label-danger text-nowrap">Create Quiz</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100 border-primary"> <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Konten Interaktif (LMS)</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-primary rounded">
+                <i class="ri-video-chat-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Curriculum & Materials</h5>
+            <small class="d-block mb-3">Kelola Bab, Video, dan File untuk Player.</small>
+            
+            <a href="{% url 'manage-curriculum' course.id %}" class="btn btn-sm btn-primary text-nowrap">
+                <i class="ri-edit-box-line me-1"></i> Manage Content
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Proyek Mahasiswa</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-dark rounded">
+                <i class="ri-briefcase-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Research Portfolio</h5>
+            <small class="d-block mb-3">Showcase hasil karya dan penelitian.</small>
+            <a href="#" class="btn btn-sm btn-label-dark text-nowrap">View Projects</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Diskusi Kelas</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-info rounded">
+                <i class="ri-discuss-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Forum Diskusi</h5>
+            <small class="d-block mb-3">Tanya jawab asinkronus antar mahasiswa.</small>
+            <a href="#" class="btn btn-sm btn-label-info text-nowrap">Go to Forum</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Pesan Instan</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-success rounded">
+                <i class="ri-chat-3-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Live Chat</h5>
+            <small class="d-block mb-3">Komunikasi real-time dengan peserta.</small>
+            <a href="#" class="btn btn-sm btn-label-success text-nowrap">Open Chat</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Pengaturan</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-secondary rounded">
+                <i class="ri-settings-3-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Settings</h5>
+            <small class="d-block mb-3">Edit info kelas, arsipkan, atau hapus.</small>
+            <a href="#" class="btn btn-sm btn-label-secondary text-nowrap">Edit Course</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
