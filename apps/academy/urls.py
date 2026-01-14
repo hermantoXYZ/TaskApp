@@ -56,6 +56,8 @@ urlpatterns = [
     path('course/<uuid:course_uuid>/learn/assignment/<int:assignment_id>/', CoursePlayerView.as_view(), name='course-player-assignment'),
 
 
+    # user public
+    path('public/share/<uuid:course_uuid>/agenda/<int:agenda_id>/', views.PublicAgendaMaterialView.as_view(), name='public-agenda-material'),
 
     path(
         "app/academy/dashboard/",

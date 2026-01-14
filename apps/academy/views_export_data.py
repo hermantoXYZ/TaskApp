@@ -25,12 +25,13 @@ class AcademyView(TemplateView):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
 
         return context
-    
+
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.urls import reverse # Wajib import ini untuk Link
 
 class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
     template_name = "course_rekapitulasi.html" 
@@ -52,7 +53,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             'sick': 60,
             'excused': 50,
             'absent': 0,
-            '-': 0 # Jika data kosong/belum diabsen
+            '-': 0
         }
 
         # 2. Optimasi Query Absensi
@@ -64,17 +65,14 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         for p in participants:
             # --- A. DETAIL ABSENSI & HITUNG SKOR ---
             student_agenda_statuses = []
-            current_total_points = 0 # Total poin yang dikumpulkan mahasiswa
+            current_total_points = 0 
             
             for ag in agendas:
                 status = attendance_map.get((p.id, ag.id), '-') 
                 student_agenda_statuses.append({'agenda_id': ag.id, 'status': status})
-                
-                # Tambahkan poin sesuai status
                 current_total_points += POINTS_MAP.get(status, 0)
             
             # Hitung Skor Akhir Absensi (Skala 0-100)
-            # Rumus: (Total Poin / (Jml Pertemuan * 100)) * 100
             attendance_score = 0
             if total_agendas > 0:
                 max_possible_points = total_agendas * 100
@@ -123,14 +121,14 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             rekap_data.append({
                 'participant': p,
                 'agenda_statuses': student_agenda_statuses,
-                'attendance_score': attendance_score, # Variable baru: Skor Absensi (Bukan sekedar %)
+                'attendance_score': attendance_score, 
                 'grades': student_grades,
                 'final_avg': avg_score
             })
 
-        # Cek Export Excel
+        # Cek Export Excel (Pass 'request' untuk generate full URL)
         if request.GET.get('export') == 'excel':
-            return self.export_to_excel(course, agendas, assignments, rekap_data)
+            return self.export_to_excel(request, course, agendas, assignments, rekap_data)
 
         return self.render_to_response(self.get_context_data(
             course=course,
@@ -140,7 +138,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             total_agendas=total_agendas
         ))
 
-    def export_to_excel(self, course, agendas, assignments, data):
+    def export_to_excel(self, request, course, agendas, assignments, data):
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Rekapitulasi Kelas"
@@ -150,16 +148,24 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         center_align = Alignment(horizontal='center', vertical='center')
         border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
         header_fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+        
+        # Style Khusus Link (Biru + Underline)
+        link_font = Font(color="0000FF", underline="single", bold=True)
+        link_fill = PatternFill(start_color="E6F7FF", end_color="E6F7FF", fill_type="solid")
 
         # --- HEADER ROW 1 ---
+        # Kolom Identitas (6 Kolom)
         headers = ["No", "Nama Mahasiswa", "NIM", "Prodi", "Kelas", "Kode MK"] 
         
+        # Simpan index kolom dimana Agenda dimulai (Excel index starts at 1)
+        # Len headers saat ini = 6, maka agenda pertama ada di kolom 7
+        agenda_start_col = len(headers) + 1
+
         # Header Absensi
         for i, ag in enumerate(agendas):
             headers.append(f"P-{i+1}")
         
-        # Ganti header "Total Hadir" jadi "Skor Absen" agar lebih relevan dengan sistem poin
-        headers.append("Skor Absen") 
+        headers.extend(["Skor Absen"]) # Ganti Total Hadir jadi Skor
 
         # Header Tugas
         for i, task in enumerate(assignments):
@@ -172,12 +178,39 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
 
         ws.append(headers)
 
-        # Apply Style ke Header
+        # --- APPLY STYLE HEADER UMUM ---
         for cell in ws[1]:
             cell.font = bold_font
             cell.alignment = center_align
             cell.fill = header_fill
             cell.border = border
+
+        # --- GENERATE LINK MATERI PADA HEADER AGENDA ---
+        # Dapatkan Base URL (http://domain.com)
+        scheme = request.scheme
+        host = request.get_host()
+        base_url = f"{scheme}://{host}"
+
+        # Loop ulang khusus kolom Agenda untuk pasang Link
+        for i, ag in enumerate(agendas):
+            col_idx = agenda_start_col + i
+            cell = ws.cell(row=1, column=col_idx)
+            
+            # Buat Link Public
+            try:
+                # Pastikan nama URL 'public-agenda-material' sudah ada di urls.py
+                relative_path = reverse('public-agenda-material', kwargs={
+                    'course_uuid': course.uuid, 
+                    'agenda_id': ag.id
+                })
+                full_link = f"{base_url}{relative_path}"
+                
+                cell.hyperlink = full_link
+                cell.font = link_font
+                cell.fill = link_fill
+                cell.value = f"P-{i+1}" # Paksa tulisan tetap P-1
+            except:
+                pass # Jika URL belum dibuat, biarkan header biasa
 
         # --- DATA ROWS ---
         for idx, item in enumerate(data):
@@ -210,7 +243,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 code_map = {'present': 'H', 'late': 'T', 'absent': 'A', 'sick': 'S', 'excused': 'I', '-': '-'}
                 row.append(code_map.get(stat['status'], '-'))
 
-            # Skor Absensi (Nilai 0-100 berdasarkan poin)
+            # Skor Absensi
             row.append(item['attendance_score'])
 
             # Loop Nilai Tugas

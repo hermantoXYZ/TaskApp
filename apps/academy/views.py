@@ -767,3 +767,23 @@ def update_grade_submission(request, submission_id):
         return redirect('assignment-grading', assignment_id=submission.assignment.id)
     
     return redirect('app-academy-dashboard')
+
+
+class PublicAgendaMaterialView(TemplateView):
+    template_name = "public_agenda_materials.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        course_uuid = self.kwargs.get('course_uuid')
+        agenda_id = self.kwargs.get('agenda_id')
+
+        # Ambil Agenda (Tanpa cek login user)
+        agenda = get_object_or_404(CourseAgenda, id=agenda_id, course__uuid=course_uuid)
+        
+        # Ambil Material terkait
+        materials = CourseMaterial.objects.filter(agenda=agenda).order_by('order')
+
+        context['agenda'] = agenda
+        context['course'] = agenda.course
+        context['materials'] = materials
+        return context
