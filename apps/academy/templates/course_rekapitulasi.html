@@ -42,6 +42,13 @@
         padding: 5px !important;
         min-width: 35px;
     }
+    /* Badge transparan untuk header info */
+    .header-badge {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        font-weight: normal;
+        font-size: 0.9rem;
+    }
 </style>
 {% endblock vendor_css %}
 
@@ -58,14 +65,27 @@
 {% block content %}
 
 <div class="card mb-4 bg-primary text-white">
-    <div class="card-body d-flex justify-content-between align-items-center p-4">
-       <div>
-          <h4 class="text-white mb-1">Rekapitulasi Kelas</h4>
-          <p class="mb-0 opacity-75">Monitoring Perkembangan Mahasiswa: {{ course.name }}</p>
-       </div>
-       <div class="text-end">
-           <h3 class="text-white mb-0">{{ rekap_data|length }}</h3>
-           <small class="opacity-75">Mahasiswa Aktif</small>
+    <div class="card-body p-4">
+       <div class="d-flex justify-content-between align-items-start">
+          <div>
+             <h6 class="text-white opacity-75 mb-1 text-uppercase">Rekapitulasi Penilaian</h6>
+             <h3 class="text-white mb-3">{{ course.name }}</h3>
+             
+             <div class="d-flex flex-wrap gap-2">
+                 <span class="badge header-badge rounded-pill px-3 py-2">
+                    <i class="ri-barcode-box-line me-1"></i> Kode: <strong>{{ course.code }}</strong>
+                 </span>
+                 <span class="badge header-badge rounded-pill px-3 py-2">
+                    <i class="ri-community-line me-1"></i> Kelas: <strong>{{ course.group }}</strong>
+                 </span>
+                 <span class="badge header-badge rounded-pill px-3 py-2">
+                    <i class="ri-calendar-check-line me-1"></i> Periode: <strong>{{ course.period }}</strong>
+                 </span>
+                  <span class="badge header-badge rounded-pill px-3 py-2">
+                    <i class="ri-user-follow-line me-1"></i> Mahasiswa Aktif: <strong>{{ rekap_data|length }}</strong>
+                 </span>
+             </div>
+          </div>
        </div>
     </div>
 </div>
@@ -88,11 +108,18 @@
       <thead>
         <tr>
           <th rowspan="2" class="bg-light">No</th>
-          <th rowspan="2" class="bg-light">Nama Mahasiswa</th> {% if agendas %}
+          <th rowspan="2" class="bg-light">Nama Mahasiswa</th> 
+          
+          <th rowspan="2" class="bg-light">NIM</th>
+          <th rowspan="2" class="bg-light">Prodi</th>
+          <th rowspan="2" class="bg-light">Kelas</th>
+          <th rowspan="2" class="bg-light">Kode MK</th>
+
+          {% if agendas %}
             <th colspan="{{ agendas.count }}" class="bg-label-info text-center">Riwayat Kehadiran</th>
           {% endif %}
 
-          <th rowspan="2" class="bg-label-secondary">%</th>
+          <th rowspan="2" class="bg-label-secondary">Skor Absen</th>
 
           {% if assignments %}
             <th colspan="{{ assignments.count }}" class="text-center">Nilai Tugas</th>
@@ -120,24 +147,29 @@
             <td class="text-center">{{ forloop.counter }}</td>
             
             <td>
-                <div class="d-flex flex-column">
-                    <span class="fw-bold text-heading small">{{ item.participant.mahasiswa.nim.first_name }}</span>
-                    <small class="text-muted" style="font-size: 10px;">{{ item.participant.mahasiswa.nim }}</small>
-                </div>
+                <span class="fw-bold text-heading text-wrap" style="min-width: 150px; display:block;">
+                    {{ item.participant.mahasiswa.nim.first_name }} 
+                </span>
+                <small class="text-muted" style="font-size: 10px;">{{ item.participant.mahasiswa.nim }}</small>
             </td>
+
+            <td>{{ item.participant.mahasiswa.nim.username }}</td>
+            <td>{{ item.participant.mahasiswa.prodi.nama_prodi|default:"-" }}</td>
+            <td>{{ course.group }}</td>
+            <td>{{ course.code }}</td>
 
             {% for stat in item.agenda_statuses %}
             <td class="text-center col-absen">
                 {% if stat.status == 'present' %}
-                    <span class="badge badge-center rounded-pill bg-label-success w-px-20 h-px-20" data-bs-toggle="tooltip" title="Hadir">H</span>
+                    <span class="badge badge-center rounded-pill bg-label-success w-px-20 h-px-20" data-bs-toggle="tooltip" title="Hadir (100)">H</span>
                 {% elif stat.status == 'late' %}
-                    <span class="badge badge-center rounded-pill bg-label-warning w-px-20 h-px-20" data-bs-toggle="tooltip" title="Terlambat">T</span>
-                {% elif stat.status == 'absent' %}
-                    <span class="badge badge-center rounded-pill bg-label-danger w-px-20 h-px-20" data-bs-toggle="tooltip" title="Alpa">A</span>
+                    <span class="badge badge-center rounded-pill bg-label-warning w-px-20 h-px-20" data-bs-toggle="tooltip" title="Terlambat (75)">T</span>
                 {% elif stat.status == 'sick' %}
-                    <span class="badge badge-center rounded-pill bg-label-info w-px-20 h-px-20" data-bs-toggle="tooltip" title="Sakit">S</span>
+                    <span class="badge badge-center rounded-pill bg-label-info w-px-20 h-px-20" data-bs-toggle="tooltip" title="Sakit (60)">S</span>
                 {% elif stat.status == 'excused' %}
-                    <span class="badge badge-center rounded-pill bg-label-secondary w-px-20 h-px-20" data-bs-toggle="tooltip" title="Izin">I</span>
+                    <span class="badge badge-center rounded-pill bg-label-secondary w-px-20 h-px-20" data-bs-toggle="tooltip" title="Izin (50)">I</span>
+                {% elif stat.status == 'absent' %}
+                    <span class="badge badge-center rounded-pill bg-label-danger w-px-20 h-px-20" data-bs-toggle="tooltip" title="Alpa (0)">A</span>
                 {% else %}
                     <span class="text-muted small">-</span>
                 {% endif %}
@@ -145,7 +177,7 @@
             {% endfor %}
 
             <td class="text-center fw-bold bg-label-secondary">
-                {{ item.attendance_pct }}%
+                {{ item.attendance_score }}
             </td>
 
             {% for grade in item.grades %}
@@ -187,13 +219,19 @@
   <div class="card-footer border-top">
      <div class="d-flex flex-wrap gap-4 small text-muted">
         <div class="d-flex align-items-center">
-            <span class="badge badge-center rounded-pill bg-label-success w-px-20 h-px-20 me-1">H</span> Hadir
+            <span class="badge badge-center rounded-pill bg-label-success w-px-20 h-px-20 me-1">H</span> Hadir (100)
         </div>
         <div class="d-flex align-items-center">
-            <span class="badge badge-center rounded-pill bg-label-warning w-px-20 h-px-20 me-1">T</span> Terlambat
+            <span class="badge badge-center rounded-pill bg-label-warning w-px-20 h-px-20 me-1">T</span> Terlambat (75)
         </div>
         <div class="d-flex align-items-center">
-            <span class="badge badge-center rounded-pill bg-label-danger w-px-20 h-px-20 me-1">A</span> Alpa
+            <span class="badge badge-center rounded-pill bg-label-info w-px-20 h-px-20 me-1">S</span> Sakit (60)
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge badge-center rounded-pill bg-label-secondary w-px-20 h-px-20 me-1">I</span> Izin (50)
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge badge-center rounded-pill bg-label-danger w-px-20 h-px-20 me-1">A</span> Alpa (0)
         </div>
     </div>
   </div>

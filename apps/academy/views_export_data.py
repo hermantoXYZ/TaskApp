@@ -39,11 +39,21 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         course = get_object_or_404(Course, uuid=course_uuid)
     
         # 1. Ambil Data Dasar
-        participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa').order_by('mahasiswa__nim')
+        participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa', 'mahasiswa__prodi').order_by('mahasiswa__nim')
         agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
         assignments = CourseAssignment.objects.filter(agenda__course=course).order_by('due_date')
         
         total_agendas = agendas.count()
+        
+        # --- KONFIGURASI BOBOT POIN ABSENSI ---
+        POINTS_MAP = {
+            'present': 100,
+            'late': 75,
+            'sick': 60,
+            'excused': 50,
+            'absent': 0,
+            '-': 0 # Jika data kosong/belum diabsen
+        }
 
         # 2. Optimasi Query Absensi
         all_attendances = CourseAttendance.objects.filter(agenda__course=course)
@@ -52,21 +62,25 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         rekap_data = [] 
 
         for p in participants:
-            # --- A. DETAIL ABSENSI ---
+            # --- A. DETAIL ABSENSI & HITUNG SKOR ---
             student_agenda_statuses = []
-            hadir_count = 0
+            current_total_points = 0 # Total poin yang dikumpulkan mahasiswa
             
             for ag in agendas:
                 status = attendance_map.get((p.id, ag.id), '-') 
                 student_agenda_statuses.append({'agenda_id': ag.id, 'status': status})
-                if status in ['present', 'late']:
-                    hadir_count += 1
+                
+                # Tambahkan poin sesuai status
+                current_total_points += POINTS_MAP.get(status, 0)
             
-            attendance_pct = 0
+            # Hitung Skor Akhir Absensi (Skala 0-100)
+            # Rumus: (Total Poin / (Jml Pertemuan * 100)) * 100
+            attendance_score = 0
             if total_agendas > 0:
-                attendance_pct = round((hadir_count / total_agendas) * 100, 1)
+                max_possible_points = total_agendas * 100
+                attendance_score = round((current_total_points / max_possible_points) * 100, 1)
 
-            # --- B. DETAIL NILAI TUGAS (UPDATED) ---
+            # --- B. DETAIL NILAI TUGAS ---
             student_grades = []
             total_score_collected = 0
             
@@ -82,12 +96,8 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 sub_time = "-"
                 
                 if sub:
-                    # Ambil Link
                     sub_link = sub.submitted_link if sub.submitted_link else "-"
-                    
-                    # Ambil Waktu & Format jadi String (Tgl/Bln Jam:Menit)
                     if sub.submitted_at:
-                        # Convert ke local time dulu jika perlu, lalu format str
                         local_time = timezone.localtime(sub.submitted_at)
                         sub_time = local_time.strftime("%d/%m %H:%M")
 
@@ -101,8 +111,8 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                     'task_id': task.id,
                     'score': score,
                     'status': status,
-                    'link': sub_link,  # Data Baru
-                    'time': sub_time   # Data Baru
+                    'link': sub_link,
+                    'time': sub_time
                 })
                 total_score_collected += score
             
@@ -113,8 +123,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             rekap_data.append({
                 'participant': p,
                 'agenda_statuses': student_agenda_statuses,
-                'attendance_pct': attendance_pct,
-                'hadir_count': hadir_count,
+                'attendance_score': attendance_score, # Variable baru: Skor Absensi (Bukan sekedar %)
                 'grades': student_grades,
                 'final_avg': avg_score
             })
@@ -143,14 +152,16 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         header_fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
 
         # --- HEADER ROW 1 ---
-        headers = ["No", "NIM", "Nama Mahasiswa"] 
+        headers = ["No", "Nama Mahasiswa", "NIM", "Prodi", "Kelas", "Kode MK"] 
         
         # Header Absensi
         for i, ag in enumerate(agendas):
             headers.append(f"P-{i+1}")
-        headers.extend(["Total Hadir", "% Absen"])
+        
+        # Ganti header "Total Hadir" jadi "Skor Absen" agar lebih relevan dengan sistem poin
+        headers.append("Skor Absen") 
 
-        # Header Tugas (DIPERLUAS: Link, Waktu, Nilai)
+        # Header Tugas
         for i, task in enumerate(assignments):
             prefix = f"Tgs-{i+1}"
             headers.append(f"{prefix} Link")
@@ -170,20 +181,28 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
 
         # --- DATA ROWS ---
         for idx, item in enumerate(data):
-            # Ambil Data Mahasiswa (Safe String)
+            # Ambil Data Mahasiswa
             mhs = item['participant'].mahasiswa
             nim_str = "-"
             nama_str = "Tanpa Nama"
+            prodi_str = "-"
 
-            if mhs and mhs.nim:
-                user_obj = mhs.nim 
-                nim_str = str(user_obj.username) 
-                nama_str = f"{user_obj.first_name} {user_obj.last_name}".strip()
+            if mhs:
+                if mhs.nim:
+                    user_obj = mhs.nim 
+                    nim_str = str(user_obj.username) 
+                    nama_str = f"{user_obj.first_name} {user_obj.last_name}".strip()
+                
+                if mhs.prodi:
+                    prodi_str = mhs.prodi.nama_prodi
 
             row = [
                 idx + 1,
-                nim_str,
                 nama_str,
+                nim_str,
+                prodi_str,
+                course.group, 
+                course.code   
             ]
 
             # Loop Status Absensi
@@ -191,19 +210,13 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 code_map = {'present': 'H', 'late': 'T', 'absent': 'A', 'sick': 'S', 'excused': 'I', '-': '-'}
                 row.append(code_map.get(stat['status'], '-'))
 
-            # Ringkasan Absen
-            row.append(item['hadir_count'])
-            row.append(f"{item['attendance_pct']}%")
+            # Skor Absensi (Nilai 0-100 berdasarkan poin)
+            row.append(item['attendance_score'])
 
-            # Loop Nilai Tugas (DIPERLUAS 3 Kolom per Tugas)
+            # Loop Nilai Tugas
             for grade in item['grades']:
-                # 1. Link Submission
                 row.append(grade['link'])
-                
-                # 2. Waktu Submission
                 row.append(grade['time'])
-                
-                # 3. Nilai (Score)
                 val = grade['score'] if grade['score'] is not None else 0 
                 row.append(val)
 
@@ -224,8 +237,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 except:
                     pass
             
-            # Batasi lebar maksimal kolom Link agar tidak terlalu lebar
-            # Jika header mengandung 'Link', max width 30, sisanya auto
             if "Link" in str(col[0].value):
                 final_width = min(max_length + 2, 30) 
             else:
