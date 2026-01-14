@@ -216,6 +216,8 @@
                                     <a href="{% url 'add-course-assignment' course.uuid %}?agenda={{section.id}}" class="btn btn-sm btn-outline-warning">
                                         <i class="ri-task-line me-1"></i> Tugas Baru
                                     </a>
+
+                                    <a href="{% url 'course-quiz-create' course.uuid%}" class="btn btn-sm btn-outline-danger">Buat Quiz</a>
                                 </li>
 
                             </ul>

@@ -1,0 +1,113 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Kelola Soal - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">{{ quiz.title }}</h5>
+                <p class="text-muted mb-4 small">{{ quiz.description|default:"Tidak ada deskripsi" }}</p>
+                
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Durasi:</span> <strong>{{ quiz.duration_minutes }} Menit</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Jumlah Soal:</span> <strong>{{ questions.count }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Status:</span> 
+                        {% if quiz.is_published %}
+                            <span class="badge bg-success">Published</span>
+                        {% else %}
+                            <span class="badge bg-warning">Draft</span>
+                        {% endif %}
+                    </li>
+                </ul>
+
+                <a href="{% url 'course-quiz-list' course.uuid %}" class="btn btn-outline-secondary w-100">
+                    <i class="ri-arrow-left-line me-1"></i> Kembali ke Daftar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        
+        <div class="card mb-4">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Daftar Soal</h5>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="ri-add-circle-line me-1"></i> Tambah Soal
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'quiz-add-question' quiz.id 'multiple_choice' %}">Pilihan Ganda</a></li>
+                        <li><a class="dropdown-item" href="{% url 'quiz-add-question' quiz.id 'essay' %}">Esai / Uraian</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion" id="accordionQuestions">
+            {% for q in questions %}
+            <div class="accordion-item card mb-3 border">
+                <h2 class="accordion-header" id="heading{{ q.id }}">
+                    <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse{{ q.id }}">
+                        <div class="d-flex align-items-center w-100">
+                            <span class="badge bg-label-primary me-3">No. {{ q.order }}</span>
+                            <span class="fw-medium me-auto text-truncate" style="max-width: 300px;">
+                                {{ q.text|striptags }}
+                            </span>
+                            <span class="badge bg-label-info me-3">{{ q.get_question_type_display }}</span>
+                            <span class="badge bg-label-secondary me-2">{{ q.score_weight }} Poin</span>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse{{ q.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionQuestions">
+                    <div class="accordion-body">
+                        {% if q.image %}
+                            <div class="mb-3">
+                                <img src="{{ q.image.url }}" class="img-fluid rounded border" style="max-height: 200px;">
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-3 fw-bold">{{ q.text|linebreaks }}</div>
+
+                        {% if q.question_type == 'multiple_choice' %}
+                            <ul class="list-group mb-3">
+                                {% for opt in q.options.all %}
+                                <li class="list-group-item {% if opt.is_correct %}list-group-item-success{% endif %}">
+                                    {% if opt.is_correct %}<i class="ri-check-line me-2"></i>{% endif %}
+                                    {{ opt.text }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        <div class="mt-3 pt-3 border-top d-flex justify-content-end gap-2">
+                            <a href="{% url 'quiz-edit-question' q.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="ri-edit-line me-1"></i> Edit Soal
+                            </a>
+                            <a href="{% url 'quiz-delete-question' q.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Yakin hapus soal ini?');">
+                                <i class="ri-delete-bin-line me-1"></i> Hapus
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5 card">
+                <div class="card-body">
+                    <i class="ri-file-list-3-line ri-3x text-muted"></i>
+                    <p class="mt-2 text-muted">Belum ada soal. Silakan tambah soal baru.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

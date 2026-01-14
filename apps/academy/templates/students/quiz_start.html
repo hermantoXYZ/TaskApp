@@ -1,0 +1,70 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Mulai Ujian - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card text-center h-100">
+                <div class="card-header border-bottom">
+                    <h4 class="mb-1 text-primary">{{ quiz.title }}</h4>
+                    <p class="text-muted mb-0">{{ quiz.course.name }} ({{ quiz.course.code }})</p>
+                </div>
+                
+                <div class="card-body py-5">
+                    <div class="mb-4">
+                        <div class="avatar avatar-xl bg-label-primary rounded-circle mx-auto mb-3" style="width: 80px; height: 80px;">
+                            <i class="ri-file-edit-line" style="font-size: 40px; line-height: 80px;"></i>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3">Instruksi Pengerjaan</h5>
+                    <div class="text-start bg-lighter p-3 rounded mb-4">
+                        {{ quiz.description|default:"Tidak ada instruksi khusus. Kerjakan dengan jujur dan teliti."|linebreaks }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3 mb-4 text-start">
+                        <div class="border rounded p-3 flex-grow-1">
+                            <small class="text-muted d-block mb-1">Durasi</small>
+                            <h6 class="mb-0"><i class="ri-time-line text-warning me-1"></i> {{ quiz.duration_minutes }} Menit</h6>
+                        </div>
+                        <div class="border rounded p-3 flex-grow-1">
+                            <small class="text-muted d-block mb-1">Soal</small>
+                            <h6 class="mb-0"><i class="ri-list-check text-info me-1"></i> {{ quiz.questions.count }} Butir</h6>
+                        </div>
+                        <div class="border rounded p-3 flex-grow-1">
+                            <small class="text-muted d-block mb-1">Percobaan</small>
+                            <h6 class="mb-0">
+                                <i class="ri-history-line text-success me-1"></i> 
+                                {{ existing_attempts }} / {{ quiz.max_attempts }}
+                            </h6>
+                        </div>
+                    </div>
+
+                    {% if can_start %}
+                        <form method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="ri-play-circle-line me-2"></i> MULAI KERJAKAN
+                            </button>
+                        </form>
+                        <p class="text-muted small mt-3 fst-italic">
+                            <i class="ri-information-line"></i> Waktu akan berjalan otomatis setelah Anda menekan tombol mulai.
+                        </p>
+                    {% else %}
+                        <div class="alert alert-warning d-flex align-items-center" role="alert">
+                            <i class="ri-alert-line me-2"></i>
+                            <div>Anda sudah mencapai batas maksimal percobaan ujian ini.</div>
+                        </div>
+                        <a href="{% url 'course-player' quiz.course.uuid %}" class="btn btn-outline-secondary w-100">
+                            Kembali ke Materi
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -4,7 +4,7 @@ from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
 from .views_prodi_set import UserListView, UserListJsonView
-from .views_students import StudentCourseListView, CoursePlayerView
+from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView
 from .views_export_data import CourseRecapitulationView
 
 urlpatterns = [
@@ -49,15 +49,31 @@ urlpatterns = [
     path("users/json/", UserListJsonView.as_view(), name="user-list-json"),
     path("", views.loginView, name="login"),
 
-    # students
+    # === PUBLIC URLS ===
+    path('public/share/<uuid:course_uuid>/agenda/<int:agenda_id>/', views.PublicAgendaMaterialView.as_view(), name='public-agenda-material'),
+
+
+    # QUIZ URLS
+    path('course/<uuid:course_uuid>/quizzes/', views.CourseQuizListView.as_view(), name='course-quiz-list'),
+    path('course/<uuid:course_uuid>/quizzes/create/', views.QuizCreateView.as_view(), name='course-quiz-create'),
+    path('quiz/<uuid:quiz_id>/manage/', views.QuizManageView.as_view(), name='quiz-manage'),
+    path('quiz/<uuid:quiz_id>/add-question/<str:q_type>/', views.AddQuizQuestionView.as_view(), name='quiz-add-question'),
+    path('quiz/<uuid:quiz_id>/delete/', views.DeleteQuizView.as_view(), name='quiz-delete'),
+    path('quiz/question/<uuid:question_id>/edit/', views.EditQuizQuestionView.as_view(), name='quiz-edit-question'),
+    path('quiz/question/<uuid:question_id>/delete/', views.DeleteQuizQuestionView.as_view(), name='quiz-delete-question'),
+
+    # === MAHASISWA QUIZ ACCESS ===
     path('app/academy/course/', StudentCourseListView.as_view(), name='app-academy-course'),
     path('course/<uuid:course_uuid>/learn/', CoursePlayerView.as_view(), name='course-player'),
     path('course/<uuid:course_uuid>/learn/material/<int:material_id>/', CoursePlayerView.as_view(), name='course-player-material'),
     path('course/<uuid:course_uuid>/learn/assignment/<int:assignment_id>/', CoursePlayerView.as_view(), name='course-player-assignment'),
 
+    path('quiz/<uuid:quiz_id>/start/', StudentQuizStartView.as_view(), name='student-quiz-start'),
+    path('quiz/attempt/<uuid:attempt_id>/take/', StudentQuizTakeView.as_view(), name='student-quiz-take'),
+    path('quiz/attempt/<uuid:attempt_id>/submit/', StudentQuizSubmitView.as_view(), name='student-quiz-submit'), 
+    path('quiz/attempt/<uuid:attempt_id>/result/', StudentQuizResultView.as_view(), name='student-quiz-result'),
 
-    # user public
-    path('public/share/<uuid:course_uuid>/agenda/<int:agenda_id>/', views.PublicAgendaMaterialView.as_view(), name='public-agenda-material'),
+
 
     path(
         "app/academy/dashboard/",

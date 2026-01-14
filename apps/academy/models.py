@@ -277,7 +277,6 @@ class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
         ('video', 'Video'),
         ('reading', 'Reading/Article'),
-        ('quiz', 'Quiz'),
         ('assignment', 'Assignment'),
     ]
     agenda = models.ForeignKey(CourseAgenda, on_delete=models.CASCADE, related_name='materials')
@@ -336,3 +335,92 @@ class StudentAssignmentSubmission(models.Model):
     
     def __str__(self):
         return f"{self.student.nim} - {self.assignment.title}"
+
+class CourseQuiz(models.Model):
+    EXAM_TYPES = [
+        ('quiz', 'Kuis Harian'),
+        ('uts', 'UTS'),
+        ('uas', 'UAS'),
+        ('remedial', 'Remedial'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    quiz_type = models.CharField(max_length=20, choices=EXAM_TYPES, default='quiz')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    duration_minutes = models.PositiveIntegerField(default=90)
+    passing_score = models.IntegerField(default=60)
+    max_attempts = models.PositiveIntegerField(default=1)
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['start_time']
+
+    def __str__(self):
+        return f"{self.title} ({self.course.code})"
+
+
+class QuizQuestion(models.Model):
+    QUESTION_TYPES = [
+        ('multiple_choice', 'Pilihan Ganda'),
+        ('essay', 'Esai'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    quiz = models.ForeignKey(CourseQuiz, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField(verbose_name="Soal") 
+    image = models.ImageField(upload_to='quiz/questions/', blank=True, null=True)
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='multiple_choice')
+    score_weight = models.PositiveIntegerField(default=10)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"Soal No {self.order} ({self.quiz.title})"
+
+
+class QuizOption(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name='options')
+    text = models.TextField() # Support LaTeX
+    is_correct = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.text[:20]} ({'Benar' if self.is_correct else 'Salah'})"
+
+
+class StudentQuizAttempt(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    quiz = models.ForeignKey(CourseQuiz, on_delete=models.CASCADE, related_name='attempts')
+    participant = models.ForeignKey(CourseParticipant, on_delete=models.CASCADE, related_name='quiz_attempts')
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    total_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    def __str__(self):
+        return f"{self.participant.mahasiswa.nim} - {self.quiz.title}"
+
+
+class StudentQuizAnswer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    attempt = models.ForeignKey(StudentQuizAttempt, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
+    selected_option = models.ForeignKey(QuizOption, on_delete=models.SET_NULL, null=True, blank=True)
+    text_answer = models.TextField(blank=True, null=True)
+    score_obtained = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    class Meta:
+        unique_together = ['attempt', 'question']
+
+    def __str__(self):
+        return f"Ans: {self.question.id}"

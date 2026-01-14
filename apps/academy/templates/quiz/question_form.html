@@ -1,0 +1,138 @@
+{% extends layout_path %}
+
+{% block title %}
+    {% if is_edit %}Edit Soal{% else %}Tambah Soal{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    {% if is_edit %}Edit Soal{% else %}Tambah Soal{% endif %}: {{ q_type_label }}
+                </h5>
+            </div>
+            <div class="card-body pt-4">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Pertanyaan (Mendukung LaTeX $$..$$)</label>
+                                {{ form.text }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Gambar (Opsional)</label>
+                                {% if form.instance.image %}
+                                    <div class="mb-2">
+                                        <a href="{{ form.instance.image.url }}" target="_blank" class="text-primary text-sm">
+                                            <i class="ri-image-line"></i> Lihat Gambar Saat Ini
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                {{ form.image }}
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                         
+                            <div class="p-3 shadow-none border rounded-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Bobot Nilai</label>
+                                    {{ form.score_weight }}
+                                </div>
+                                <hr>
+                                <button type="submit" class="btn btn-primary w-100 mb-2">Simpan Soal</button>
+                                <a href="{% url 'quiz-manage' quiz.id %}" class="btn btn-outline-secondary w-100">Batal</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    {% if q_type == 'multiple_choice' %}
+                    <h6 class="fw-bold mb-3">Pilihan Jawaban</h6>
+                    
+                    <div id="options-container">
+                        {% if is_edit and existing_options %}
+                            {% for opt in existing_options %}
+                            <div class="input-group mb-3">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio" name="correct_option" value="{{ forloop.counter0 }}" {% if opt.is_correct %}checked{% endif %} required>
+                                </div>
+                                <input type="text" name="option_text" class="form-control" value="{{ opt.text }}" required>
+                                <button type="button" class="btn btn-outline-danger remove-option"><i class="ri-delete-bin-line"></i></button>
+                            </div>
+                            {% endfor %}
+                        
+                        {% else %}
+                            {% for i in "0123"|make_list %}
+                            <div class="input-group mb-3">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio" name="correct_option" value="{{ forloop.counter0 }}" {% if forloop.first %}checked{% endif %} required>
+                                </div>
+                                <input type="text" name="option_text" class="form-control" placeholder="Opsi Jawaban {{ forloop.counter }}" required>
+                                <button type="button" class="btn btn-outline-danger remove-option"><i class="ri-delete-bin-line"></i></button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-option-btn">
+                        <i class="ri-add-line me-1"></i> Tambah Opsi Lain
+                    </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('options-container');
+    if (!container) return; 
+
+    // Helper: Update value radio button agar urut (0, 1, 2...) setelah hapus
+    function updateRadioValues() {
+        const radios = container.querySelectorAll('input[type="radio"]');
+        radios.forEach((radio, index) => {
+            // Trik agar status checked tidak hilang saat value berubah
+            const isChecked = radio.checked; 
+            radio.value = index;
+            radio.checked = isChecked;
+        });
+    }
+
+    // Tambah Opsi
+    document.getElementById('add-option-btn').addEventListener('click', function() {
+        const count = container.children.length;
+        const div = document.createElement('div');
+        div.className = 'input-group mb-3';
+        div.innerHTML = `
+            <div class="input-group-text">
+                <input class="form-check-input mt-0" type="radio" name="correct_option" value="${count}">
+            </div>
+            <input type="text" name="option_text" class="form-control" placeholder="Opsi Tambahan">
+            <button type="button" class="btn btn-outline-danger remove-option"><i class="ri-delete-bin-line"></i></button>
+        `;
+        container.appendChild(div);
+    });
+
+    // Hapus Opsi
+    container.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-option')) {
+            if (container.children.length > 2) { 
+                e.target.closest('.input-group').remove();
+                updateRadioValues(); // Panggil fungsi re-index
+            } else {
+                alert("Minimal harus ada 2 pilihan jawaban!");
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

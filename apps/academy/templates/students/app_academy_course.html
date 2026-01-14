@@ -96,7 +96,7 @@
                   <a href="{% url 'course-player' course.uuid %}" class="h5">{{ course.name }}</a>
                   <p class="text-muted small mb-1">{{ course.code }}</p>
                   
-                  <p class="mt-1">{{ course.description|truncatewords:10 }}</p>
+                  <p class="mt-1">{{ course.description|truncatewords:8 }}</p>
                   
                   <div class="d-flex flex-column gap-1 mb-3">
                       <p class="d-flex align-items-center mb-0 text-muted small">

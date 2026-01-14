@@ -1,6 +1,33 @@
 from django import forms
 from .models import Course, Prodi, CoursePeriod, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, CourseAssignment
-from .models import UserDosen, UserMhs
+from .models import UserDosen, UserMhs, CourseQuiz, QuizQuestion, QuizOption
+
+
+class CourseQuizForm(forms.ModelForm):
+    class Meta:
+        model = CourseQuiz
+        fields = ['title', 'quiz_type', 'description', 'start_time', 'end_time', 'duration_minutes', 'passing_score', 'max_attempts', 'is_published']
+        widgets = {
+            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+            'passing_score': forms.NumberInput(attrs={'class': 'form-control'}),
+            'max_attempts': forms.NumberInput(attrs={'class': 'form-control'}),
+            'quiz_type': forms.Select(attrs={'class': 'form-select'}),
+            'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+class QuizQuestionForm(forms.ModelForm):
+    class Meta:
+        model = QuizQuestion
+        fields = ['text', 'image', 'score_weight']
+        widgets = {
+            'text': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Tulis soal atau kode LaTeX disini...'}),
+            'score_weight': forms.NumberInput(attrs={'class': 'form-control'}),
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+        }
 
 
 class CoursePeriodForm(forms.ModelForm):
@@ -15,8 +42,6 @@ class CoursePeriodForm(forms.ModelForm):
 
 
 class AddParticipantForm(forms.ModelForm):
-    # GANTI NAMA FIELD: Jangan pakai 'mahasiswa', tapi pakai 'list_mahasiswa'
-    # Ini memutus hubungan otomatis yang menyebabkan error.
     list_mahasiswa = forms.ModelMultipleChoiceField(
         queryset=UserMhs.objects.all(),
         widget=forms.SelectMultiple(attrs={

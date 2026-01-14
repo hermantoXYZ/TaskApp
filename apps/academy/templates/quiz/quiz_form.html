@@ -1,0 +1,74 @@
+{% extends layout_path %}
+
+{% block title %}Setup Kuis Baru{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+     <div class="col-12">
+    
+        <div class="card mb-4">
+            <div class="card-header border-bottom">
+                <h5 class="mb-0">Setup Kuis Baru</h5>
+            </div>
+            <div class="card-body pt-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Judul Kuis / Ujian</label>
+                        {{ form.title }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipe Ujian</label>
+                            {{ form.quiz_type }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Durasi (Menit)</label>
+                            {{ form.duration_minutes }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Waktu Mulai</label>
+                            {{ form.start_time }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Waktu Selesai</label>
+                            {{ form.end_time }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">KKM (Passing Score)</label>
+                            {{ form.passing_score }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Maksimal Percobaan</label>
+                            {{ form.max_attempts }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Instruksi / Deskripsi</label>
+                        {{ form.description }}
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        {{ form.is_published }}
+                        <label class="form-check-label">Publikasikan Sekarang?</label>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-end gap-2">
+                        <a href="{% url 'course-quiz-list' course.uuid %}" class="btn btn-outline-secondary">Batal</a>
+                        <button type="submit" class="btn btn-primary">Simpan & Lanjut ke Soal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

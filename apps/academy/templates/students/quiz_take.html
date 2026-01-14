@@ -1,0 +1,273 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Ujian: {{ quiz.title }}{% endblock %}
+
+{% block page_js %}
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="security-overlay" class="d-flex flex-column justify-content-center align-items-center position-fixed w-100 h-100 top-0 start-0 bg-white" style="z-index: 9999;">
+    <div class="text-center p-5">
+        <div class="avatar avatar-xl bg-label-danger rounded-circle mx-auto mb-4">
+            <i class="ri-shield-keyhole-line ri-3x"></i>
+        </div>
+        <h3 class="text-danger mb-2">Mode Ujian Terkunci</h3>
+        <p class="text-muted mb-4" id="overlay-message">
+            Anda harus masuk ke mode Layar Penuh (Fullscreen) untuk mengerjakan ujian ini.<br>
+            Jangan mencoba membuka tab lain atau aplikasi lain.
+        </p>
+        <button id="btn-enter-fullscreen" class="btn btn-danger btn-lg">
+            <i class="ri-fullscreen-line me-2"></i> MASUK MODE UJIAN
+        </button>
+    </div>
+</div>
+
+<div class="card sticky-top shadow-sm mb-4 border-bottom border-primary border-3" style="z-index: 1020;">
+    <div class="card-body py-2 d-flex justify-content-between align-items-center bg-white">
+        <h5 class="mb-0 text-truncate" style="max-width: 40%;">{{ quiz.title }}</h5>
+        
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-none d-md-block text-danger fw-bold small" id="warning-box" style="display: none;">
+                <i class="ri-alert-line"></i> Pelanggaran: <span id="violation-count">0</span>/3
+            </div>
+
+            <div class="badge bg-label-danger fs-5 p-2 rounded d-flex align-items-center">
+                <i class="ri-alarm-line me-2"></i>
+                <span id="timer-display" style="min-width: 80px; text-align: center;">00:00:00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="exam-content"> <div class="col-md-10 col-lg-8 mx-auto">
+        <form method="POST" action="{% url 'student-quiz-submit' attempt.id %}" id="quizForm">
+            {% csrf_token %}
+            
+            {% for q in questions %}
+            <div class="card mb-4 shadow-sm user-select-none"> <div class="card-header bg-label-secondary d-flex justify-content-between align-items-center py-2 px-3">
+                    <span class="fw-bold text-dark">Soal No. {{ forloop.counter }}</span>
+                    <span class="badge bg-white text-dark border">{{ q.score_weight }} Poin</span>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="mb-3 fs-5 text-dark lh-base">
+                        {{ q.text|linebreaks }}
+                    </div>
+
+                    {% if q.image %}
+                        <div class="mb-3">
+                            <img src="{{ q.image.url }}" class="img-fluid rounded border pointer-events-none" style="max-height: 300px;">
+                        </div>
+                    {% endif %}
+
+                    <hr class="my-4 dashed">
+
+                    {% if q.question_type == 'multiple_choice' %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for opt in q.options.all %}
+                            <label class="card border shadow-none hover-bg-light cursor-pointer mb-0">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input fs-5" type="radio" 
+                                               name="question_{{ q.id }}" 
+                                               value="{{ opt.id }}" 
+                                               id="opt_{{ opt.id }}">
+                                    </div>
+                                    <span class="fs-6 ms-2 w-100" style="cursor: pointer;">
+                                        {{ opt.text }}
+                                    </span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    {% elif q.question_type == 'essay' %}
+                        <label class="form-label fw-bold text-primary">Jawaban Uraian Anda:</label>
+                        <textarea class="form-control" name="question_{{ q.id }}" rows="5" placeholder="Tulis jawaban Anda disini..."></textarea>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="card mb-5 bg-primary text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="text-white mb-0">Selesai Mengerjakan?</h5>
+                        <small class="text-white-50">Pastikan semua jawaban sudah terisi.</small>
+                    </div>
+                    <button type="submit" class="btn btn-light btn-lg text-primary fw-bold" onclick="return confirm('Apakah Anda yakin ingin mengumpulkan jawaban?');">
+                        <i class="ri-checkbox-circle-line me-2"></i> KIRIM JAWABAN
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- KONFIGURASI ---
+    let timeRemaining = {{ remaining_seconds }};
+    let violationCount = 0;
+    const maxViolations = 3; // Maksimal pelanggaran sebelum auto-submit
+    
+    const timerDisplay = document.getElementById('timer-display');
+    const quizForm = document.getElementById('quizForm');
+    const securityOverlay = document.getElementById('security-overlay');
+    const btnEnterFullscreen = document.getElementById('btn-enter-fullscreen');
+    const overlayMessage = document.getElementById('overlay-message');
+    const violationCounterDisplay = document.getElementById('violation-count');
+    const warningBox = document.getElementById('warning-box');
+
+    // --- 1. LOGIC TIMER ---
+    function updateTimer() {
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.innerText = "HABIS!";
+            submitExam("Waktu habis! Jawaban dikirim otomatis.");
+            return;
+        }
+
+        let hours = Math.floor(timeRemaining / 3600);
+        let minutes = Math.floor((timeRemaining % 3600) / 60);
+        let seconds = timeRemaining % 60;
+
+        timerDisplay.innerText = 
+            (hours < 10 ? "0" : "") + hours + ":" +
+            (minutes < 10 ? "0" : "") + minutes + ":" +
+            (seconds < 10 ? "0" : "") + seconds;
+        
+        if (timeRemaining < 300) { // < 5 menit
+            timerDisplay.parentElement.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
+        }
+        timeRemaining--;
+    }
+    let timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+
+    // --- 2. LOGIC FULLSCREEN ENFORCER ---
+    
+    // Fungsi Masuk Fullscreen
+    function requestFullScreen() {
+        var elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) { /* Safari */
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+            elem.msRequestFullscreen();
+        }
+        securityOverlay.classList.add('d-none'); // Sembunyikan overlay
+    }
+
+    // Tombol di overlay
+    btnEnterFullscreen.addEventListener('click', function() {
+        requestFullScreen();
+    });
+
+    // Deteksi jika user keluar dari Fullscreen (Tekan ESC)
+    document.addEventListener('fullscreenchange', exitHandler);
+    document.addEventListener('webkitfullscreenchange', exitHandler);
+    document.addEventListener('mozfullscreenchange', exitHandler);
+    document.addEventListener('MSFullscreenChange', exitHandler);
+
+    function exitHandler() {
+        if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
+            // User keluar fullscreen
+            securityOverlay.classList.remove('d-none'); // Munculkan overlay lagi
+            recordViolation("Terdeteksi keluar dari mode layar penuh.");
+        }
+    }
+
+    // --- 3. LOGIC DETEKSI PINDAH TAB (VISIBILITY API) ---
+    document.addEventListener("visibilitychange", function() {
+        if (document.hidden) {
+            recordViolation("Terdeteksi membuka tab atau aplikasi lain.");
+        }
+    });
+
+    window.addEventListener("blur", function() {
+         // Blur event kadang terlalu sensitif, kita gunakan visibilitychange sebagai trigger utama
+         // Tapi bisa diaktifkan jika ingin sangat ketat
+         // recordViolation("Fokus hilang dari browser."); 
+    });
+
+    // --- 4. ANTI KLIK KANAN & COPY PASTE ---
+    document.addEventListener('contextmenu', event => event.preventDefault()); // Matikan klik kanan
+    document.addEventListener('copy', event => event.preventDefault()); // Matikan copy
+    document.addEventListener('cut', event => event.preventDefault()); // Matikan cut
+    document.addEventListener('paste', event => event.preventDefault()); // Matikan paste
+    
+    document.addEventListener('keydown', function(e) {
+        // Matikan F12, Ctrl+Shift+I (Inspect Element), Alt+Tab (sebisanya)
+        if(e.keyCode == 123) { e.preventDefault(); return false; }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { e.preventDefault(); return false; }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { e.preventDefault(); return false; }
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { e.preventDefault(); return false; }
+    });
+
+    // --- HELPER FUNCTIONS ---
+
+    function recordViolation(reason) {
+        violationCount++;
+        violationCounterDisplay.innerText = violationCount;
+        warningBox.style.display = 'block';
+
+        // Update pesan di overlay jika user sedang di overlay
+        overlayMessage.innerHTML = `<span class='text-danger fw-bold'>PELANGGARAN TERDETEKSI! (${violationCount}/${maxViolations})</span><br>${reason}<br>Kembali ke ujian segera atau jawaban akan terkirim otomatis.`;
+
+        // Alert Browser (Peringatan Keras)
+        alert(`PERINGATAN PELANGGARAN ${violationCount}/${maxViolations}!\n\nAlasan: ${reason}\n\nJika mencapai ${maxViolations} pelanggaran, ujian akan otomatis dikumpulkan.`);
+
+        if (violationCount >= maxViolations) {
+            submitExam("Batas pelanggaran keamanan terlampaui (Keluar Tab/Fullscreen).");
+        }
+    }
+
+    function submitExam(reason) {
+        // Mencegah submit double
+        if (!quizForm.dataset.submitted) {
+            quizForm.dataset.submitted = "true";
+            alert(reason);
+            
+            // Opsional: Bisa tambahkan input hidden untuk kirim alasan submit ke server
+            // let input = document.createElement("input");
+            // input.type = "hidden";
+            // input.name = "force_submit_reason";
+            // input.value = reason;
+            // quizForm.appendChild(input);
+
+            quizForm.submit();
+        }
+    }
+
+    // UX: Klik Card pilih Radio
+    document.querySelectorAll('.card.hover-bg-light').forEach(card => {
+        card.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            if(radio) radio.checked = true;
+        });
+    });
+
+    // Mencegah tombol Back browser
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        history.go(1);
+    };
+
+</script>
+
+<style>
+    .hover-bg-light:hover { background-color: #f8f9fa; border-color: #666cff !important; }
+    .dashed { border-top-style: dashed !important; }
+    
+    /* Mencegah seleksi teks */
+    .user-select-none {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+</style>
+{% endblock %}

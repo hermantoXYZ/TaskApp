@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView
 from web_project import TemplateLayout
-from .forms import CourseForm, AddParticipantForm, AddAgendaForm, AddAnnouncementForm, AttendanceForm, CourseMaterialForm, AddProgramStudiCourseForm, CoursePeriodForm, CourseAssignmentForm
+from .forms import CourseForm, AddParticipantForm, AddAgendaForm, AddAnnouncementForm, AttendanceForm, CourseMaterialForm, AddProgramStudiCourseForm, CoursePeriodForm, CourseAssignmentForm, CourseQuizForm, QuizQuestionForm
 from django.contrib import messages
-from .models import Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment
+from .models import Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment, CourseQuiz, QuizQuestion, QuizOption
 from .models import UserMhs
 from django.utils import timezone
 from web_project.template_helpers.theme import TemplateHelper
@@ -12,6 +12,8 @@ from django.contrib.auth.decorators import login_required
 
 from .decorators_students import check_userstudents
 from .decorators_dosen import DosenRequiredMixin
+
+from django.db import transaction
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -787,3 +789,210 @@ class PublicAgendaMaterialView(TemplateView):
         context['course'] = agenda.course
         context['materials'] = materials
         return context
+    
+
+class CourseQuizListView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/quiz_list.html"
+
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        # Ambil kuis urut berdasarkan waktu mulai
+        quizzes = CourseQuiz.objects.filter(course=course).order_by('start_time')
+        
+        return self.render_to_response(self.get_context_data(
+            course=course,
+            quizzes=quizzes
+        ))
+
+
+class QuizCreateView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/quiz_form.html"
+
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = CourseQuizForm()
+        
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course
+        ))
+
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = CourseQuizForm(request.POST)
+        
+        if form.is_valid():
+            quiz = form.save(commit=False)
+            quiz.course = course
+            quiz.save()
+            
+            messages.success(request, "Kuis berhasil dibuat! Silakan tambah soal.")
+            # Redirect ke halaman Manage Soal
+            return redirect('quiz-manage', quiz_id=quiz.id)
+        
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course
+        ))
+
+
+class QuizManageView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/quiz_manage.html"
+
+    def get(self, request, quiz_id, *args, **kwargs):
+        quiz = get_object_or_404(CourseQuiz, id=quiz_id)
+        # Ambil soal urut berdasarkan field 'order'
+        questions = quiz.questions.all().order_by('order')
+        
+        return self.render_to_response(self.get_context_data(
+            quiz=quiz,
+            questions=questions,
+            course=quiz.course
+        ))
+
+
+class AddQuizQuestionView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/question_form.html"
+
+    def get(self, request, quiz_id, q_type, *args, **kwargs):
+        quiz = get_object_or_404(CourseQuiz, id=quiz_id)
+        form = QuizQuestionForm()
+        
+        return self.render_to_response(self.get_context_data(
+            quiz=quiz,
+            form=form,
+            q_type=q_type,
+            q_type_label='Pilihan Ganda' if q_type == 'multiple_choice' else 'Esai'
+        ))
+
+    def post(self, request, quiz_id, q_type, *args, **kwargs):
+        quiz = get_object_or_404(CourseQuiz, id=quiz_id)
+        form = QuizQuestionForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            with transaction.atomic():
+                # 1. Simpan Soal Utama
+                question = form.save(commit=False)
+                question.quiz = quiz
+                question.question_type = q_type
+                
+                # Auto Order: Taruh di urutan terakhir
+                last_order = QuizQuestion.objects.filter(quiz=quiz).count()
+                question.order = last_order + 1
+                question.save()
+
+                # 2. Logic Khusus Pilihan Ganda (Simpan Opsi)
+                if q_type == 'multiple_choice':
+                    options = request.POST.getlist('option_text') # Ambil array input HTML
+                    correct_index = request.POST.get('correct_option') # Index radio button yg dipilih
+
+                    for idx, opt_text in enumerate(options):
+                        # Hanya simpan jika teks opsi tidak kosong
+                        if opt_text.strip():
+                            is_correct = (str(idx) == correct_index)
+                            QuizOption.objects.create(
+                                question=question,
+                                text=opt_text,
+                                is_correct=is_correct,
+                                order=idx+1
+                            )
+                
+            messages.success(request, "Soal berhasil ditambahkan.")
+            return redirect('quiz-manage', quiz_id=quiz.id)
+
+        # Jika form error
+        return self.render_to_response(self.get_context_data(
+            quiz=quiz,
+            form=form,
+            q_type=q_type,
+            q_type_label='Pilihan Ganda' if q_type == 'multiple_choice' else 'Esai'
+        ))
+
+
+class DeleteQuizView(DosenRequiredMixin, AcademyView):
+    def get(self, request, quiz_id, *args, **kwargs):
+        quiz = get_object_or_404(CourseQuiz, id=quiz_id)
+        course_uuid = quiz.course.uuid
+        title = quiz.title
+        
+        quiz.delete()
+        messages.success(request, f'Kuis "{title}" berhasil dihapus.')
+        return redirect('course-quiz-list', course_uuid=course_uuid)
+    
+class EditQuizQuestionView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/question_form.html"
+
+    def get(self, request, question_id, *args, **kwargs):
+        question = get_object_or_404(QuizQuestion, id=question_id)
+        quiz = question.quiz
+        form = QuizQuestionForm(instance=question)
+        
+        # Ambil opsi jika tipe soal Pilihan Ganda
+        existing_options = None
+        if question.question_type == 'multiple_choice':
+            existing_options = question.options.all().order_by('order')
+
+        return self.render_to_response(self.get_context_data(
+            quiz=quiz,
+            form=form,
+            q_type=question.question_type,
+            q_type_label='Pilihan Ganda' if question.question_type == 'multiple_choice' else 'Esai',
+            is_edit=True,            # Penanda mode Edit
+            existing_options=existing_options
+        ))
+
+    def post(self, request, question_id, *args, **kwargs):
+        question = get_object_or_404(QuizQuestion, id=question_id)
+        quiz = question.quiz
+        
+        form = QuizQuestionForm(request.POST, request.FILES, instance=question)
+
+        if form.is_valid():
+            with transaction.atomic():
+                # 1. Update Data Soal Utama
+                q = form.save(commit=False)
+                q.save()
+
+                # 2. Logic Reset Opsi (Khusus Pilihan Ganda)
+                if question.question_type == 'multiple_choice':
+                    # Hapus semua opsi lama
+                    question.options.all().delete()
+                    
+                    # Buat ulang opsi baru dari input form
+                    options = request.POST.getlist('option_text')
+                    correct_index = request.POST.get('correct_option')
+
+                    for idx, opt_text in enumerate(options):
+                        if opt_text.strip():
+                            is_correct = (str(idx) == correct_index)
+                            QuizOption.objects.create(
+                                question=question,
+                                text=opt_text,
+                                is_correct=is_correct,
+                                order=idx+1
+                            )
+            
+            messages.success(request, "Soal berhasil diperbarui.")
+            return redirect('quiz-manage', quiz_id=quiz.id)
+        
+        # Jika form error, kembalikan ke halaman dengan data yang ada
+        existing_options = question.options.all().order_by('order') if question.question_type == 'multiple_choice' else None
+        
+        return self.render_to_response(self.get_context_data(
+            quiz=quiz,
+            form=form,
+            q_type=question.question_type,
+            q_type_label='Pilihan Ganda' if question.question_type == 'multiple_choice' else 'Esai',
+            is_edit=True,
+            existing_options=existing_options
+        ))
+
+
+class DeleteQuizQuestionView(DosenRequiredMixin, AcademyView):
+    def get(self, request, question_id, *args, **kwargs):
+        question = get_object_or_404(QuizQuestion, id=question_id)
+        quiz_id = question.quiz.id
+        
+        question.delete()
+        messages.success(request, "Soal berhasil dihapus.")
+        return redirect('quiz-manage', quiz_id=quiz_id)
