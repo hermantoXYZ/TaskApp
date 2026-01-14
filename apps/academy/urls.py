@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from . import views
 from .views_prodi_set import UserListView, UserListJsonView
 from .views_students import StudentCourseListView, CoursePlayerView
-
+from .views_export_data import CourseRecapitulationView
 
 urlpatterns = [
     path('tambah/academy/course/', AddCourse.as_view(), name='tambah-academy-course'),
@@ -38,6 +38,8 @@ urlpatterns = [
     path('course/period/edit/<uuid:pk>/', EditCoursePeriod.as_view(), name='edit-course-period'),
     path('course/period/delete/<uuid:pk>/', DeleteCoursePeriod.as_view(), name='delete-course-period'),
 
+    path('course/<uuid:course_uuid>/rekapitulasi/', CourseRecapitulationView.as_view(), name='course-rekapitulasi'),
+
 
     path('course/submission/<int:submission_id>/update-grade/', views.update_grade_submission, name='update-grade-submission'),
     # user
@@ -52,6 +54,7 @@ urlpatterns = [
     path('course/<uuid:course_uuid>/learn/', CoursePlayerView.as_view(), name='course-player'),
     path('course/<uuid:course_uuid>/learn/material/<int:material_id>/', CoursePlayerView.as_view(), name='course-player-material'),
     path('course/<uuid:course_uuid>/learn/assignment/<int:assignment_id>/', CoursePlayerView.as_view(), name='course-player-assignment'),
+
 
 
     path(

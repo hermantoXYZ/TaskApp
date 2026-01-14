@@ -57,7 +57,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <p class="mb-0 text-muted">Info Terbaru</p>
+          <p class="mb-0 text-muted">{{ course.announcements.count }} Announcements</p>
           <div class="avatar">
             <div class="avatar-initial bg-label-danger rounded">
                 <i class="ri-megaphone-line ri-24px"></i>
@@ -170,7 +170,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <p class="mb-0 text-muted">Proyek Mahasiswa</p>
+          <p class="mb-0 text-muted">Transkrip All Aktivitas</p>
           <div class="avatar">
             <div class="avatar-initial bg-label-dark rounded">
                 <i class="ri-briefcase-line ri-24px"></i>
@@ -179,9 +179,9 @@
         </div>
         <div class="d-flex justify-content-between align-items-end">
           <div class="role-heading">
-            <h5 class="mb-1">Research Portfolio</h5>
-            <small class="d-block mb-3">Showcase hasil karya dan penelitian.</small>
-            <a href="#" class="btn btn-sm btn-label-dark text-nowrap">View Projects</a>
+            <h5 class="mb-1">Rekapitulasi</h5>
+            <small class="d-block mb-3">Showcase Kehadiran/Tugas/dan Aktivitas Course</small>
+            <a href="{% url 'course-rekapitulasi' course.uuid %}" class="btn btn-sm btn-label-dark text-nowrap">View Rekapitulasi</a>
           </div>
         </div>
       </div>

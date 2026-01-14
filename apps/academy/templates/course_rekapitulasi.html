@@ -1,0 +1,227 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Rekapitulasi - {{ course.code }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-fixedheader-bs5/fixedheader.bootstrap5.css' %}" />
+
+<style>
+    /* Styling khusus untuk sel tugas agar muat Link + Nilai + Waktu */
+    .task-cell {
+        min-width: 100px;
+        font-size: 0.85rem;
+        padding: 5px !important;
+    }
+    .task-time {
+        font-size: 0.65rem;
+        color: #888;
+        display: block;
+        margin-top: 2px;
+    }
+    .task-link {
+        font-size: 0.75rem;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 2px;
+    }
+    /* Pastikan header rata tengah */
+    table.dataTable thead th {
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    /* Perkecil padding kolom absensi */
+    .col-absen {
+        padding: 5px !important;
+        min-width: 35px;
+    }
+</style>
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_js %}
+{{ block.super }}
+{% endblock page_js %}
+
+{% block content %}
+
+<div class="card mb-4 bg-primary text-white">
+    <div class="card-body d-flex justify-content-between align-items-center p-4">
+       <div>
+          <h4 class="text-white mb-1">Rekapitulasi Kelas</h4>
+          <p class="mb-0 opacity-75">Monitoring Perkembangan Mahasiswa: {{ course.name }}</p>
+       </div>
+       <div class="text-end">
+           <h3 class="text-white mb-0">{{ rekap_data|length }}</h3>
+           <small class="opacity-75">Mahasiswa Aktif</small>
+       </div>
+    </div>
+</div>
+
+<div class="card">
+  <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Transkrip Lengkap</h5>
+    <div class="d-flex gap-2">
+        <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary">
+           <i class="ri-arrow-go-back-line me-1"></i> Kembali
+       </a>
+       <a href="?export=excel" class="btn btn-success">
+           <i class="ri-file-excel-2-line me-1"></i> Export Excel
+       </a>
+   </div>
+  </div>
+
+  <div class="card-datatable text-nowrap">
+    <table class="table table-bordered table-sm" id="tableRekap" style="width:100%">
+      <thead>
+        <tr>
+          <th rowspan="2" class="bg-light">No</th>
+          <th rowspan="2" class="bg-light">Nama Mahasiswa</th> {% if agendas %}
+            <th colspan="{{ agendas.count }}" class="bg-label-info text-center">Riwayat Kehadiran</th>
+          {% endif %}
+
+          <th rowspan="2" class="bg-label-secondary">%</th>
+
+          {% if assignments %}
+            <th colspan="{{ assignments.count }}" class="text-center">Nilai Tugas</th>
+          {% endif %}
+
+          <th rowspan="2" class="bg-label-primary text-primary">Avg</th>
+        </tr>
+        <tr>
+            {% for ag in agendas %}
+                <th class="small col-absen" title="{{ ag.title }} - {{ ag.agenda_date|date:'d M' }}">
+                    P{{ forloop.counter }}
+                </th>
+            {% endfor %}
+
+            {% for task in assignments %}
+                <th class="small" title="{{ task.title }}">
+                    T{{ forloop.counter }}
+                </th>
+            {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in rekap_data %}
+        <tr>
+            <td class="text-center">{{ forloop.counter }}</td>
+            
+            <td>
+                <div class="d-flex flex-column">
+                    <span class="fw-bold text-heading small">{{ item.participant.mahasiswa.nim.first_name }}</span>
+                    <small class="text-muted" style="font-size: 10px;">{{ item.participant.mahasiswa.nim }}</small>
+                </div>
+            </td>
+
+            {% for stat in item.agenda_statuses %}
+            <td class="text-center col-absen">
+                {% if stat.status == 'present' %}
+                    <span class="badge badge-center rounded-pill bg-label-success w-px-20 h-px-20" data-bs-toggle="tooltip" title="Hadir">H</span>
+                {% elif stat.status == 'late' %}
+                    <span class="badge badge-center rounded-pill bg-label-warning w-px-20 h-px-20" data-bs-toggle="tooltip" title="Terlambat">T</span>
+                {% elif stat.status == 'absent' %}
+                    <span class="badge badge-center rounded-pill bg-label-danger w-px-20 h-px-20" data-bs-toggle="tooltip" title="Alpa">A</span>
+                {% elif stat.status == 'sick' %}
+                    <span class="badge badge-center rounded-pill bg-label-info w-px-20 h-px-20" data-bs-toggle="tooltip" title="Sakit">S</span>
+                {% elif stat.status == 'excused' %}
+                    <span class="badge badge-center rounded-pill bg-label-secondary w-px-20 h-px-20" data-bs-toggle="tooltip" title="Izin">I</span>
+                {% else %}
+                    <span class="text-muted small">-</span>
+                {% endif %}
+            </td>
+            {% endfor %}
+
+            <td class="text-center fw-bold bg-label-secondary">
+                {{ item.attendance_pct }}%
+            </td>
+
+            {% for grade in item.grades %}
+            <td class="text-center align-middle task-cell">
+                <div class="d-flex flex-column align-items-center justify-content-center">
+                    
+                    {% if grade.link != '-' %}
+                        <a href="{{ grade.link }}" target="_blank" class="task-link text-primary" title="Buka Jawaban">
+                            <i class="ri-link"></i> Link
+                        </a>
+                    {% endif %}
+
+                    {% if grade.status == 'graded' %}
+                        <span class="fw-bold {% if grade.score < 60 %}text-danger{% endif %}">
+                            {{ grade.score }}
+                        </span>
+                    {% elif grade.status == 'submitted' %}
+                        <span class="badge bg-label-info" style="font-size: 0.60rem;">Menunggu</span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+
+                    {% if grade.time != '-' %}
+                        <span class="task-time">{{ grade.time }}</span>
+                    {% endif %}
+                </div>
+            </td>
+            {% endfor %}
+
+            <td class="text-center fw-bold text-primary bg-label-primary-subtle">
+                {{ item.final_avg }}
+            </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="card-footer border-top">
+     <div class="d-flex flex-wrap gap-4 small text-muted">
+        <div class="d-flex align-items-center">
+            <span class="badge badge-center rounded-pill bg-label-success w-px-20 h-px-20 me-1">H</span> Hadir
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge badge-center rounded-pill bg-label-warning w-px-20 h-px-20 me-1">T</span> Terlambat
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge badge-center rounded-pill bg-label-danger w-px-20 h-px-20 me-1">A</span> Alpa
+        </div>
+    </div>
+  </div>
+
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi DataTable dengan Fixed Columns
+    var table = $('#tableRekap').DataTable({
+        scrollX: true,        // Aktifkan scroll horizontal
+        scrollCollapse: true, // Agar tabel tidak memakan tempat vertikal berlebih
+        paging: false,        // Matikan paging (tampilkan semua siswa)
+        info: false,          // Matikan info "Showing 1 to 10"
+        searching: true,      // Tetap nyalakan search box
+        fixedColumns: {
+            left: 2           // Kunci 2 kolom pertama (No & Nama) agar tidak ikut geser
+        },
+        columnDefs: [
+            { width: '200px', targets: 1 } // Pastikan kolom Nama cukup lebar
+        ]
+    });
+
+    // Aktifkan Tooltip
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+});
+</script>
+
+{% endblock %}

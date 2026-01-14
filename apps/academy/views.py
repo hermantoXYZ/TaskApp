@@ -429,7 +429,7 @@ class CourseAnnouncementView(AcademyView):
             announcement.save()
             
             messages.success(request, 'Pengumuman berhasil dipublikasikan.')
-            return redirect('course-announcement', course_uuid=course.uuid)
+            return redirect('add-course-announcement', course_uuid=course.uuid)
         
         announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
         return self.render_to_response(self.get_context_data(
