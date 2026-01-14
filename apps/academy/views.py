@@ -202,8 +202,8 @@ class DeleteCoursePeriod(DosenRequiredMixin, AcademyView):
 
 class EditCourse(DosenRequiredMixin, AcademyView):
     template_name = "add_academy_course.html" 
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         form = CourseForm(instance=course)
 
         return self.render_to_response(self.get_context_data(
@@ -212,8 +212,8 @@ class EditCourse(DosenRequiredMixin, AcademyView):
             is_edit=True  
         ))
 
-    def post(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         form = CourseForm(request.POST, instance=course)
 
         if form.is_valid():
@@ -226,13 +226,16 @@ class EditCourse(DosenRequiredMixin, AcademyView):
             is_edit=True
         ))
 
-class EditAllCourse(DosenRequiredMixin, AcademyView):
-    template_name = "academy_course.html"
-
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
-        return self.render_to_response(self.get_context_data(form=CourseForm(instance=course), course=course))
-
+class ViewsAllCourse(DosenRequiredMixin, AcademyView):
+    template_name = "view_all_academy_course.html"
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        
+        return self.render_to_response(self.get_context_data(
+            form=CourseForm(instance=course), 
+            course=course
+        ))
+    
 class ListCourse(AcademyView):
     template_name = "list_academy_course.html"
     def get_context_data(self, **kwargs):
@@ -241,19 +244,19 @@ class ListCourse(AcademyView):
             context['courses'] = courses
             return context
     
-class DeleteCourse(AcademyView):
+class DeleteCourse(DosenRequiredMixin, AcademyView):
     def get(self, request, *args, **kwargs):
-        course_id = kwargs.get('course_id')
-        course = get_object_or_404(Course, id=course_id)
+        course_uuid = kwargs.get('course_uuid')
+        course = get_object_or_404(Course, uuid=course_uuid)
         course.delete()
         messages.success(request, f'Course {course.code} berhasil dihapus.')
-        return redirect('list-academy-course') # Pastikan 'list_course' sesuai nama url di urls.py
+        return redirect('list-academy-course')
     
-class AddCourseParticipant(AcademyView):
-    template_name = "add_course_participant.html"
+class AddCourseParticipant(DosenRequiredMixin, AcademyView):
+    template_name = "add_participant.html"
 
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa')
         
         context = self.get_context_data(
@@ -263,8 +266,8 @@ class AddCourseParticipant(AcademyView):
         )
         return self.render_to_response(context)
 
-    def post(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         form = AddParticipantForm(request.POST)
 
         if form.is_valid():
@@ -282,20 +285,29 @@ class AddCourseParticipant(AcademyView):
                     jumlah_sukses += 1
             
             messages.success(request, f'Berhasil menambahkan {jumlah_sukses} mahasiswa.')
-            return redirect('add-course-participant', course_id=course.id)
+            return redirect('add-course-participant', course_uuid=course.uuid)
                 
         participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa')
         return self.render_to_response(self.get_context_data(form=form, course=course, participants=participants))
     
-# 1. VIEW UNTUK TAMBAH (ADD)
-class AddCourseAgenda(AcademyView):
-    template_name = "add_course_agenda.html"
+class DeleteCourseParticipant(AcademyView):
+    def get(self, request, *args, **kwargs):
+        course_uuid = self.kwargs.get('course_uuid')
+        participant_id = self.kwargs.get('participant_id')
+        course = get_object_or_404(Course, uuid=course_uuid)
+        participant = get_object_or_404(CourseParticipant, id=participant_id, course=course)
+        mhs_name = str(participant.mahasiswa) 
+        participant.delete()
+        messages.success(request, f'Mahasiswa "{mhs_name}" berhasil dihapus dari kelas.')
+        return redirect('add-course-participant', course_uuid=course.uuid)
 
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+class AddCourseAgenda(AcademyView):
+    template_name = "add_agenda.html"
+
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
-        
-        # Logic hitung kehadiran untuk tabel
+
         self._calculate_attendance(course, agendas)
 
         return render(request, self.template_name, self.get_context_data(
@@ -305,8 +317,8 @@ class AddCourseAgenda(AcademyView):
             is_edit=False
         ))
 
-    def post(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         form = AddAgendaForm(request.POST)
 
         if form.is_valid():
@@ -314,9 +326,8 @@ class AddCourseAgenda(AcademyView):
             agenda.course = course
             agenda.save()
             messages.success(request, f'Agenda "{agenda.title}" berhasil ditambahkan.')
-            return redirect('add-course-agenda', course_id=course.id)
+            return redirect('add-course-agenda', course_uuid=course.uuid)
         
-        # Jika error
         agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
         self._calculate_attendance(course, agendas)
         
@@ -327,7 +338,6 @@ class AddCourseAgenda(AcademyView):
             is_edit=False
         ))
     
-    # Helper untuk menghitung presensi (agar tidak duplikasi code)
     def _calculate_attendance(self, course, agendas):
         total_participants = CourseParticipant.objects.filter(course=course).count()
         for ag in agendas:
@@ -337,18 +347,15 @@ class AddCourseAgenda(AcademyView):
             ag.percent = int((hadir_count / total_participants) * 100) if total_participants > 0 else 0
 
 
-# 2. VIEW UNTUK EDIT
 class EditCourseAgenda(AcademyView):
-    template_name = "add_course_agenda.html"
+    template_name = "add_agenda.html"
 
-    def get(self, request, course_id, agenda_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def get(self, request, course_uuid, agenda_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         agenda_instance = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
         
         agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
-        
-        # Panggil helper calculation dari class AddCourseAgenda (atau copy paste methodnya)
-        # Disini saya copy logic-nya agar independen
+    
         total_participants = CourseParticipant.objects.filter(course=course).count()
         for ag in agendas:
             hadir_count = CourseAttendance.objects.filter(agenda=ag, status__in=['present', 'late']).count()
@@ -366,8 +373,8 @@ class EditCourseAgenda(AcademyView):
             edit_id=agenda_id
         ))
 
-    def post(self, request, course_id, agenda_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def post(self, request, course_uuid, agenda_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         agenda_instance = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
         
         form = AddAgendaForm(request.POST, instance=agenda_instance)
@@ -375,7 +382,7 @@ class EditCourseAgenda(AcademyView):
         if form.is_valid():
             form.save()
             messages.success(request, f'Agenda "{agenda_instance.title}" berhasil diperbarui.')
-            return redirect('add-course-agenda', course_id=course.id)
+            return redirect('add-course-agenda', course_uuid=course.uuid )
         
         agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
         return render(request, self.template_name, self.get_context_data(
@@ -387,20 +394,23 @@ class EditCourseAgenda(AcademyView):
         ))
 
 
-class DeleteCourseAgenda(DosenRequiredMixin, AcademyView):
-    def get(self, request, course_id, agenda_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+
+class DeleteCourseAgenda(AcademyView):
+    def get(self, request, *args, **kwargs):
+        course_uuid = self.kwargs.get('course_uuid') or self.kwargs.get('course_id')
+        agenda_id = self.kwargs.get('agenda_id') or self.kwargs.get('pk')
+        course = get_object_or_404(Course, uuid=course_uuid)
         agenda = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
-        title = agenda.title
-        agenda.delete()       
-        messages.success(request, f'Agenda "{title}" berhasil dihapus.')
-        return redirect('add-course-agenda', course_id=course.id)
+        agenda_title = agenda.title
+        agenda.delete()
+        messages.success(request, f'Agenda "{agenda_title}" dan data presensinya berhasil dihapus.')
+        return redirect('add-course-agenda', course_uuid=course.uuid)
+    
 
 class CourseAnnouncementView(AcademyView):
-    template_name = "add_course_announcement.html"
-
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    template_name = "add_announcement.html"
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
 
         return self.render_to_response(self.get_context_data(
@@ -409,8 +419,8 @@ class CourseAnnouncementView(AcademyView):
             announcements=announcements
         ))
 
-    def post(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         form = AddAnnouncementForm(request.POST)
 
         if form.is_valid():
@@ -419,7 +429,7 @@ class CourseAnnouncementView(AcademyView):
             announcement.save()
             
             messages.success(request, 'Pengumuman berhasil dipublikasikan.')
-            return redirect('course-announcement', course_id=course.id)
+            return redirect('course-announcement', course_uuid=course.uuid)
         
         announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
         return self.render_to_response(self.get_context_data(
@@ -428,21 +438,32 @@ class CourseAnnouncementView(AcademyView):
             announcements=announcements
         ))
     
-class CourseAttendanceView(AcademyView):
+class DeleteCourseAnnouncementView(DosenRequiredMixin, AcademyView):
+    def get(self, request, announcement_id, *args, **kwargs):
+        course_uuid = self.kwargs.get('course_uuid')
+        course = get_object_or_404(Course, uuid=course_uuid)
+        announcement = get_object_or_404(CourseAnnouncement, id=announcement_id, course=course)
+        announcement.delete()
+        messages.success(request, 'Pengumuman berhasil dihapus.')
+        return redirect('add-course-announcement', course_uuid=course.uuid)
+    
+
+class CourseAttendanceView(DosenRequiredMixin, AcademyView):
     template_name = "course_attendance.html"
 
-    def get(self, request, agenda_id, *args, **kwargs):
-        agenda = get_object_or_404(CourseAgenda, id=agenda_id)
-        course = agenda.course
+    def get(self, request, course_uuid, agenda_id, *args, **kwargs):
+        # 1. Ambil Course pakai UUID (Validasi keamanan)
+        course = get_object_or_404(Course, uuid=course_uuid)
+        
+        # 2. Ambil Agenda & Pastikan agenda ini milik course tersebut
+        agenda = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
         
         participants = CourseParticipant.objects.filter(
             course=course
         ).select_related('mahasiswa').order_by('mahasiswa__nim')
 
-        # 3. Siapkan Data Gabungan (Participant + Form Unik)
         student_data = []
         for p in participants:
-            # Cek apakah sudah ada data absen sebelumnya?
             existing_obj = CourseAttendance.objects.filter(
                 agenda=agenda, 
                 participant=p
@@ -450,10 +471,9 @@ class CourseAttendanceView(AcademyView):
             
             form = AttendanceForm(instance=existing_obj, prefix=str(p.id))
             
-            # Masukkan ke list dictionary
             student_data.append({
-                'participant': p, # Untuk ditampilkan Nama/NIM di tabel
-                'form': form      # Untuk ditampilkan Radio Button & Input Note
+                'participant': p, 
+                'form': form      
             })
 
         context = self.get_context_data(
@@ -463,16 +483,16 @@ class CourseAttendanceView(AcademyView):
         )
         return self.render_to_response(context)
 
-    def post(self, request, agenda_id, *args, **kwargs):
-        agenda = get_object_or_404(CourseAgenda, id=agenda_id)
-        course = agenda.course
+    # TAMBAHKAN parameter course_uuid
+    def post(self, request, course_uuid, agenda_id, *args, **kwargs):
+        # 1. Validasi Course & Agenda
+        course = get_object_or_404(Course, uuid=course_uuid)
+        agenda = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
         
-        # Ambil ulang participant untuk looping saat simpan
         participants = CourseParticipant.objects.filter(course=course)
 
         saved_count = 0
         for p in participants:
-            # Tangkap data form berdasarkan PREFIX unik tadi
             form = AttendanceForm(request.POST, prefix=str(p.id))
             
             if form.is_valid():
@@ -490,15 +510,15 @@ class CourseAttendanceView(AcademyView):
                 saved_count += 1
         
         messages.success(request, f'Presensi berhasil disimpan untuk {saved_count} mahasiswa.')
-        return redirect('course-attendance', agenda_id=agenda.id)
+        return redirect('course-attendance', course_uuid=course.uuid, agenda_id=agenda.id)
     
 
 
 class ManageCurriculumView(DosenRequiredMixin, AcademyView):
     template_name = "manage_curriculum.html"
 
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials')
         
         context = self.get_context_data(
@@ -510,42 +530,39 @@ class ManageCurriculumView(DosenRequiredMixin, AcademyView):
 
 
 class AddCourseMaterialView(DosenRequiredMixin, AcademyView):
-    template_name = "add_course_material.html"
+    template_name = "add_material.html"
 
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
-        form = CourseMaterialForm(course_id=course.id)
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = CourseMaterialForm(course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(
             form=form, 
             course=course
         ))
 
-    def post(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
-        form = CourseMaterialForm(request.POST, request.FILES, course_id=course.id)
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = CourseMaterialForm(request.POST, request.FILES, course_uuid=course.uuid)
 
         if form.is_valid():
             material = form.save()
             messages.success(request, f'Materi "{material.title}" berhasil disimpan.')
-            return redirect('manage-curriculum', course_id=course.id)
+            return redirect('manage-curriculum', course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(form=form, course=course))   
     
 class EditCourseMaterialView(DosenRequiredMixin, AcademyView):
-    template_name = "add_course_material.html"
+    template_name = "add_material.html"
 
-    def get(self, request, course_id, material_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def get(self, request, course_uuid, material_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         material = get_object_or_404(CourseMaterial, id=material_id)
-    
-        # PERBAIKAN: Ganti 'material.section' menjadi 'material.agenda'
         if material.agenda.course != course:
             messages.error(request, "Materi tidak valid untuk kursus ini.")
-            # Redirect kembali ke halaman Agenda, bukan manage-curriculum
-            return redirect('add-course-agenda', course_id=course.id)
+            return redirect('manage-curriculum', course_uuid=course.uuid)
 
-        form = CourseMaterialForm(instance=material, course_id=course.id)
+        form = CourseMaterialForm(instance=material, course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(
             form=form, 
@@ -554,21 +571,21 @@ class EditCourseMaterialView(DosenRequiredMixin, AcademyView):
             is_edit=True     
         ))
 
-    def post(self, request, course_id, material_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
+    def post(self, request, course_uuid, material_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
         material = get_object_or_404(CourseMaterial, id=material_id)
 
         # PERBAIKAN: Ganti 'material.section' menjadi 'material.agenda'
         if material.agenda.course != course:
-            return redirect('add-course-agenda', course_id=course.id)
+            return redirect('manage-curriculum', course_uuid=course.uuid)
 
-        form = CourseMaterialForm(request.POST, request.FILES, instance=material, course_id=course.id)
+        form = CourseMaterialForm(request.POST, request.FILES, instance=material, course_uuid=course.uuid)
 
         if form.is_valid():
             form.save()
             messages.success(request, f'Materi "{material.title}" berhasil diperbarui.')
             # Redirect kembali ke halaman Agenda
-            return redirect('add-course-agenda', course_id=course.id)
+            return redirect('manage-curriculum', course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(
             form=form, 
@@ -580,74 +597,129 @@ class EditCourseMaterialView(DosenRequiredMixin, AcademyView):
 class DeleteCourseMaterialView(DosenRequiredMixin, AcademyView):
     def get(self, request, material_id, *args, **kwargs):
         material = get_object_or_404(CourseMaterial, id=material_id)
-        course_id = material.agenda.course.id
+        course_uuid = material.agenda.course.uuid
         material.delete()
         messages.success(request, f'Materi "{material.title}" berhasil dihapus.')
-        return redirect('manage-curriculum', course_id=course_id)
+        return redirect('manage-curriculum', course_uuid=course_uuid)
     
 class AddCourseAssignmentView(DosenRequiredMixin, AcademyView):
-    template_name = "add_course_assignment.html" 
+    template_name = "add_assignment.html" 
 
-    def get(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
-        form = CourseAssignmentForm(course_id=course.id)
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = CourseAssignmentForm(course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(
             form=form, 
             course=course
         ))
 
-    def post(self, request, course_id, *args, **kwargs):
-        course = get_object_or_404(Course, id=course_id)
-        form = CourseAssignmentForm(request.POST, request.FILES, course_id=course.id)
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = CourseAssignmentForm(request.POST, request.FILES, course_uuid=course.uuid)
 
         if form.is_valid():
             assignment = form.save(commit=False)
             if assignment.agenda.course != course:
                 messages.error(request, "Agenda tidak valid.")
-                return redirect('manage-curriculum', course_id=course.id)
+                return redirect('manage-curriculum', course_uuid=course.uuid)
             
             assignment.save()
             messages.success(request, f'Tugas "{assignment.title}" berhasil ditambahkan.')
-            return redirect('manage-curriculum', course_id=course.id)
+            return redirect('manage-curriculum', course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(
             form=form, 
             course=course
         ))
     
+class EditCourseAssignmentView(DosenRequiredMixin, AcademyView):
+    template_name = "add_assignment.html"
+
+    def get(self, request, course_uuid, assignment_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+        if assignment.agenda.course != course:
+            messages.error(request, "Data tugas tidak valid untuk mata kuliah ini.")
+            return redirect('manage-curriculum', course_uuid=course.uuid)
+
+        form = CourseAssignmentForm(instance=assignment, course_uuid=course.uuid)
+        
+        return self.render_to_response(self.get_context_data(
+            form=form, 
+            course=course,
+            assignment=assignment,
+            is_edit=True 
+        ))
+
+    def post(self, request, course_uuid, assignment_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+
+        if assignment.agenda.course != course:
+            return redirect('manage-curriculum', course_uuid=course.uuid)
+
+        form = CourseAssignmentForm(request.POST, request.FILES, instance=assignment, course_uuid=course.uuid)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Tugas "{assignment.title}" berhasil diperbarui.')
+            return redirect('manage-curriculum', course_uuid=course.uuid)
+        
+        return self.render_to_response(self.get_context_data(
+            form=form, 
+            course=course,
+            assignment=assignment,
+            is_edit=True
+        ))
+    
+
+class DeleteCourseAssignmentView(DosenRequiredMixin, AcademyView):
+    def get(self, request, assignment_id, *args, **kwargs):
+        course_uuid = self.kwargs.get('course_uuid')
+        course = get_object_or_404(Course, uuid=course_uuid)
+        assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+        if assignment.agenda.course != course:
+            messages.error(request, "Tugas tidak ditemukan di kelas ini.")
+            return redirect('manage-curriculum', course_uuid=course.uuid)
+        title = assignment.title
+        assignment.delete()
+        messages.success(request, f'Tugas "{title}" berhasil dihapus.')
+        return redirect('manage-curriculum', course_uuid=course.uuid)
+    
 class AssignmentGradingView(DosenRequiredMixin, AcademyView):
     template_name = "grading_assignment.html"
 
-    def get(self, request, assignment_id, *args, **kwargs):
-        # 1. Ambil Data Assignment & Course
+    # UPDATE: Tambahkan parameter course_uuid
+    def get(self, request, course_uuid, assignment_id, *args, **kwargs):
+        # 1. Ambil Course & Assignment
+        course = get_object_or_404(Course, uuid=course_uuid)
         assignment = get_object_or_404(CourseAssignment, id=assignment_id)
-        course = assignment.agenda.course
         
-        # 2. Ambil Semua Peserta (Mahasiswa) di Course ini
+        # 2. Security Check: Pastikan assignment ini milik course tersebut
+        # (Mencegah user iseng ganti-ganti ID di URL)
+        if assignment.agenda.course != course:
+            messages.error(request, "Tugas tidak ditemukan di kelas ini.")
+            return redirect('manage-curriculum', course_uuid=course.uuid)
+        
+        # 3. Ambil Semua Peserta
         participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa')
         
-        # 3. Gabungkan Data Mahasiswa dengan Data Submission
+        # 4. Logic Grading List (Sama seperti sebelumnya)
         grading_list = []
         stats = {'total': participants.count(), 'submitted': 0, 'graded': 0}
         
         for p in participants:
-            # Cek apakah mahasiswa ini sudah submit?
             sub = StudentAssignmentSubmission.objects.filter(assignment=assignment, student=p.mahasiswa).first()
-            
-            status = 'missing' # Default: Belum kumpul
+            status = 'missing'
             is_late = False
 
             if sub:
                 status = 'submitted'
                 stats['submitted'] += 1
-                
-                # Cek apakah sudah dinilai
                 if sub.score is not None:
                     status = 'graded'
                     stats['graded'] += 1
-                
-                # Cek apakah terlambat
                 if sub.submitted_at > assignment.due_date:
                     is_late = True
 
@@ -659,7 +731,6 @@ class AssignmentGradingView(DosenRequiredMixin, AcademyView):
                 'is_late': is_late
             })
 
-        # 4. Kirim ke Template
         context = self.get_context_data(
             assignment=assignment,
             course=course,
@@ -667,7 +738,6 @@ class AssignmentGradingView(DosenRequiredMixin, AcademyView):
             stats=stats
         )
         return self.render_to_response(context)
-
 
 # ---------------------------------------------------------
 # FUNGSI UNTUK SIMPAN NILAI (Dipanggil tombol Save)

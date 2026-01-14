@@ -173,13 +173,12 @@ class AttendanceForm(forms.ModelForm):
                 'placeholder': 'Keterangan (Opsional)...'
             })
         }
-
 class CourseMaterialForm(forms.ModelForm):
     class Meta:
         model = CourseMaterial
         fields = ['agenda', 'title', 'material_type', 'video_url', 'file_attachment', 'text_content', 'duration_seconds', 'is_preview', 'order']
         widgets = {
-            'agenda': forms.Select(attrs={'class': 'select2 form-select'}), # Pastikan template punya select2
+            'agenda': forms.Select(attrs={'class': 'select2 form-select'}),
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Judul Materi'}),
             'material_type': forms.Select(attrs={'class': 'select2 form-select'}),
             'video_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://youtube.com/...'}),
@@ -190,21 +189,16 @@ class CourseMaterialForm(forms.ModelForm):
             'order': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Urutan'}),
         }
 
-    # PENTING: Filter Dropdown Section agar sesuai Course
     def __init__(self, *args, **kwargs):
-        course_id = kwargs.pop('course_id', None) # Terima parameter course_id
+        course_uuid = kwargs.pop('course_uuid', None)
         super().__init__(*args, **kwargs)
         
-        if course_id:
-            # PERBAIKAN DISINI: Ganti 'section' menjadi 'agenda'
-            # Karena field di model dan di Meta bernama 'agenda'
+        if course_uuid:
             self.fields['agenda'].queryset = CourseAgenda.objects.filter(
-                course_id=course_id
+                course__uuid=course_uuid
             ).order_by('agenda_date')
             
-            # Opsional: Ubah label agar lebih jelas bagi user
             self.fields['agenda'].label = "Pilih Pertemuan / Agenda"
-
 
 class CourseAssignmentForm(forms.ModelForm):
     class Meta:
@@ -215,8 +209,6 @@ class CourseAssignmentForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Judul Tugas'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Instruksi pengerjaan...'}),
             'file_instruction': forms.FileInput(attrs={'class': 'form-control'}),
-            
-            # Widget Datepicker Cantik
             'due_date': forms.DateTimeInput(attrs={
                 'class': 'form-control flatpickr-datetime', 
                 'placeholder': 'Pilih Batas Waktu'
@@ -227,8 +219,10 @@ class CourseAssignmentForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        course_id = kwargs.pop('course_id', None)
-        super().__init__(*args, **kwargs)
-        # Filter Dropdown Agenda hanya milik Course ini
-        if course_id:
-            self.fields['agenda'].queryset = CourseAgenda.objects.filter(course_id=course_id).order_by('agenda_date')
+            course_uuid = kwargs.pop('course_uuid', None)
+            super().__init__(*args, **kwargs)
+
+            if course_uuid:
+                self.fields['agenda'].queryset = CourseAgenda.objects.filter(
+                    course__uuid=course_uuid
+                ).order_by('agenda_date')

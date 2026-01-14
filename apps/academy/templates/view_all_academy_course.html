@@ -68,7 +68,7 @@
           <div class="role-heading">
             <h5 class="mb-1">Announcements</h5>
             <small class="d-block mb-3">Buat pengumuman penting untuk seluruh kelas.</small>
-            <a href="{% url 'add-course-announcement' course.id %}" class="btn btn-sm btn-label-danger text-nowrap">Manage News</a>
+            <a href="{% url 'add-course-announcement' course.uuid %}" class="btn btn-sm btn-label-danger text-nowrap">Manage News</a>
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@
           <div class="role-heading">
             <h5 class="mb-1">Participants</h5>
             <small class="d-block mb-3">Kelola data mahasiswa dan absensi.</small>
-            <a href="{% url 'add-course-participant' course.id %}" class="btn btn-sm btn-label-info text-nowrap">Manage Students</a>
+            <a href="{% url 'add-course-participant' course.uuid %}" class="btn btn-sm btn-label-info text-nowrap">Manage Students</a>
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@
           <div class="role-heading">
             <h5 class="mb-1">Class Agenda</h5>
             <small class="d-block mb-3">Jadwal perkuliahan dan deadline.</small>
-            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-sm btn-label-success text-nowrap">Manage Schedule</a>
+            <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-sm btn-label-success text-nowrap">Manage Schedule</a>
           </div>
         </div>
       </div>
@@ -157,7 +157,7 @@
             <h5 class="mb-1">Curriculum & Materials</h5>
             <small class="d-block mb-3">Kelola Bab, Video, dan File untuk Player.</small>
             
-            <a href="{% url 'manage-curriculum' course.id %}" class="btn btn-sm btn-primary text-nowrap">
+            <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-sm btn-primary text-nowrap">
                 <i class="ri-edit-box-line me-1"></i> Manage Content
             </a>
           </div>

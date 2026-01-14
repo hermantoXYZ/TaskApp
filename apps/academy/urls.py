@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AcademyView, AddCourse, EditCourse, ListCourse, DeleteCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, EditAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView
+from .views import AcademyView, AddCourse, EditCourse, ListCourse, DeleteCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
@@ -9,32 +9,36 @@ from .views_students import StudentCourseListView, CoursePlayerView
 
 urlpatterns = [
     path('tambah/academy/course/', AddCourse.as_view(), name='tambah-academy-course'),
-    path('edit/academy/course/<int:course_id>/', EditAllCourse.as_view(), name='edit-all-academy-course'),
-    path('course/<int:course_id>/edit/', EditCourse.as_view(), name='edit-academy-course'),
+    path('views/academy/course/<uuid:course_uuid>/', ViewsAllCourse.as_view(), name='edit-all-academy-course'),
+    path('edit/academy/course/<uuid:course_uuid>/', EditCourse.as_view(), name='edit-academy-course'),
     path('list/academy/course/', ListCourse.as_view(), name='list-academy-course'),
-    path('course/delete/<int:course_id>/', DeleteCourse.as_view(), name='delete_course'),
-    path('course/<int:course_id>/add-participant/', AddCourseParticipant.as_view(), name='add-course-participant'),
-    path('course/<int:course_id>/add-agenda/', AddCourseAgenda.as_view(), name='add-course-agenda'),
-    path('course/<int:course_id>/agenda/<int:agenda_id>/edit/', views.EditCourseAgenda.as_view(), name='edit-course-agenda'),
-    path('course/<int:course_id>/agenda/<int:agenda_id>/delete/', views.DeleteCourseAgenda.as_view(), name='delete-course-agenda'),
-    
-    path('course/<int:course_id>/announcement/', CourseAnnouncementView.as_view(), name='add-course-announcement'),
-    path('agenda/<int:agenda_id>/attendance/', CourseAttendanceView.as_view(), name='course-attendance'),
+    path('course/delete/<uuid:course_uuid>/', DeleteCourse.as_view(), name='delete_course'),
+    path('course/<uuid:course_uuid>/participant/', views.AddCourseParticipant.as_view(), name='add-course-participant'),
+    path('course/<uuid:course_uuid>/participant/<int:participant_id>/delete/', views.DeleteCourseParticipant.as_view(), name='delete-participant'),
+    path('course/<uuid:course_uuid>/agenda/', AddCourseAgenda.as_view(), name='add-course-agenda'),
+    path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/edit/', views.EditCourseAgenda.as_view(), name='edit-course-agenda'),
+    path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/delete/', DeleteCourseAgenda.as_view(), name='delete-agenda'),
+    path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/attendance/', views.CourseAttendanceView.as_view(), name='course-attendance'),
+    path('course/<uuid:course_uuid>/curriculum/', ManageCurriculumView.as_view(), name='manage-curriculum'),
+    path('course/<uuid:course_uuid>/curriculum/material/', AddCourseMaterialView.as_view(), name='add-course-material'),
+    path('course/<uuid:course_uuid>/curriculum/material/<int:material_id>/delete/', DeleteCourseMaterialView.as_view(), name='delete-course-material'),
+    path('course/<uuid:course_uuid>/curriculum/material/<int:material_id>/edit/', EditCourseMaterialView.as_view(), name='edit-course-material'),
+    path('course/<uuid:course_uuid>/learn/<int:material_id>/', CoursePlayerView.as_view(), name='course-player-detail'),
+    path('course/<uuid:course_uuid>/curriculum/assignment/', views.AddCourseAssignmentView.as_view(), name='add-course-assignment'),
+    path('course/<uuid:course_uuid>/curriculum/assignment/<int:assignment_id>/edit/', views.EditCourseAssignmentView.as_view(), name='edit-course-assignment'),
+    path('course/<uuid:course_uuid>/assignment/<int:assignment_id>/delete/', views.DeleteCourseAssignmentView.as_view(), name='delete-course-assignment'),
+    path('course/<uuid:course_uuid>/assignment/<int:assignment_id>/grading/', views.AssignmentGradingView.as_view(), name='assignment-grading'),
+    path('course/<uuid:course_uuid>/announcement/', CourseAnnouncementView.as_view(), name='add-course-announcement'),
+    path('course/<uuid:course_uuid>/announcement/<int:announcement_id>/delete/', views.DeleteCourseAnnouncementView.as_view(), name='delete-course-announcement'),
 
-    
-    path('course/<int:course_id>/curriculum/', ManageCurriculumView.as_view(), name='manage-curriculum'),
-    path('course/<int:course_id>/curriculum/add-material/', AddCourseMaterialView.as_view(), name='add-course-material'),
-    path('course/<int:course_id>/curriculum/material/<int:material_id>/edit/', EditCourseMaterialView.as_view(), name='edit-course-material'),
-    path('course/<int:course_id>/learn/<int:material_id>/', CoursePlayerView.as_view(), name='course-player-detail'),
-    path('course/<int:course_id>/curriculum/material/<int:material_id>/delete/', DeleteCourseMaterialView.as_view(), name='delete-course-material'),
     path('course/program-studi', AddProgramStudiCourse.as_view(), name='program-studi-course'),
     path('course/edit/progam-studi/<uuid:pk>/', EditProgramStudiCourse.as_view(), name='edit-program-studi-course'),
     path('course/delete/<uuid:pk>/', DeleteProgramStudiCourse.as_view(), name='delete-program-studi-course'),
     path('list-course-period', AddCoursePeriod.as_view(), name='list-course-period'),
     path('course/period/edit/<uuid:pk>/', EditCoursePeriod.as_view(), name='edit-course-period'),
     path('course/period/delete/<uuid:pk>/', DeleteCoursePeriod.as_view(), name='delete-course-period'),
-    path('course/<int:course_id>/curriculum/add-assignment/', views.AddCourseAssignmentView.as_view(), name='add-course-assignment'),
-    path('course/assignment/<int:assignment_id>/grading/', views.AssignmentGradingView.as_view(), name='assignment-grading'),
+
+
     path('course/submission/<int:submission_id>/update-grade/', views.update_grade_submission, name='update-grade-submission'),
     # user
     path('profile/mahasiswa', UserProfileView.as_view(), name='profile'),

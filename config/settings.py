@@ -164,7 +164,7 @@ LANGUAGES = [
 # ! Make sure you have cleared the browser cache after changing the default language
 LANGUAGE_CODE = "en"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'Asia/Makassar'
 
 USE_I18N = True
 

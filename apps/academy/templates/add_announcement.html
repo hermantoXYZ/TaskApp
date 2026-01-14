@@ -8,32 +8,20 @@
 {% block vendor_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
-<link rel="stylesheet" href="{% static 'vendor/libs/@form-validation/form-validation.css' %}" />
-<link rel="stylesheet" href="{% static 'vendor/libs/animate-css/animate.css' %}" />
 {% endblock vendor_css %}
 
 {% block vendor_js %}
 {{ block.super }}
 <script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
-<script src="{% static 'vendor/libs/@form-validation/popular.js' %}"></script>
-<script src="{% static 'vendor/libs/@form-validation/bootstrap5.js' %}"></script>
-<script src="{% static 'vendor/libs/@form-validation/auto-focus.js' %}"></script>
 {% endblock vendor_js %}
-
-{% block page_js %}
-{{ block.super }}
-<script src="{% static 'js/forms-selects.js' %}"></script>
-{% endblock page_js %}
 
 {% block content %}
 <div class="row">
   <div class="col-12">
     <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-         Course Announcements
-        </h5>
-         <a href="{% url 'edit-all-academy-course' course.id %}" class="btn btn-outline-secondary btn-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Course Announcements</h5>
+         <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-outline-secondary btn-sm">
             <i class="ri-arrow-go-back-line me-1"></i> Kembali
          </a>
       </div>
@@ -53,52 +41,31 @@
                     </div>
 
                     <div class="form-floating form-floating-outline mb-6">
-                        <input type="text"
-                            name="{{ form.title.html_name }}"
-                            id="{{ form.title.id_for_label }}"
+                        <input type="text" name="{{ form.title.html_name }}" id="{{ form.title.id_for_label }}"
                             value="{{ form.title.value|default_if_none:'' }}"
                             class="form-control {% if form.title.errors %}is-invalid{% endif %}"
-                            placeholder="Judul Pengumuman"
-                            required>
+                            placeholder="Judul Pengumuman" required>
                         <label for="{{ form.title.id_for_label }}">Judul Pengumuman</label>
                         {% if form.title.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.title.errors %}{{ error }}{% endfor %}
-                            </div>
+                            <div class="invalid-feedback">{% for error in form.title.errors %}{{ error }}{% endfor %}</div>
                         {% endif %}
                     </div>
 
                     <div class="form-floating form-floating-outline mb-6">
-                        <select name="{{ form.priority.html_name }}"
-                                id="{{ form.priority.id_for_label }}"
+                        <select name="{{ form.priority.html_name }}" id="{{ form.priority.id_for_label }}"
                                 class="select2 form-select {% if form.priority.errors %}is-invalid{% endif %}">
                             {% for value, label in form.fields.priority.choices %}
-                                <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
+                                <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                         <label for="{{ form.priority.id_for_label }}">Tingkat Prioritas</label>
-                        {% if form.priority.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.priority.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
 
                     <div class="form-floating form-floating-outline mb-6">
-                        <textarea name="{{ form.content.html_name }}"
-                                  id="{{ form.content.id_for_label }}"
+                        <textarea name="{{ form.content.html_name }}" id="{{ form.content.id_for_label }}"
                                   class="form-control {% if form.content.errors %}is-invalid{% endif %}"
-                                  style="height: 150px;"
-                                  placeholder="Isi pengumuman..."
-                                  required>{{ form.content.value|default_if_none:'' }}</textarea>
+                                  style="height: 150px;" placeholder="Isi pengumuman..." required>{{ form.content.value|default_if_none:'' }}</textarea>
                         <label for="{{ form.content.id_for_label }}">Isi Pesan / Informasi</label>
-                        {% if form.content.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.content.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
 
                     <div class="form-check form-switch mb-6">
@@ -107,7 +74,7 @@
                     </div>
 
                     <div class="d-flex justify-content-end">
-                         <a href="{% url 'list-academy-course' %}" class="btn btn-label-secondary me-3">Kembali</a>
+                        <a href="{% url 'list-academy-course' %}" class="btn btn-label-secondary me-3">Kembali</a>
                         <button type="submit" class="btn btn-primary">Publikasikan</button>
                     </div>
                 </form>
@@ -149,7 +116,13 @@
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li>
-                                                <a class="dropdown-item text-danger" href="#" onclick="return confirm('Hapus pengumuman ini?')">
+                                                <a class="dropdown-item text-danger" 
+                                                   href="javascript:void(0);"
+                                                   data-bs-toggle="modal" 
+                                                   data-bs-target="#deleteUniversalModal"
+                                                   data-href="{% url 'delete-course-announcement' course.uuid ann.id %}"
+                                                   data-title="Hapus Pengumuman?"
+                                                   data-message="Apakah Anda yakin ingin menghapus pengumuman <strong>'{{ ann.title }}'</strong>?">
                                                     <i class="ri-delete-bin-line me-2"></i> Delete
                                                 </a>
                                             </li>
@@ -174,18 +147,59 @@
                 </div>
             </div>
 
-        </div> </div>
+        </div> 
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteUniversalModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-danger">
+                <i class="ri-delete-bin-2-line ri-32px"></i>
+            </span>
+        </div>
+        <h5 class="mb-2 fw-bold" id="modalDeleteTitle">Hapus Item?</h5>
+        <p class="text-muted mb-4 small" id="modalDeleteBody">Tindakan ini tidak dapat dibatalkan.</p>
+        <div class="d-flex gap-2 w-100">
+            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">Batal</button>
+            <a href="#" id="btnConfirmDelete" class="btn btn-danger w-100">Ya, Hapus</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi Select2 untuk Prioritas
+    // Inisialisasi Select2
     $('.select2').select2({
-        minimumResultsForSearch: Infinity, // Matikan search box karena opsi sedikit
+        minimumResultsForSearch: Infinity,
         width: '100%'
     });
+
+    // Script untuk Modal Delete Dinamis
+    var deleteModal = document.getElementById('deleteUniversalModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var deleteUrl = button.getAttribute('data-href');
+            var titleText = button.getAttribute('data-title');
+            var messageText = button.getAttribute('data-message');
+            
+            var modalTitle = deleteModal.querySelector('#modalDeleteTitle');
+            var modalBody = deleteModal.querySelector('#modalDeleteBody');
+            var confirmBtn = deleteModal.querySelector('#btnConfirmDelete');
+            
+            if (titleText) modalTitle.innerText = titleText;
+            if (messageText) modalBody.innerHTML = messageText;
+            if (confirmBtn) confirmBtn.href = deleteUrl;
+        });
+    }
 });
 </script>
 {% endblock %}

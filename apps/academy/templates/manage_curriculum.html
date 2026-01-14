@@ -58,11 +58,11 @@
     </div>
     <div class="col-12 col-md-4 ps-md-4 ps-lg-6 d-flex align-items-center"> 
          <div class="d-flex align-items-center gap-2">
-            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-primary">
+            <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-primary">
                 <i class="ri-folder-add-line me-1"></i> Bab Baru
             </a>
 
-            <a href="{% url 'add-course-material' course.id %}" class="btn btn-outline-primary">
+            <a href="{% url 'add-course-material' course.uuid %}" class="btn btn-outline-primary">
                 <i class="ri-file-add-line me-1"></i> Materi Baru
             </a>
         </div>
@@ -110,10 +110,16 @@
                         </button>
                         
                         <div class="d-flex align-items-center bg-lighter px-2 border-start flex-shrink-0">
-                            <a href="{% url 'edit-course-agenda' course.id section.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1">
+                            <a href="{% url 'edit-course-agenda' course.uuid section.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1">
                                 <i class="ri-pencil-line"></i>
                             </a>
-                            <a href="{% url 'delete-course-agenda' course.id section.id %}" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus agenda ini?');">
+                           <a href="javascript:void(0);" 
+                               class="btn btn-sm btn-icon btn-text-danger rounded-pill"
+                               data-bs-toggle="modal" 
+                               data-bs-target="#deleteUniversalModal"
+                               data-href="{% url 'delete-agenda' course.uuid section.id %}"
+                               data-title="Hapus Agenda/Bab?"
+                               data-message="Menghapus agenda ini juga akan <strong>menghapus seluruh Materi dan Tugas</strong> di dalamnya.">
                                 <i class="ri-delete-bin-line"></i>
                             </a>
                         </div>
@@ -148,8 +154,16 @@
                                         </div>
                                         
                                         <div>
-                                            <a href="{% url 'edit-course-material' course.id material.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1"><i class="ri-pencil-line"></i></a>
-                                            <a href="{% url 'delete-course-material' course.id material.id %}" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus materi ini?');"><i class="ri-delete-bin-line"></i></a>
+                                            <a href="{% url 'edit-course-material' course.uuid material.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1"><i class="ri-pencil-line"></i></a>
+                                            <a href="javascript:void(0);" 
+                                               class="btn btn-sm btn-icon btn-text-danger rounded-pill"
+                                               data-bs-toggle="modal" 
+                                               data-bs-target="#deleteUniversalModal"
+                                               data-href="{% url 'delete-course-material' course.uuid material.id %}"
+                                               data-title="Hapus Materi?"
+                                               data-message="Materi ini akan dihapus permanen dari sistem.">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </a>
                                         </div>
                                     </li>
                                     {% endfor %}
@@ -173,12 +187,20 @@
                                         </div>
                                         
                                         <div class="d-flex align-items-center">
-                                            <a href="{% url 'assignment-grading' tugas.id %}" class="btn btn-sm btn-label-primary rounded-pill me-2">
+                                            <a href="{% url 'assignment-grading' course.uuid tugas.id %}" class="btn btn-sm btn-label-primary rounded-pill me-2">
                                                 <i class="ri-file-list-3-line me-1"></i> Periksa
                                             </a>
 
-                                            <a href="#" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1"><i class="ri-pencil-line"></i></a>
-                                            <a href="#" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus tugas ini?');"><i class="ri-delete-bin-line"></i></a>
+                                            <a href="{% url 'edit-course-assignment' course.uuid tugas.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1"><i class="ri-pencil-line"></i></a>
+                                            <a href="javascript:void(0);" 
+                                               class="btn btn-sm btn-icon btn-text-danger rounded-pill"
+                                               data-bs-toggle="modal" 
+                                               data-bs-target="#deleteUniversalModal"
+                                               data-href="{% url 'delete-course-assignment' course.uuid tugas.id %}" 
+                                               data-title="Hapus Tugas?"
+                                               data-message="Tugas <strong>{{ tugas.title }}</strong> dan seluruh nilai/submisi mahasiswa akan dihapus permanen.">
+                                               <i class="ri-delete-bin-line"></i>
+                                            </a>
                                         </div>
                                     </li>
                                     {% endfor %}
@@ -187,11 +209,11 @@
                                 <li class="list-group-item p-3 text-center bg-transparent dashed-border-top">
                                     <span class="text-muted small d-block mb-2 fst-italic">Tambahkan konten ke dalam bab ini:</span>
                                     
-                                    <a href="{% url 'add-course-material' course.id %}?agenda={{section.id}}" class="btn btn-sm btn-outline-primary me-2">
+                                    <a href="{% url 'add-course-material' course.uuid %}?agenda={{section.id}}" class="btn btn-sm btn-outline-primary me-2">
                                         <i class="ri-file-add-line me-1"></i> Materi Baru
                                     </a>
                                     
-                                    <a href="{% url 'add-course-assignment' course.id %}?agenda={{section.id}}" class="btn btn-sm btn-outline-warning">
+                                    <a href="{% url 'add-course-assignment' course.uuid %}?agenda={{section.id}}" class="btn btn-sm btn-outline-warning">
                                         <i class="ri-task-line me-1"></i> Tugas Baru
                                     </a>
                                 </li>
@@ -208,4 +230,65 @@
 
   </div>
 </div>
+
+<div class="modal fade" id="deleteUniversalModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+      
+      <div class="modal-body text-center p-4">
+        
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        
+        <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-danger">
+                <i class="ri-delete-bin-2-line ri-32px"></i>
+            </span>
+        </div>
+
+        <h5 class="mb-2 fw-bold" id="modalDeleteTitle">Hapus Item?</h5>
+        
+        <p class="text-muted mb-4 small" id="modalDeleteBody">
+            Tindakan ini tidak dapat dibatalkan.
+        </p>
+        
+        <div class="d-flex gap-2 w-100">
+            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">
+              Batal
+            </button>
+            <a href="#" id="btnConfirmDelete" class="btn btn-danger w-100">
+                Ya, Hapus
+            </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var deleteModal = document.getElementById('deleteUniversalModal');
+        
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                // 1. Tangkap tombol yang diklik
+                var button = event.relatedTarget;
+                
+                // 2. Ambil data dari atribut data-*
+                var deleteUrl = button.getAttribute('data-href');
+                var titleText = button.getAttribute('data-title');
+                var messageText = button.getAttribute('data-message');
+                
+                // 3. Update isi Modal
+                var modalTitle = deleteModal.querySelector('#modalDeleteTitle');
+                var modalBody = deleteModal.querySelector('#modalDeleteBody');
+                var confirmBtn = deleteModal.querySelector('#btnConfirmDelete');
+                
+                if (titleText) modalTitle.innerText = titleText;
+                if (messageText) modalBody.innerHTML = messageText; // Gunakan innerHTML biar bisa pakai tag <b>
+                if (confirmBtn) confirmBtn.href = deleteUrl;
+            });
+        }
+    });
+</script>
 {% endblock %}

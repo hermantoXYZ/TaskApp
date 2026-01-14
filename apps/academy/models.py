@@ -269,6 +269,9 @@ class CourseAttendance(models.Model):
     check_in_time = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.participant.mahasiswa.nim.first_name} - {self.agenda.title}"
+
 
 class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
@@ -324,7 +327,7 @@ class CourseAssignment(models.Model):
 class StudentAssignmentSubmission(models.Model):
     assignment = models.ForeignKey(CourseAssignment, on_delete=models.CASCADE, related_name='submissions')
     student = models.ForeignKey(UserMhs, on_delete=models.CASCADE, related_name='submissions')
-    submitted_file = models.FileField(upload_to='course/assignments/submissions/', blank=True, null=True)
+    submitted_link = models.URLField(max_length=500, blank=False, null=False)
     submitted_text = models.TextField(blank=True, null=True, help_text="Jawaban teks/link GDrive")   
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -38,7 +38,7 @@
         <h5 class="mb-0">
            Tambah Mahasiswa Baru
         </h5>
-         <a href="{% url 'edit-all-academy-course' course.id %}" class="btn btn-outline-secondary btn-sm">
+         <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-outline-secondary btn-sm">
             <i class="ri-arrow-go-back-line me-1"></i> Kembali
          </a>
       </div>
@@ -53,7 +53,6 @@
               <label for="select2Disabled">Mata Kuliah</label>
             </div>
           </div>
-
 
           <div class="col-md-6 mb-6">
             <div class="form-floating form-floating-outline">
@@ -78,9 +77,7 @@
       </div>
     </div>
     </form> 
-
     <hr class="my-5">
-
     <div class="card">
         <div class="card-header border-bottom">
             <h5 class="card-title mb-0">Daftar Mahasiswa di Kelas Ini</h5>
@@ -115,8 +112,13 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="#" class="btn btn-sm btn-icon btn-text-danger rounded-pill" onclick="return confirm('Hapus mahasiswa ini dari kelas?')">
-                                <i class="ri-delete-bin-line"></i>
+                            <a href="javascript:void(0);" 
+                            class="btn btn-sm btn-icon btn-text-secondary rounded-pill text-danger"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#deleteParticipantModal"
+                            data-href="{% url 'delete-participant' course.uuid p.id %}"
+                            title="Hapus Mahasiswa">
+                                <i class="ri-delete-bin-7-line"></i>
                             </a>
                         </td>
                     </tr>
@@ -129,11 +131,59 @@
     </div>
 </div>
 
+<div class="modal fade" id="deleteParticipantModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+      
+      <div class="modal-body text-center p-4">
+        
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        
+        <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-danger">
+                <i class="ri-user-unfollow-line ri-32px"></i>
+            </span>
+        </div>
+
+        <h5 class="mb-2 fw-bold">Keluarkan Mahasiswa?</h5>
+        <p class="text-muted mb-4 small">
+            Mahasiswa ini akan dihapus dari daftar kelas. Data presensi/nilai terkait mungkin juga akan terpengaruh.
+        </p>
+        
+        <div class="d-flex gap-2 w-100">
+            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">
+              Batal
+            </button>
+            <a href="#" id="btnConfirmDeleteParticipant" class="btn btn-danger w-100">
+                Ya, Keluarkan
+            </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var deleteModal = document.getElementById('deleteParticipantModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var deleteUrl = button.getAttribute('data-href');
+                var confirmBtn = deleteModal.querySelector('#btnConfirmDeleteParticipant');
+                if (confirmBtn) {
+                    confirmBtn.href = deleteUrl;
+                }
+            });
+        }
+    });
+</script>
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // 1. INISIALISASI SELECT2 (Untuk Form)
-    var studentSelect = $('select[name="list_mahasiswa"]'); // Sesuaikan nama field form Anda
+    var studentSelect = $('select[name="list_mahasiswa"]'); 
     if (studentSelect.length) {
         studentSelect.select2({
             placeholder: "Cari dan pilih nama mahasiswa...",
@@ -142,12 +192,10 @@ document.addEventListener('DOMContentLoaded', function() {
             closeOnSelect: false 
         });
     }
-    $('#select2Disabled').select2(); // Untuk field course readonly
+    $('#select2Disabled').select2(); 
 
-    // 2. INISIALISASI DATATABLES (Untuk Tabel)
     $('#tableParticipant').DataTable({
         responsive: true,
-        // Opsi tambahan agar tampilan lebih rapi
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         language: {
             search: "",

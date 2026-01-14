@@ -3,7 +3,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Tables - Basic Tables{% endblock %}
+{% block title %}Daftar Mata Kuliah{% endblock %}
 
 {% block content %}
 
@@ -54,34 +54,28 @@
             </span>
           </td>
 
-         <td>
- <div class="d-flex align-items-center gap-2">
-    <a href="{% url 'edit-all-academy-course' course.id %}" class="btn btn-sm btn-icon btn-outline-secondary btn-text-secondary rounded-pill waves-effect waves-light"><i class="ri-eye-line ri-20px"></i></a>
-    <a href="{% url 'delete_course' course_id=course.id %}"  onclick="return confirm('Apakah Anda yakin ingin menghapus course {{ course.code }}?');" class="btn btn-sm btn-icon btn-text-danger btn-outline-danger rounded-pill waves-effect waves-light"><i class="ri-delete-bin-7-line ri-20px"></i></a>
-    <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-        <i class="ri-more-2-line"></i>
-    </button>
-    <div class="dropdown-menu">
-      
-      <a class="dropdown-item" href="{% url 'edit-academy-course' course.id %}">
-          <i class="ri-pencil-line me-1"></i> Edit Course
-      </a>
+          <td>
+             <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-sm btn-icon btn-outline-secondary btn-text-secondary rounded-pill waves-effect waves-light"><i class="ri-eye-line ri-20px"></i></a>
+                
+                <button type="button" 
+                        class="btn btn-sm btn-icon btn-text-danger btn-outline-danger rounded-pill waves-effect waves-light"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#deleteModal"
+                        data-href="{% url 'delete_course' course_uuid=course.uuid %}"
+                        title="Hapus">
+                    <i class="ri-delete-bin-7-line ri-20px"></i>
+                </button>
+                <a href="{% url 'edit-academy-course' course.uuid %}" class="btn btn-sm btn-icon btn-outline-primary btn-text-primary rounded-pill waves-effect waves-light">
+    <i class="ri-pencil-line ri-20px"></i>
+</a>
 
-      <div class="dropdown-divider"></div>
-
-      <a class="dropdown-item text-danger" 
-         href="{% url 'delete_course' course_id=course.id %}"
-         onclick="return confirm('Apakah Anda yakin ingin menghapus course {{ course.code }}?');">
-          <i class="ri-delete-bin-7-line me-1"></i> Delete
-      </a>
-      </div>
-  </div>
-</td>
+            </div>
+          </td>
         </tr>
-        
         {% empty %}
         <tr>
-            <td colspan="6" class="text-center py-5">
+            <td colspan="7" class="text-center py-5">
                 <div class="text-muted">Belum ada data mata kuliah.</div>
             </td>
         </tr>
@@ -90,5 +84,55 @@
     </table>
   </div>
 </div>
-<!-- Contextual Classes -->
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+      
+      <div class="modal-body text-center p-4">
+        
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        
+        <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-danger">
+                <i class="ri-delete-bin-2-line ri-32px"></i>
+            </span>
+        </div>
+
+        <h5 class="mb-2 fw-bold">Hapus Data Ini?</h5>
+        <p class="text-muted mb-4 small">Tindakan ini tidak dapat dibatalkan.</p>
+        
+        <div class="d-flex gap-2 w-100">
+            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">
+              Batal
+            </button>
+            <a href="#" id="confirmDeleteBtn" class="btn btn-danger w-100">
+                Ya, Hapus
+            </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
+
+
+{% block page_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var deleteUrl = button.getAttribute('data-href');
+                var confirmBtn = deleteModal.querySelector('#confirmDeleteBtn');
+                if (confirmBtn) {
+                    confirmBtn.href = deleteUrl;
+                }
+            });
+        }
+    });
+</script>
+{% endblock page_js %}

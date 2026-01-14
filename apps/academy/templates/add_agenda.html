@@ -25,11 +25,11 @@
         </h5>
         
         {% if is_edit %}
-            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-sm btn-outline-secondary">
+            <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-sm btn-outline-secondary">
                 <i class="ri-close-line me-1"></i> Batal Edit
             </a>
         {% else %}
-         <a href="{% url 'edit-all-academy-course' course.id %}" class="btn btn-outline-secondary btn-sm">
+         <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-outline-secondary btn-sm">
             <i class="ri-arrow-go-back-line me-1"></i> Kembali
          </a>
         {% endif %}
@@ -273,7 +273,7 @@
               </td>
 
               <td>
-                <a href="{% url 'course-attendance' agenda.id %}" class="btn btn-sm btn-primary me-2">
+                <a href="{% url 'course-attendance' course.uuid agenda.id %}" class="btn btn-sm btn-primary me-2">
                     <i class="ri-file-list-3-line me-1"></i> Absensi
                 </a>
 
@@ -281,11 +281,14 @@
                   <button type="button" class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
                   <div class="dropdown-menu">
                     
-                    <a class="dropdown-item" href="{% url 'edit-course-agenda' course.id agenda.id %}">
+                    <a class="dropdown-item" href="{% url 'edit-course-agenda' course.uuid agenda.id %}">
                         <i class="ri-pencil-line me-1"></i> Edit Agenda
                     </a>
-                    
-                    <a class="dropdown-item text-danger" href="{% url 'delete-course-agenda' course.id agenda.id %}" onclick="return confirm('Apakah Anda yakin ingin menghapus agenda ini? Data absensi terkait juga akan terhapus.');">
+                    <a class="dropdown-item text-danger" 
+                    href="javascript:void(0);"
+                    data-bs-toggle="modal" 
+                    data-bs-target="#deleteModal"
+                    data-href="{% url 'delete-agenda' course.uuid agenda.id %}">
                         <i class="ri-delete-bin-7-line me-1"></i> Hapus
                     </a>
 
@@ -313,6 +316,39 @@
     </div>
 </div>
 
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+      
+      <div class="modal-body text-center p-4">
+        
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        
+        <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-danger">
+                <i class="ri-delete-bin-2-line ri-32px"></i>
+            </span>
+        </div>
+
+        <h5 class="mb-2 fw-bold">Hapus Agenda Ini?</h5>
+        <p class="text-muted mb-4 small">
+            Data agenda beserta <strong>seluruh data presensi mahasiswa</strong> di dalamnya akan dihapus permanen.
+        </p>
+        
+        <div class="d-flex gap-2 w-100">
+            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">
+              Batal
+            </button>
+            <a href="#" id="confirmDeleteBtn" class="btn btn-danger w-100">
+                Ya, Hapus
+            </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Init Flatpickr
@@ -340,5 +376,27 @@ function toggleMeetingUrl() {
         meetingDiv.style.display = 'none';
     }
 }
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                // Tombol yang diklik (trigger)
+                var button = event.relatedTarget;
+                
+                // Ambil URL dari data-href
+                var deleteUrl = button.getAttribute('data-href');
+                
+                // Cari tombol konfirmasi di dalam modal
+                var confirmBtn = deleteModal.querySelector('#confirmDeleteBtn');
+                
+                // Set href tombol konfirmasi
+                if (confirmBtn) {
+                    confirmBtn.href = deleteUrl;
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

@@ -1,6 +1,6 @@
 
 # Register your models here.
-from .models import UserDosen, UserMhs, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress
+from .models import UserDosen, UserMhs, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, CourseAssignment, StudentAssignmentSubmission
 from django.contrib import admin
 
 
@@ -30,3 +30,5 @@ admin.site.register(CourseAnnouncement)
 admin.site.register(CourseAttendance)
 admin.site.register(CourseMaterial)
 admin.site.register(StudentMaterialProgress)
+admin.site.register(CourseAssignment)
+admin.site.register(StudentAssignmentSubmission)

@@ -26,7 +26,15 @@
 <div class="row mb-6">
   <div class="col-md mb-6 mb-md-0">
     <div class="card">
-      <h5 class="card-header">Tambah Materi Pembelajaran</h5>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+           Tambah Materi Pembelajaran
+        </h5>
+         <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+            <i class="ri-arrow-go-back-line me-1"></i> Kembali
+         </a>
+      </div>
+
       <div class="card-body">
         
         <form method="post" enctype="multipart/form-data" class="row g-5">
@@ -117,7 +125,7 @@
           </div>
 
           <div class="col-12 mt-4 d-flex justify-content-end">
-            <a href="{% url 'add-course-agenda' course.id %}" class="btn btn-outline-secondary me-3">Batal</a>
+            <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary me-3">Batal</a>
             <button type="submit" class="btn btn-primary">Simpan Materi</button>
           </div>
 

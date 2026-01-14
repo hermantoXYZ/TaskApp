@@ -176,7 +176,13 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
                 'check_in_time': att_record.check_in_time if att_record else None
             })
 
+        is_overdue = False
+        if active_type == 'assignment':
+             if timezone.now() > active_item.due_date:
+                 is_overdue = True
+
         context = self.get_context_data(
+            is_overdue=is_overdue,
             course=course,
             sections=sections,
             active_item=active_item,
@@ -200,6 +206,7 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
         participant = get_object_or_404(CourseParticipant, course=course, mahasiswa=mhs_profile)
 
         if material_id:
+            # ... (Material logic remains the same) ...
             material = get_object_or_404(CourseMaterial, id=material_id)
             progress, created = StudentMaterialProgress.objects.get_or_create(
                 participant=participant, material=material
@@ -213,26 +220,33 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
 
         elif assignment_id:
             assignment = get_object_or_404(CourseAssignment, id=assignment_id)
-            
-            if not assignment.allow_late_submission and timezone.now() > assignment.due_date:
+
+            # Consolidated Deadline Check
+            is_overdue = timezone.now() > assignment.due_date
+            if is_overdue and not assignment.allow_late_submission:
                 messages.error(request, 'Batas waktu pengumpulan sudah berakhir.')
                 return redirect('course-player-assignment', course_uuid=course.uuid, assignment_id=assignment.id)
+            
+            # Input Retrieval
+            link_input = request.POST.get('submitted_link')
+            text_input = request.POST.get('submitted_text')
 
-            submission, created = StudentAssignmentSubmission.objects.get_or_create(
+            # Validation for Link Input
+            if not link_input:
+                messages.error(request, 'Link tugas tidak boleh kosong!')
+                return redirect('course-player-assignment', course_uuid=course.uuid, assignment_id=assignment.id)
+
+            # Update or Create Submission
+            submission, created = StudentAssignmentSubmission.objects.update_or_create(
                 student=mhs_profile,
-                assignment=assignment
+                assignment=assignment,
+                defaults={
+                    'submitted_link': link_input,
+                    'submitted_text': text_input,
+                    'updated_at': timezone.now()
+                }
             )
-            
-
-            if 'submitted_file' in request.FILES:
-                submission.submitted_file = request.FILES['submitted_file']
-            
-            if 'submitted_text' in request.POST:
-                submission.submitted_text = request.POST['submitted_text']
-
-            submission.updated_at = timezone.now()
-            submission.save()
-            
+        
             messages.success(request, 'Tugas berhasil dikumpulkan!')
             return redirect('course-player-assignment', course_uuid=course.uuid, assignment_id=assignment.id)
 

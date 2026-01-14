@@ -32,7 +32,7 @@
     <li class="menu-header mt-5">
       <span class="menu-header-text">Apps & Pages</span>
     </li>
-
+    {% if user.is_superuser or user.userdosen %}
     <li class="menu-item {% if request.resolver_match.url_name == 'app-chat' %}active{% endif %}">
       <a href="{% url 'app-chat' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-wechat-line"></i>
@@ -46,7 +46,7 @@
         <div>Calendar</div>
       </a>
     </li>
-
+    {% endif %}
     {% if user.is_superuser or user.userdosen %}
     <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">
       <a href="{% url 'app-kanban' %}" class="menu-link">
@@ -94,14 +94,6 @@
       </a>
     </li>
     {% endif %}
-    {% if user.usermhs %}
-    <li class="menu-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
-      <a href="{% url 'profile' %}" class="menu-link">
-        <i class="menu-icon tf-icons ri-user-line"></i>
-        <div>Profile</div>
-      </a>
-    </li>
-    {% endif %}
 
     {% if user.is_superuser %}
     <li class="menu-item {% if 'app-user' in request.path %}active open{% endif %}">
@@ -120,8 +112,16 @@
     {% endif %}
 
     <li class="menu-header mt-5">
-      <span class="menu-header-text">Misc</span>
+      <span class="menu-header-text">Others</span>
     </li>
+    {% if user.usermhs %}
+    <li class="menu-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+      <a href="{% url 'profile' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-user-line"></i>
+        <div>Profile</div>
+      </a>
+    </li>
+    {% endif %}
 
     <li class="menu-item">
       <a href="#" target="_blank" class="menu-link">

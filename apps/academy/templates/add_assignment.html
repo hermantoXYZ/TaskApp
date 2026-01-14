@@ -1,0 +1,155 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if is_edit %} Edit Tugas - {{ assignment.title }} {% else %} Tambah Tugas - {{ course.code }} {% endif %}
+{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+  <div class="col-12 mb-4">
+      <div class="d-flex justify-content-between align-items-center">
+          <div>
+              <h4 class="fw-bold mb-0">
+                  {% if is_edit %} Edit Tugas {% else %} Buat Tugas Baru {% endif %}
+              </h4>
+              <p class="text-muted mb-0">Mata Kuliah: <span class="text-primary fw-medium">{{ course.name }} ({{ course.code }})</span></p>
+          </div>
+          <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary">
+              <i class="ri-arrow-go-back-line me-1"></i> Kembali
+          </a>
+      </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="row">
+    {% csrf_token %}
+    
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 card-title"><i class="ri-file-text-line me-2"></i>Detail Tugas</h5>
+        </div>
+        <div class="card-body">
+            
+            <div class="mb-4">
+                <label class="form-label fw-medium">Pertemuan / Agenda <span class="text-danger">*</span></label>
+                {{ form.agenda }}
+                {% if form.agenda.errors %}<div class="text-danger small mt-1">{{ form.agenda.errors }}</div>{% endif %}
+                <div class="form-text">Pilih pertemuan di mana tugas ini akan diberikan.</div>
+            </div>
+
+            <div class="form-floating form-floating-outline mb-4">
+                {{ form.title }}
+                <label for="{{ form.title.id_for_label }}">Judul Tugas</label>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-medium mb-1">Instruksi / Soal</label>
+                {{ form.description }}
+                <div class="form-text">Jelaskan detail pengerjaan tugas kepada mahasiswa.</div>
+            </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 card-title"><i class="ri-settings-3-line me-2"></i>Pengaturan</h5>
+            </div>
+            <div class="card-body">
+                
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Batas Waktu (Deadline)</label>
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text"><i class="ri-calendar-event-line"></i></span>
+                        {{ form.due_date }}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Nilai Maksimal</label>
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text"><i class="ri-award-line"></i></span>
+                        {{ form.max_score }}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                    <div>
+                        <span class="fw-medium d-block">Terima Terlambat?</span>
+                        <small class="text-muted">Izinkan submit lewat deadline</small>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        {{ form.allow_late_submission }}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 card-title"><i class="ri-attachment-line me-2"></i>Lampiran File</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Upload Soal / Panduan (PDF/DOCX)</label>
+                    {{ form.file_instruction }}
+                </div>
+                <div class="alert alert-primary d-flex align-items-center p-2 mb-0" role="alert">
+                    <i class="ri-information-line me-2"></i>
+                    <div class="small">Kosongkan jika soal sudah ada di deskripsi.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-transparent shadow-none">
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="ri-save-3-line me-1"></i> Simpan & Publikasikan
+                </button>
+            </div>
+        </div>
+
+    </div>
+  </form>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Init Select2
+    $('.select2').select2({
+        width: '100%',
+        placeholder: "Pilih Pertemuan...",
+        allowClear: true
+    });
+
+    // Init Flatpickr (Date Time)
+    flatpickr(".flatpickr-datetime", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        altInput: true,
+        altFormat: "j F Y, H:i",
+        minDate: "today",
+        defaultHour: 23,
+        defaultMinute: 59
+    });
+});
+</script>
+{% endblock %}

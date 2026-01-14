@@ -173,41 +173,85 @@
                     <h5>{% if active_item %} {{ active_item.title }} {% else %} Deskripsi Kursus {% endif %}</h5>
                     <div class="mb-6">
                         {% if active_type == 'assignment' %}
+                            
                             {{ active_item.description|safe|linebreaks }}
                             <hr class="my-6">
-                            <h5>Pengumpulan Tugas</h5>
-                            {% if submission %}
-                                <div class="alert alert-success d-flex align-items-start" role="alert">
-                                    <i class="ri-checkbox-circle-line me-3 ri-xl mt-1"></i>
-                                    <div class="w-100">
-                                        <h6 class="alert-heading mb-1">Status: Terkirim</h6>
-                                        <p class="mb-1">
-                                            <small>Waktu: {{ submission.updated_at|date:"d M Y, H:i" }}</small><br>
-                                            {% if submission.submitted_file %}File: <a href="{{ submission.submitted_file.url }}" target="_blank" class="fw-bold">{{ submission.submitted_file.name }}</a>{% endif %}
-                                        </p>
-                                        {% if submission.score is not None %}
-                                            <hr>
-                                            <div class="d-flex justify-content-between">
-                                                <span class="fw-bold text-primary">Nilai: {{ submission.score }} / {{ active_item.max_score }}</span>
-                                                <span class="fst-italic text-muted">Note: {{ submission.feedback|default:"-" }}</span>
+                            
+                           <h5>Pengumpulan Tugas</h5>
+
+                        {% if submission %}
+                            <div class="alert alert-success d-flex align-items-start" role="alert">
+                                <i class="ri-checkbox-circle-line me-3 ri-xl mt-1"></i>
+                                <div class="w-100">
+                                    <h6 class="alert-heading mb-1">Status: Terkirim</h6>
+                                    <p class="mb-1">
+                                        <small>Waktu: {{ submission.updated_at|date:"d M Y, H:i" }}</small><br>
+                                        
+                                        {% if submission.submitted_link %}
+                                            <div class="mt-2 p-2 bg-white rounded border d-inline-block">
+                                                <i class="ri-link me-1 text-primary"></i>
+                                                <a href="{{ submission.submitted_link }}" target="_blank" class="fw-bold">{{ submission.submitted_link }}</a>
                                             </div>
-                                        {% else %}
-                                            <div class="text-muted small fst-italic mt-2">Menunggu penilaian dosen.</div>
                                         {% endif %}
-                                    </div>
+                                    </p>
+
+                                    {% if submission.score is not None %}
+                                        <hr>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-bold text-primary">Nilai: {{ submission.score }} / {{ active_item.max_score }}</span>
+                                            <span class="fst-italic text-muted">Feedback: {{ submission.feedback|default:"-" }}</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-muted small fst-italic mt-2">Menunggu penilaian dosen.</div>
+                                    {% endif %}
                                 </div>
-                                <button class="btn btn-outline-secondary btn-sm mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#uploadForm">Upload Ulang</button>
+                            </div>
+                            
+                            {% if not is_overdue or active_item.allow_late_submission %}
+                                <button class="btn btn-outline-secondary btn-sm mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#uploadForm">
+                                    <i class="ri-edit-line me-1"></i> Edit Link
+                                </button>
+                            {% else %}
+                                <div class="mt-2 text-danger small fst-italic">
+                                    <i class="ri-lock-line me-1"></i> Pengumpulan ditutup. Anda tidak bisa mengedit lagi.
+                                </div>
                             {% endif %}
+
+                        {% else %}
+                            {% if is_overdue and not active_item.allow_late_submission %}
+                                <div class="alert alert-danger mt-3">
+                                    <i class="ri-alarm-warning-line me-1"></i> <strong>Waktu Habis!</strong><br>
+                                    Batas waktu pengumpulan: {{ active_item.due_date|date:"d M Y, H:i" }}.
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    
+                        {% if not is_overdue or active_item.allow_late_submission %}
                             <div class="{% if submission %}collapse mt-3{% endif %}" id="uploadForm">
                                 <div class="card bg-lighter border p-4">
-                                    <form method="post" enctype="multipart/form-data" action="{% url 'course-player-assignment' course.uuid active_item.id %}">
+                                    <form method="post" action="{% url 'course-player-assignment' course.uuid active_item.id %}">
                                         {% csrf_token %}
-                                        <div class="mb-3"><label class="form-label fw-bold">File Jawaban</label><input type="file" name="submitted_file" class="form-control" {% if not submission %}required{% endif %}></div>
-                                        <div class="mb-3"><label class="form-label fw-bold">Catatan</label><textarea name="submitted_text" class="form-control" rows="2">{{ submission.submitted_text|default:'' }}</textarea></div>
-                                        <button type="submit" class="btn btn-primary">Kirim Tugas</button>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Link Tugas <span class="text-danger">*</span></label>
+                                            <input type="url" name="submitted_link" class="form-control" 
+                                                   placeholder="https://docs.google.com/..." 
+                                                   value="{{ submission.submitted_link|default:'' }}" required>
+                                            <div class="form-text">Masukkan link Google Drive, Github, Figma, atau Youtube. Pastikan akses link Publik.</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Catatan (Opsional)</label>
+                                            <textarea name="submitted_text" class="form-control" rows="2" placeholder="Pesan untuk dosen...">{{ submission.submitted_text|default:'' }}</textarea>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="ri-send-plane-fill me-1"></i> Kirim Tugas
+                                        </button>
                                     </form>
                                 </div>
                             </div>
+                        {% endif %}
                         {% elif active_type == 'material' %}
                             {{ active_item.text_content|safe|default:"-" }}
                         {% else %}
