@@ -3,7 +3,7 @@ from django.views.generic import TemplateView
 from web_project import TemplateLayout
 from .forms import CourseForm, AddParticipantForm, AddAgendaForm, AddAnnouncementForm, AttendanceForm, CourseMaterialForm, AddProgramStudiCourseForm, CoursePeriodForm, CourseAssignmentForm, CourseQuizForm, QuizQuestionForm
 from django.contrib import messages
-from .models import Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment, CourseQuiz, QuizQuestion, QuizOption
+from .models import Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment, CourseQuiz, QuizQuestion, QuizOption, StudentQuizAttempt, StudentQuizAnswer
 from .models import UserMhs
 from django.utils import timezone
 from web_project.template_helpers.theme import TemplateHelper
@@ -14,6 +14,8 @@ from .decorators_students import check_userstudents
 from .decorators_dosen import DosenRequiredMixin
 
 from django.db import transaction
+
+from django.db.models import Sum
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -996,3 +998,75 @@ class DeleteQuizQuestionView(DosenRequiredMixin, AcademyView):
         question.delete()
         messages.success(request, "Soal berhasil dihapus.")
         return redirect('quiz-manage', quiz_id=quiz_id)
+    
+class QuizSubmissionListView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/submission_list.html"
+
+    def get(self, request, quiz_id, *args, **kwargs):
+        quiz = get_object_or_404(CourseQuiz, id=quiz_id)
+        
+        # Ambil semua percobaan (attempt) yang sudah selesai (finished_at tidak kosong)
+        attempts = StudentQuizAttempt.objects.filter(
+            quiz=quiz, 
+            finished_at__isnull=False
+        ).select_related('participant', 'participant__mahasiswa').order_by('-total_score')
+
+        return self.render_to_response(self.get_context_data(
+            quiz=quiz,
+            course=quiz.course,
+            attempts=attempts
+        ))
+
+
+# --- VIEW: FORM PENILAIAN / GRADING (Sisi Dosen) ---
+class QuizSubmissionGradeView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/submission_detail.html"
+
+    def get(self, request, attempt_id, *args, **kwargs):
+        attempt = get_object_or_404(StudentQuizAttempt, id=attempt_id)
+        
+        # Ambil jawaban user, urutkan sesuai urutan soal
+        answers = StudentQuizAnswer.objects.filter(attempt=attempt).select_related('question', 'selected_option').order_by('question__order')
+
+        return self.render_to_response(self.get_context_data(
+            attempt=attempt,
+            quiz=attempt.quiz,
+            course=attempt.quiz.course,
+            answers=answers
+        ))
+
+    def post(self, request, attempt_id, *args, **kwargs):
+        attempt = get_object_or_404(StudentQuizAttempt, id=attempt_id)
+        
+        # Kita loop semua inputan dari form
+        # Input name format: "score_{answer_id}"
+        
+        with transaction.atomic():
+            for key, value in request.POST.items():
+                if key.startswith('score_'):
+                    # Ambil ID jawaban dari nama input
+                    ans_id = key.split('_')[1]
+                    try:
+                        score_val = float(value)
+                        
+                        # Update Score di Tabel Jawaban
+                        answer_obj = StudentQuizAnswer.objects.get(id=ans_id)
+                        
+                        # Validasi sederhana: Nilai tidak boleh melebihi bobot soal
+                        if score_val > answer_obj.question.score_weight:
+                            messages.warning(request, f"Nilai untuk soal no {answer_obj.question.order} melebihi bobot maksimal ({answer_obj.question.score_weight}). Diset ke maksimal.")
+                            score_val = answer_obj.question.score_weight
+                            
+                        answer_obj.score_obtained = score_val
+                        answer_obj.save()
+                        
+                    except (ValueError, StudentQuizAnswer.DoesNotExist):
+                        continue
+
+            # --- HITUNG ULANG TOTAL SKOR ---
+            new_total = attempt.answers.aggregate(total=Sum('score_obtained'))['total'] or 0
+            attempt.total_score = new_total
+            attempt.save()
+
+        messages.success(request, f"Nilai berhasil disimpan. Total Skor Baru: {attempt.total_score}")
+        return redirect('quiz-submissions', quiz_id=attempt.quiz.id)

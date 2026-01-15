@@ -61,6 +61,8 @@ urlpatterns = [
     path('quiz/<uuid:quiz_id>/delete/', views.DeleteQuizView.as_view(), name='quiz-delete'),
     path('quiz/question/<uuid:question_id>/edit/', views.EditQuizQuestionView.as_view(), name='quiz-edit-question'),
     path('quiz/question/<uuid:question_id>/delete/', views.DeleteQuizQuestionView.as_view(), name='quiz-delete-question'),
+    path('quiz/<uuid:quiz_id>/submissions/', views.QuizSubmissionListView.as_view(), name='quiz-submissions'),
+    path('quiz/attempt/<uuid:attempt_id>/grade/', views.QuizSubmissionGradeView.as_view(), name='quiz-grade-submission'),
 
     # === MAHASISWA QUIZ ACCESS ===
     path('app/academy/course/', StudentCourseListView.as_view(), name='app-academy-course'),

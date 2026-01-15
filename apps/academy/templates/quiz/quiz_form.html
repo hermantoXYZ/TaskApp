@@ -8,7 +8,14 @@
     
         <div class="card mb-4">
             <div class="card-header border-bottom">
-                <h5 class="mb-0">Setup Kuis Baru</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                    Setup Kuis Baru
+                    </h5>
+                    <a href="{% url 'course-quiz-list' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="ri-arrow-go-back-line me-1"></i> Kembali
+                    </a>
+                </div>
             </div>
             <div class="card-body pt-4">
                 <form method="POST">

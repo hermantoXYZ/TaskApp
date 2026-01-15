@@ -1,0 +1,61 @@
+{% extends layout_path %}
+{% block title %}Hasil Ujian - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Hasil Ujian: {{ quiz.title }}</h5>
+            <small class="text-muted">{{ quiz.course.name }}</small>
+        </div>
+        <a href="{% url 'course-quiz-list' quiz.course.uuid %}" class="btn btn-outline-secondary">
+            <i class="ri-arrow-left-line me-1"></i> Kembali
+        </a>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Mahasiswa</th>
+                    <th>NIM</th>
+                    <th>Waktu Submit</th>
+                    <th>Total Skor</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attempts %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-sm me-2">
+                                <span class="avatar-initial rounded-circle bg-label-primary">
+                                    {{ att.participant.mahasiswa.nim.first_name|slice:":1" }}
+                                </span>
+                            </div>
+                            <strong>{{ att.participant.mahasiswa.nim.first_name }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ att.participant.mahasiswa.nim.username }}</td>
+                    <td>{{ att.finished_at|date:"d M Y, H:i" }}</td>
+                    <td>
+                        <span class="badge bg-label-primary fs-6">{{ att.total_score|floatformat:0 }}</span>
+                    </td>
+                    <td><span class="badge bg-label-success">Selesai</span></td>
+                    <td>
+                        <a href="{% url 'quiz-grade-submission' att.id %}" class="btn btn-sm btn-primary">
+                            <i class="ri-file-search-line me-1"></i> Periksa / Nilai
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">Belum ada mahasiswa yang mengumpulkan.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

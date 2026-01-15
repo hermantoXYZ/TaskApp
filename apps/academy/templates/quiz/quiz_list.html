@@ -10,9 +10,15 @@
             <h5 class="mb-0">Daftar Kuis & Ujian</h5>
             <small class="text-muted">{{ course.name }}</small>
         </div>
-        <a href="{% url 'course-quiz-create' course.uuid %}" class="btn btn-primary">
-            <i class="ri-add-line me-1"></i> Buat Kuis Baru
-        </a>
+        
+        <div class="d-flex gap-2">
+            <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-label-secondary">
+                <i class="ri-arrow-left-line me-1"></i> Kembali
+            </a>
+            <a href="{% url 'course-quiz-create' course.uuid %}" class="btn btn-primary">
+                <i class="ri-add-line me-1"></i> Buat Kuis Baru
+            </a>
+        </div>
     </div>
     <div class="table-responsive text-nowrap">
         <table class="table table-hover">
@@ -55,6 +61,9 @@
                             <div class="dropdown-menu">
                                 <a class="dropdown-item" href="{% url 'quiz-manage' quiz.id %}">
                                     <i class="ri-settings-4-line me-1"></i> Kelola Soal
+                                </a>
+                                <a class="dropdown-item" href="{% url 'quiz-submissions' quiz.id %}">
+                                    <i class="ri-file-user-line me-1"></i> Lihat Hasil & Nilai
                                 </a>
                                 <a class="dropdown-item text-danger" href="{% url 'quiz-delete' quiz.id %}" onclick="return confirm('Yakin hapus kuis ini? Semua soal di dalamnya akan ikut terhapus.');">
                                     <i class="ri-delete-bin-line me-1"></i> Hapus
