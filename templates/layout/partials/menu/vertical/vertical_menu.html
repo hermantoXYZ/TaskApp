@@ -39,13 +39,6 @@
         <div>Chat</div>
       </a>
     </li>
-
-    <li class="menu-item {% if request.resolver_match.url_name == 'app-calendar' %}active{% endif %}">
-      <a href="{% url 'app-calendar' %}" class="menu-link">
-        <i class="menu-icon tf-icons ri-calendar-line"></i>
-        <div>Calendar</div>
-      </a>
-    </li>
     {% endif %}
     {% if user.is_superuser or user.userdosen %}
     <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">

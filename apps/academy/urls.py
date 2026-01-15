@@ -6,6 +6,7 @@ from . import views
 from .views_prodi_set import UserListView, UserListJsonView
 from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView
 from .views_export_data import CourseRecapitulationView
+from .views_apps import KanbanAcademyView, ChatAcademyViews
 
 urlpatterns = [
     path('tambah/academy/course/', AddCourse.as_view(), name='tambah-academy-course'),
@@ -78,6 +79,10 @@ urlpatterns = [
     # === GROUP URLS === #
     path('course/<uuid:course_uuid>/groups/', views.CourseGroupListView.as_view(), name='course-groups'),
     path('groups/<uuid:group_id>/', views.CourseGroupDetailView.as_view(), name='group-detail'),
+
+    # === KANBAN & CHAT URLS === #
+    path('app/kanban/', KanbanAcademyView.as_view(), name="app-kanban"),
+    path('app/chats/', ChatAcademyViews.as_view(), name="app-chat"),
 
     path(
         "app/academy/dashboard/",

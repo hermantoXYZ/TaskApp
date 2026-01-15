@@ -42,7 +42,6 @@ ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", default="local")
 
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -51,10 +50,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "import_export",
-    "apps.layouts",
-    "apps.chat",
-    "apps.my_calendar",
-    "apps.kanban",
     "apps.academy",
     "auth.apps.AuthConfig"
 ]
@@ -64,7 +59,6 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
-    
     "web_project.language_middleware.DefaultLanguageMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -170,9 +164,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-LOCALE_PATHS = [
-    BASE_DIR / "locale",
-]
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
@@ -233,7 +224,3 @@ SESSION_COOKIE_AGE = 1209600
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5050",
 ]
-
-
-# Your stuff...
-# ------------------------------------------------------------------------------
