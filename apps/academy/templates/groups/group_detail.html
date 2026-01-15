@@ -1,0 +1,171 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}{{ group.name }} - Detail Kelompok{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 text-primary">Detail Kelompok</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb breadcrumb-style1 mb-0">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'course-groups' group.course.uuid %}">Daftar Kelompok</a>
+                </li>
+                <li class="breadcrumb-item active">{{ group.name }}</li>
+            </ol>
+        </nav>
+    </div>
+    <a href="{% url 'course-groups' group.course.uuid %}" class="btn btn-label-secondary">
+        <i class="ri-arrow-left-line me-1"></i> Kembali
+    </a>
+</div>
+
+<div class="row g-4">
+    
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Anggota Kelompok ({{ members.count }})</h5>
+            </div>
+            <div class="table-responsive text-nowrap">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Mahasiswa</th>
+                            <th>NIM</th>
+                            <th>Peran</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar avatar-sm me-2">
+                                        <span class="avatar-initial rounded-circle bg-label-primary">
+                                            {{ member.participant.mahasiswa.nim.first_name|slice:":1" }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold text-heading">{{ member.participant.mahasiswa.nim.first_name }} {{ member.participant.mahasiswa.last_name }}</span>
+                                        <small class="text-muted">{{ member.participant.mahasiswa.prodi.nama_prodi }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ member.participant.mahasiswa.nim.username }}</td>
+                            <td>
+                                {% if member.role == 'leader' %}
+                                    <span class="badge bg-label-warning">Ketua</span>
+                                {% else %}
+                                    <span class="badge bg-label-secondary">Anggota</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <form method="POST" onsubmit="return confirm('Yakin ingin mengeluarkan mahasiswa ini?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="remove_member" value="1">
+                                    <input type="hidden" name="member_id" value="{{ member.id }}">
+                                    <button type="submit" class="btn btn-sm btn-icon btn-text-danger" title="Keluarkan">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="ri-user-unfollow-line ri-3x mb-2"></i>
+                                <p class="mb-0">Belum ada anggota di kelompok ini.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        
+        <div class="card mb-4">
+            <div class="card-header bg-label-primary">
+                <h5 class="mb-0 text-primary"><i class="ri-user-add-line me-2"></i> Tambah Anggota</h5>
+            </div>
+            <div class="card-body pt-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="add_member" value="1">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Pilih Mahasiswa</label>
+                        <select name="participant_id" class="form-select select2" required>
+                            <option value="" selected disabled>-- Pilih Mahasiswa --</option>
+                            {% for p in available_participants %}
+                                <option value="{{ p.id }}">
+                                    {{ p.mahasiswa.nim }} - {{ p.mahasiswa.first_name }}
+                                </option>
+                            {% empty %}
+                                <option disabled>Semua mahasiswa sudah punya kelompok</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Hanya menampilkan mahasiswa yang belum masuk kelompok manapun.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Peran</label>
+                        <select name="role" class="form-select">
+                            <option value="member">Anggota</option>
+                            <option value="leader">Ketua</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" {% if not available_participants %}disabled{% endif %}>
+                        Tambahkan
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Pengaturan Kelompok</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="edit_group" value="1">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nama Kelompok</label>
+                        <input type="text" name="group_name" class="form-control" value="{{ group.name }}" required>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-outline-primary">Simpan Perubahan</button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="alert alert-danger mb-3 p-3">
+                    <h6 class="alert-heading fw-bold mb-1"><i class="ri-alarm-warning-line me-1"></i> Hapus Kelompok</h6>
+                    <small class="d-block mb-3">Tindakan ini tidak dapat dibatalkan. Anggota akan dikeluarkan otomatis.</small>
+                    
+                    <form method="POST" onsubmit="return confirm('APAKAH ANDA YAKIN?\n\nKelompok \'{{ group.name }}\' akan dihapus permanen.\nSemua anggota akan menjadi mahasiswa tanpa kelompok.');">
+                        {% csrf_token %}
+                        <input type="hidden" name="delete_group" value="1">
+                        <button type="submit" class="btn btn-danger w-100">
+                            Hapus Permanen
+                        </button>
+                    </form>
+                </div>
+
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

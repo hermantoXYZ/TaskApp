@@ -4,7 +4,7 @@ from web_project import TemplateLayout
 from .forms import CourseForm, AddParticipantForm, AddAgendaForm, AddAnnouncementForm, AttendanceForm, CourseMaterialForm, AddProgramStudiCourseForm, CoursePeriodForm, CourseAssignmentForm, CourseQuizForm, QuizQuestionForm
 from django.contrib import messages
 from .models import Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment, CourseQuiz, QuizQuestion, QuizOption, StudentQuizAttempt, StudentQuizAnswer
-from .models import UserMhs
+from .models import UserMhs, CourseGroup, CourseGroupMember
 from django.utils import timezone
 from web_project.template_helpers.theme import TemplateHelper
 from django.contrib.auth import authenticate, login, logout
@@ -16,6 +16,7 @@ from .decorators_dosen import DosenRequiredMixin
 from django.db import transaction
 
 from django.db.models import Sum
+import random
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -1070,3 +1071,108 @@ class QuizSubmissionGradeView(DosenRequiredMixin, AcademyView):
 
         messages.success(request, f"Nilai berhasil disimpan. Total Skor Baru: {attempt.total_score}")
         return redirect('quiz-submissions', quiz_id=attempt.quiz.id)
+    
+
+class CourseGroupListView(DosenRequiredMixin, AcademyView):
+    template_name = "groups/group_list.html"
+
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        groups = CourseGroup.objects.filter(course=course).prefetch_related('members__participant__mahasiswa')
+        
+        # Ambil peserta yang BELUM punya kelompok
+        assigned_ids = CourseGroupMember.objects.filter(group__course=course).values_list('participant_id', flat=True)
+        unassigned_participants = CourseParticipant.objects.filter(course=course).exclude(id__in=assigned_ids)
+
+        return self.render_to_response(self.get_context_data(
+            course=course,
+            groups=groups,
+            unassigned_participants=unassigned_participants
+        ))
+
+    # Fitur: Buat Kelompok Baru
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        
+        if 'create_group' in request.POST:
+            name = request.POST.get('group_name')
+            if name:
+                CourseGroup.objects.create(course=course, name=name)
+                messages.success(request, f"Kelompok '{name}' berhasil dibuat.")
+            else:
+                messages.error(request, "Nama kelompok tidak boleh kosong.")
+        
+        # Fitur: Auto Generate Kelompok (Opsional, sangat berguna)
+        elif 'auto_generate' in request.POST:
+            total_groups = int(request.POST.get('total_groups', 5))
+            
+            # Ambil semua peserta aktif
+            participants = list(CourseParticipant.objects.filter(course=course))
+            random.shuffle(participants) # Acak urutan
+            
+            # Buat Kelompok
+            groups = []
+            for i in range(total_groups):
+                g = CourseGroup.objects.create(course=course, name=f"Kelompok {i+1}")
+                groups.append(g)
+            
+            # Distribusi Peserta
+            for index, p in enumerate(participants):
+                target_group = groups[index % total_groups] # Algoritma Round Robin
+                CourseGroupMember.objects.create(group=target_group, participant=p)
+            
+            messages.success(request, f"Berhasil membagi peserta ke dalam {total_groups} kelompok secara acak.")
+
+        return redirect('course-groups', course_uuid=course.uuid)
+
+
+# --- VIEW: DETAIL KELOMPOK & MANAGE ANGGOTA ---
+class CourseGroupDetailView(DosenRequiredMixin, AcademyView):
+    template_name = "groups/group_detail.html"
+
+    def get(self, request, group_id, *args, **kwargs):
+        group = get_object_or_404(CourseGroup, id=group_id)
+        
+        # Ambil peserta yang belum punya kelompok DI COURSE INI
+        assigned_ids = CourseGroupMember.objects.filter(group__course=group.course).values_list('participant_id', flat=True)
+        available_participants = CourseParticipant.objects.filter(course=group.course).exclude(id__in=assigned_ids)
+
+        return self.render_to_response(self.get_context_data(
+            group=group,
+            members=group.members.all().select_related('participant__mahasiswa'),
+            available_participants=available_participants
+        ))
+
+    def post(self, request, group_id, *args, **kwargs):
+        group = get_object_or_404(CourseGroup, id=group_id)
+
+        # Tambah Anggota Manual
+        if 'add_member' in request.POST:
+            participant_id = request.POST.get('participant_id')
+            role = request.POST.get('role', 'member')
+            if participant_id:
+                participant = get_object_or_404(CourseParticipant, id=participant_id)
+                CourseGroupMember.objects.create(group=group, participant=participant, role=role)
+                messages.success(request, "Anggota berhasil ditambahkan.")
+
+        # Hapus Anggota
+        elif 'remove_member' in request.POST:
+            member_id = request.POST.get('member_id')
+            CourseGroupMember.objects.filter(id=member_id, group=group).delete()
+            messages.success(request, "Anggota dihapus dari kelompok.")
+        
+        # Edit Nama Kelompok
+        elif 'edit_group' in request.POST:
+            group.name = request.POST.get('group_name')
+            group.save()
+            messages.success(request, "Nama kelompok diperbarui.")
+
+        elif 'delete_group' in request.POST:
+            course_uuid = group.course.uuid # Simpan UUID course untuk redirect
+            group_name = group.name
+            group.delete() # Hapus permanen
+            messages.success(request, f"Kelompok '{group_name}' berhasil dihapus.")
+            # Redirect kembali ke halaman daftar kelompok
+            return redirect('course-groups', course_uuid=course_uuid)
+
+        return redirect('group-detail', group_id=group.id)

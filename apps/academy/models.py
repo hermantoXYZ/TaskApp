@@ -424,3 +424,32 @@ class StudentQuizAnswer(models.Model):
 
     def __str__(self):
         return f"Ans: {self.question.id}"
+    
+class CourseGroup(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='groups')
+    name = models.CharField(max_length=100)  
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.course.code}"
+
+    def member_count(self):
+        return self.members.count()
+
+class CourseGroupMember(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    group = models.ForeignKey(CourseGroup, on_delete=models.CASCADE, related_name='members')
+    participant = models.ForeignKey(CourseParticipant, on_delete=models.CASCADE, related_name='group_memberships')
+    role = models.CharField(max_length=20, default='member', choices=[
+        ('leader', 'Ketua'),
+        ('member', 'Anggota'),
+    ])
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['group', 'participant'] 
+
+    def __str__(self):
+        return f"{self.participant.mahasiswa.nim} -> {self.group.name}"

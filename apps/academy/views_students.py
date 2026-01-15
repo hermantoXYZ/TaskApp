@@ -3,7 +3,7 @@ from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from web_project import TemplateLayout
-from .models import UserMhs, UserDosen, Course, CourseParticipant, CourseAgenda, CourseMaterial, CourseAssignment, CourseAnnouncement, StudentMaterialProgress, StudentAssignmentSubmission, CourseAttendance, CourseQuiz, StudentQuizAttempt, StudentQuizAnswer, QuizQuestion, QuizOption, CourseParticipant
+from .models import UserMhs, UserDosen, Course, CourseParticipant, CourseAgenda, CourseMaterial, CourseAssignment, CourseAnnouncement, StudentMaterialProgress, StudentAssignmentSubmission, CourseAttendance, CourseQuiz, StudentQuizAttempt, StudentQuizAnswer, QuizQuestion, QuizOption, CourseParticipant, CourseGroupMember
 from .forms_mhs import MhsProfileForm  # Pastikan import form Anda
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .decorators_students import StudentsRequiredMixin
@@ -148,6 +148,8 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
         attendance_report = [] 
         total_hadir = 0
         user_attendance_map = {} 
+        my_group = None
+        group_members = []
 
         # === 3. CEK PROGRESS USER (JIKA LOGIN) ===
         if request.user.is_authenticated:
@@ -177,7 +179,15 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
                         if rec.status == 'present':
                             total_hadir += 1
                     
-                    # [BARU] Cek Status Pengerjaan Kuis
+                    my_group_rel = CourseGroupMember.objects.filter(
+                        participant=participant
+                    ).select_related('group').first()
+                    
+
+                    if my_group_rel:
+                        my_group = my_group_rel.group
+                        group_members = my_group.members.select_related('participant__mahasiswa__nim').order_by('role', 'participant__mahasiswa__nim__first_name')
+                        
                     for quiz in quizzes:
                         # Cek apakah sudah ada attempt yang FINISHED (selesai)
                         is_done = StudentQuizAttempt.objects.filter(
@@ -218,6 +228,8 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
             attendance_report=attendance_report, 
             total_hadir=total_hadir,
             quizzes=quizzes,  # <--- JANGAN LUPA TAMBAHKAN INI
+            my_group=my_group,          # Variabel ini sekarang aman karena sudah di-init di atas
+            group_members=group_members
         )
         return self.render_to_response(context)
 

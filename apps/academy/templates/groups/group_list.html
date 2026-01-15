@@ -1,0 +1,125 @@
+{% extends layout_path %}
+
+{% block title %}Kelompok Belajar - {{ course.code }}{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Kelompok Belajar</h5>
+        
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalAutoGroup">
+                <i class="ri-magic-line me-1"></i> Bagi Otomatis
+            </button>
+            
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateGroup">
+                <i class="ri-add-line me-1"></i> Buat Kelompok
+            </button>
+
+            <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-outline-secondary">
+                 <i class="ri-arrow-go-back-line me-1"></i>Kembali</a>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        
+        {% if unassigned_participants.count > 0 %}
+        <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+            <i class="ri-alert-line me-2"></i>
+            <div>
+                Ada <strong>{{ unassigned_participants.count }}</strong> mahasiswa yang belum masuk kelompok manapun.
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row g-4">
+            {% for group in groups %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border shadow-none">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-label-secondary py-3">
+                        <h6 class="mb-0 text-truncate">{{ group.name }}</h6>
+                        <a href="{% url 'group-detail' group.id %}" class="btn btn-sm btn-icon btn-label-secondary">
+                            <i class="ri-settings-4-line"></i>
+                        </a>
+                    </div>
+                    <div class="card-body pt-3">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar-group">
+                                {% for member in group.members.all|slice:":4" %}
+                                <div class="avatar avatar-sm" title="{{ member.participant.mahasiswa.first_name }}">
+                                    <span class="avatar-initial rounded-circle bg-primary text-white">
+                                        {{ member.participant.mahasiswa.nim.first_name|slice:":1" }}
+                                    </span>
+                                </div>
+                                {% endfor %}
+                                {% if group.member_count > 4 %}
+                                <div class="avatar avatar-sm">
+                                    <span class="avatar-initial rounded-circle bg-secondary text-white small">
+                                        +{{ group.member_count|add:"-4" }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-0">{{ group.member_count }} Anggota</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top p-3">
+                        <a href="{% url 'group-detail' group.id %}" class="btn btn-sm btn-outline-primary w-100">Lihat Anggota</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <img src="https://cdni.iconscout.com/illustration/premium/thumb/team-building-3536640-2968360.png" width="200" class="mb-3">
+                <p class="text-muted">Belum ada kelompok yang dibuat.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreateGroup" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="create_group" value="1">
+            <div class="modal-header">
+                <h5 class="modal-title">Buat Kelompok Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Nama Kelompok</label>
+                <input type="text" name="group_name" class="form-control" placeholder="Contoh: Kelompok 1" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAutoGroup" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="auto_generate" value="1">
+            <div class="modal-header">
+                <h5 class="modal-title">Bagi Kelompok Otomatis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info small">
+                    Sistem akan mengacak semua peserta dan membaginya rata ke dalam jumlah kelompok yang Anda tentukan.
+                </div>
+                <label class="form-label">Ingin dibagi menjadi berapa kelompok?</label>
+                <input type="number" name="total_groups" class="form-control" value="5" min="2" max="20" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Acak & Bagi</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -58,7 +58,7 @@
             <li class="nav-item">
               <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-learning" aria-controls="navs-learning" aria-selected="true">
                 <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-video-line me-2"></i> Ruang Belajar
+                    <i class="tf-icons ri-video-line me-2"></i> Learns
                 </span>
                 <i class="ri-video-line ri-20px d-sm-none"></i>
               </button>
@@ -67,7 +67,7 @@
             <li class="nav-item">
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-announcement" aria-controls="navs-announcement" aria-selected="false">
                 <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-notification-3-line me-2"></i> Pengumuman
+                    <i class="tf-icons ri-notification-3-line me-2"></i> Info
                     {% if course.announcements.count > 0 %}
                         <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2 pt-50">{{ course.announcements.count }}</span>
                     {% endif %}
@@ -82,12 +82,21 @@
             <li class="nav-item">
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-quizzes" aria-controls="navs-quizzes" aria-selected="false">
                 <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-survey-line me-2"></i> Ujian
+                    <i class="tf-icons ri-survey-line me-2"></i> Quiz
                     {% if quizzes %}
                         <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2 pt-50">{{ quizzes.count }}</span>
                     {% endif %}
                 </span>
                 <i class="ri-survey-line ri-20px d-sm-none"></i>
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-groups" aria-controls="navs-groups" aria-selected="false">
+                <span class="d-none d-sm-block">
+                    <i class="tf-icons ri-team-line me-2"></i> Tim
+                </span>
+                <i class="ri-team-line ri-20px d-sm-none"></i>
               </button>
             </li>
 
@@ -381,121 +390,215 @@
                 </div>
             </div>
           </div>
-<div class="tab-pane fade" id="navs-quizzes" role="tabpanel">
-  <div class="card shadow-none border-0">
-      <div class="card-body px-0 pt-0">
-          
-          <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-              <div>
-                  <h5 class="mb-1">Daftar Ujian & Evaluasi</h5>
-                  <p class="text-muted small mb-0">Selesaikan ujian berikut sebelum tenggat waktu.</p>
-              </div>
-              <span class="badge bg-label-primary rounded-pill">{{ quizzes.count }} Tersedia</span>
+        <div class="tab-pane fade" id="navs-quizzes" role="tabpanel">
+        <div class="card shadow-none border-0">
+            <div class="card-body px-0 pt-0">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                    <div>
+                        <h5 class="mb-1">Daftar Ujian & Evaluasi</h5>
+                        <p class="text-muted small mb-0">Selesaikan ujian berikut sebelum tenggat waktu.</p>
+                    </div>
+                    <span class="badge bg-label-primary rounded-pill">{{ quizzes.count }} Tersedia</span>
+                </div>
+
+                {% if quizzes %}
+                    <div class="row g-3">
+                        {% for quiz in quizzes %}
+                        <div class="col-12">
+                            <div class="card border shadow-none h-100">
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                        
+                                        <div class="d-flex align-items-start gap-3 w-100">
+                                            <div class="avatar avatar-lg flex-shrink-0">
+                                                <div class="avatar-initial rounded {% if quiz.user_is_done %}bg-label-success text-success{% else %}bg-label-primary text-primary{% endif %}">
+                                                    {% if quiz.user_is_done %}
+                                                        <i class="ri-checkbox-circle-fill ri-24px"></i>
+                                                    {% else %}
+                                                        <i class="ri-file-edit-line ri-24px"></i>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="w-100">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <h5 class="mb-1">
+                                                        <a href="{% url 'student-quiz-start' quiz.id %}" class="text-heading text-decoration-none stretched-link">
+                                                            {{ quiz.title }}
+                                                        </a>
+                                                    </h5>
+                                                    
+                                                    {% if quiz.user_is_done %}
+                                                        <span class="badge bg-label-success d-md-none rounded-pill">Selesai</span>
+                                                    {% else %}
+                                                        <span class="badge bg-label-warning d-md-none rounded-pill">Belum</span>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <div class="d-flex flex-wrap gap-2 mt-1">
+                                                    <span class="badge bg-label-secondary fw-normal">
+                                                        <i class="ri-time-line me-1"></i> {{ quiz.duration_minutes }} Menit
+                                                    </span>
+                                                    <span class="badge bg-label-secondary fw-normal">
+                                                        <i class="ri-list-check me-1"></i> {{ quiz.questions.count }} Soal
+                                                    </span>
+                                                    <span class="badge bg-label-secondary fw-normal">
+                                                        <i class="ri-history-line me-1"></i> Max: {{ quiz.max_attempts }}x
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-end d-none d-md-block" style="min-width: 150px; position: relative; z-index: 2;">
+                                            {% if quiz.user_is_done %}
+                                                <div class="mb-1">
+                                                    <small class="text-muted d-block">Nilai Akhir</small>
+                                                    {% if quiz.user_score is not None %}
+                                                        <h3 class="mb-0 text-success">{{ quiz.user_score|floatformat:0 }}</h3>
+                                                    {% else %}
+                                                        <span class="badge bg-label-warning">Menunggu</span>
+                                                    {% endif %}
+                                                </div>
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-sm btn-outline-secondary mt-1 w-100">
+                                                    Detail
+                                                </a>
+                                            {% else %}
+                                                <div class="mb-2">
+                                                    <span class="badge bg-label-primary">Tersedia</span>
+                                                </div>
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-primary w-100">
+                                                    <i class="ri-play-circle-line me-1"></i> Mulai
+                                                </a>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="d-md-none w-100 mt-2" style="position: relative; z-index: 2;">
+                                            {% if quiz.user_is_done %}
+                                                <div class="d-flex justify-content-between align-items-center bg-lighter p-2 rounded mb-2">
+                                                    <span class="fw-bold text-muted">Nilai:</span>
+                                                    <span class="h4 mb-0 text-success">{{ quiz.user_score|floatformat:0|default:"-" }}</span>
+                                                </div>
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-outline-secondary w-100">Lihat Detail</a>
+                                            {% else %}
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-primary w-100">Mulai Ujian</a>
+                                            {% endif %}
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 bg-lighter rounded">
+                        <div class="avatar avatar-xl mx-auto mb-3">
+                            <span class="avatar-initial rounded-circle bg-label-secondary">
+                                <i class="ri-survey-line ri-3x"></i>
+                            </span>
+                        </div>
+                        <h6 class="mb-1">Belum ada ujian</h6>
+                        <p class="text-muted mb-0">Daftar kuis atau ujian akan muncul di sini.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        </div>
+
+        <div class="tab-pane fade" id="navs-groups" role="tabpanel">
+            <div class="card shadow-none border">
+                <div class="card-body">
+                    
+                    {% if my_group %}
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h4 class="mb-1 text-primary">{{ my_group.name }}</h4>
+                                <p class="text-muted mb-0">Daftar anggota tim Anda untuk tugas kolaborasi.</p>
+                            </div>
+                            <span class="badge bg-label-primary rounded-pill">
+                                {{ group_members.count }} Anggota
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="table-responsive border rounded">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Anggota Tim</th>
+                                                <th>NIM</th>
+                                                <th>Peran</th>
+                                                <th>Kontak</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for member in group_members %}
+                                            <tr class="{% if member.participant.mahasiswa.nim == request.user.username %}bg-label-primary-subtle{% endif %}">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar avatar-sm me-3">
+                                                            <span class="avatar-initial rounded-circle {% if member.participant.mahasiswa.nim == request.user.username %}bg-primary{% else %}bg-label-secondary{% endif %}">
+                                                                {{ member.participant.mahasiswa.nim.first_name|slice:":1" }}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-0 fw-bold">
+                                                                {{ member.participant.mahasiswa.nim.first_name }}
+                                                                {% if member.participant.mahasiswa.nim == request.user.username %}
+                                                                    <span class="badge bg-primary ms-1" style="font-size: 0.6rem;">ANDA</span>
+                                                                {% endif %}
+                                                            </h6>
+                                                            <small class="text-muted">{{ member.participant.mahasiswa.prodi.nama_prodi }}</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ member.participant.mahasiswa.nim.username }}</td>
+                                                <td>
+                                                    {% if member.role == 'leader' %}
+                                                        <span class="badge bg-label-warning"><i class="ri-vip-crown-line me-1"></i> Ketua</span>
+                                                    {% else %}
+                                                        <span class="badge bg-label-secondary">Anggota</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if member.participant.mahasiswa.nim.telp %}
+                                                        <a href="https://wa.me/{{ member.participant.mahasiswa.nim.telp }}" target="_blank" class="btn btn-sm btn-icon btn-label-success" title="Hubungi WhatsApp">
+                                                            <i class="ri-whatsapp-line"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        <span class="text-muted small">-</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="avatar avatar-xl mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-secondary">
+                                    <i class="ri-team-line ri-3x"></i>
+                                </span>
+                            </div>
+                            <h5 class="mb-1">Anda belum masuk kelompok</h5>
+                            <p class="text-muted">
+                                Dosen belum membagikan kelompok atau Anda belum ditambahkan.<br>
+                                Silakan hubungi dosen pengampu jika diperlukan.
+                            </p>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
           </div>
 
-          {% if quizzes %}
-              <div class="row g-3">
-                  {% for quiz in quizzes %}
-                  <div class="col-12">
-                      <div class="card border shadow-none h-100">
-                          <div class="card-body p-3">
-                              <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                                  
-                                  <div class="d-flex align-items-start gap-3 w-100">
-                                      <div class="avatar avatar-lg flex-shrink-0">
-                                          <div class="avatar-initial rounded {% if quiz.user_is_done %}bg-label-success text-success{% else %}bg-label-primary text-primary{% endif %}">
-                                              {% if quiz.user_is_done %}
-                                                  <i class="ri-checkbox-circle-fill ri-24px"></i>
-                                              {% else %}
-                                                  <i class="ri-file-edit-line ri-24px"></i>
-                                              {% endif %}
-                                          </div>
-                                      </div>
-                                      
-                                      <div class="w-100">
-                                          <div class="d-flex justify-content-between align-items-start">
-                                              <h5 class="mb-1">
-                                                  <a href="{% url 'student-quiz-start' quiz.id %}" class="text-heading text-decoration-none stretched-link">
-                                                      {{ quiz.title }}
-                                                  </a>
-                                              </h5>
-                                              
-                                              {% if quiz.user_is_done %}
-                                                  <span class="badge bg-label-success d-md-none rounded-pill">Selesai</span>
-                                              {% else %}
-                                                  <span class="badge bg-label-warning d-md-none rounded-pill">Belum</span>
-                                              {% endif %}
-                                          </div>
-                                          
-                                          <div class="d-flex flex-wrap gap-2 mt-1">
-                                              <span class="badge bg-label-secondary fw-normal">
-                                                  <i class="ri-time-line me-1"></i> {{ quiz.duration_minutes }} Menit
-                                              </span>
-                                              <span class="badge bg-label-secondary fw-normal">
-                                                  <i class="ri-list-check me-1"></i> {{ quiz.questions.count }} Soal
-                                              </span>
-                                              <span class="badge bg-label-secondary fw-normal">
-                                                  <i class="ri-history-line me-1"></i> Max: {{ quiz.max_attempts }}x
-                                              </span>
-                                          </div>
-                                      </div>
-                                  </div>
 
-                                  <div class="text-end d-none d-md-block" style="min-width: 150px; position: relative; z-index: 2;">
-                                      {% if quiz.user_is_done %}
-                                          <div class="mb-1">
-                                              <small class="text-muted d-block">Nilai Akhir</small>
-                                              {% if quiz.user_score is not None %}
-                                                  <h3 class="mb-0 text-success">{{ quiz.user_score|floatformat:0 }}</h3>
-                                              {% else %}
-                                                  <span class="badge bg-label-warning">Menunggu</span>
-                                              {% endif %}
-                                          </div>
-                                          <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-sm btn-outline-secondary mt-1 w-100">
-                                              Detail
-                                          </a>
-                                      {% else %}
-                                          <div class="mb-2">
-                                              <span class="badge bg-label-primary">Tersedia</span>
-                                          </div>
-                                          <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-primary w-100">
-                                              <i class="ri-play-circle-line me-1"></i> Mulai
-                                          </a>
-                                      {% endif %}
-                                  </div>
-
-                                  <div class="d-md-none w-100 mt-2" style="position: relative; z-index: 2;">
-                                      {% if quiz.user_is_done %}
-                                          <div class="d-flex justify-content-between align-items-center bg-lighter p-2 rounded mb-2">
-                                              <span class="fw-bold text-muted">Nilai:</span>
-                                              <span class="h4 mb-0 text-success">{{ quiz.user_score|floatformat:0|default:"-" }}</span>
-                                          </div>
-                                          <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-outline-secondary w-100">Lihat Detail</a>
-                                      {% else %}
-                                          <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-primary w-100">Mulai Ujian</a>
-                                      {% endif %}
-                                  </div>
-
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-                  {% endfor %}
-              </div>
-          {% else %}
-              <div class="text-center py-5 bg-lighter rounded">
-                  <div class="avatar avatar-xl mx-auto mb-3">
-                      <span class="avatar-initial rounded-circle bg-label-secondary">
-                          <i class="ri-survey-line ri-3x"></i>
-                      </span>
-                  </div>
-                  <h6 class="mb-1">Belum ada ujian</h6>
-                  <p class="text-muted mb-0">Daftar kuis atau ujian akan muncul di sini.</p>
-              </div>
-          {% endif %}
-      </div>
-  </div>
-</div>
         </div>
       </div>
     </div>

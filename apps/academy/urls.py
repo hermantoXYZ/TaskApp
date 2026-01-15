@@ -75,7 +75,9 @@ urlpatterns = [
     path('quiz/attempt/<uuid:attempt_id>/submit/', StudentQuizSubmitView.as_view(), name='student-quiz-submit'), 
     path('quiz/attempt/<uuid:attempt_id>/result/', StudentQuizResultView.as_view(), name='student-quiz-result'),
 
-
+    # === GROUP URLS === #
+    path('course/<uuid:course_uuid>/groups/', views.CourseGroupListView.as_view(), name='course-groups'),
+    path('groups/<uuid:group_id>/', views.CourseGroupDetailView.as_view(), name='group-detail'),
 
     path(
         "app/academy/dashboard/",

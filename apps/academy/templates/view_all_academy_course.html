@@ -79,6 +79,28 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-4">
+          <p class="mb-0 text-muted">Tim & Kolaborasi</p>
+          <div class="avatar">
+            <div class="avatar-initial bg-label-warning rounded">
+                <i class="ri-team-line ri-24px"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end">
+          <div class="role-heading">
+            <h5 class="mb-1">Kelompok Belajar</h5>
+            <small class="d-block mb-3">Atur pembagian kelompok tugas/proyek.</small>
+            <a href="{% url 'course-groups' course.uuid %}" class="btn btn-sm btn-label-warning text-nowrap">Manage Groups</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4 col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
           <p class="mb-0 text-muted">{{ course.participants.count }} Students</p>
           <div class="avatar">
             <div class="avatar-initial bg-label-info rounded">
