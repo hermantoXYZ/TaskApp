@@ -59,6 +59,9 @@ def loginView(request):
         else:
             return render(request,'auth_login_basic.html', context) 
 
+def LogoutView(request):
+    logout(request)
+    return redirect('login')
 
 class AddCourse(DosenRequiredMixin, AcademyView):
     template_name = "add_academy_course.html"

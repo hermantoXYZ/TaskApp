@@ -7,6 +7,7 @@ from .views_prodi_set import UserListView, UserListJsonView
 from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView
 from .views_export_data import CourseRecapitulationView
 from .views_apps import KanbanAcademyView, ChatAcademyViews
+from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
     path('tambah/academy/course/', AddCourse.as_view(), name='tambah-academy-course'),
@@ -46,6 +47,7 @@ urlpatterns = [
     # user
     path('profile/mahasiswa', UserProfileView.as_view(), name='profile'),
     path('login/', views.loginView, name='login'),
+    path("logout/",LogoutView.as_view(),name="logout",),
     path("app/user/listss/", UserListView.as_view(), name="app-user-lists"),
     path("users/json/", UserListJsonView.as_view(), name="user-list-json"),
     path("", views.loginView, name="login"),
@@ -83,20 +85,5 @@ urlpatterns = [
     # === KANBAN & CHAT URLS === #
     path('app/kanban/', KanbanAcademyView.as_view(), name="app-kanban"),
     path('app/chats/', ChatAcademyViews.as_view(), name="app-chat"),
-
-    path(
-        "app/academy/dashboard/",
-        login_required(AcademyView.as_view(template_name="app_academy_dashboard.html")),
-        name="app-academy-dashboard",
-    ),
-    path(
-        "app/academy/course_details/",
-        login_required(AcademyView.as_view(template_name="app_academy_course_details.html")),
-        name="app-academy-course-details",
-    ),
-    path(
-        "app-perpustakaan/",
-        login_required(AcademyView.as_view(template_name="app_perpustakaan.html")),
-        name="app-perpustakaan",
-    )
+    path("app/academy/dashboard/",login_required(AcademyView.as_view(template_name="app_academy_dashboard.html")),name="app-academy-dashboard",),
 ]

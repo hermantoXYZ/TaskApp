@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "import_export",
     "apps.academy",
-    "auth.apps.AuthConfig"
 ]
 
 MIDDLEWARE = [
