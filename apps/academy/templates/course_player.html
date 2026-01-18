@@ -437,10 +437,8 @@
                                                         </a>
                                                     </h5>
                                                     
-                                                    {% if quiz.quiz_type == 'uts' %}
-                                                        <span class="badge bg-danger d-md-none rounded-pill">UTS</span>
-                                                    {% elif quiz.quiz_type == 'uas' %}
-                                                        <span class="badge bg-danger d-md-none rounded-pill">UAS</span>
+                                                    {% if quiz.quiz_type == 'exam' %}
+                                                        <span class="badge bg-danger d-md-none rounded-pill">Ujian Semester</span>
                                                     {% elif quiz.user_is_done %}
                                                         <span class="badge bg-label-success d-md-none rounded-pill">Selesai</span>
                                                     {% else %}
@@ -450,11 +448,9 @@
                                                 
                                                 <div class="d-flex flex-wrap gap-2 mt-1">
                                                     
-                                                    {% if quiz.quiz_type == 'uts' %}
-                                                        <span class="badge bg-danger">UTS</span>
-                                                    {% elif quiz.quiz_type == 'uas' %}
-                                                        <span class="badge bg-danger">UAS</span>
-                                                    {% else %}
+                                                    {% if quiz.quiz_type == 'exam' %}
+                                                        <span class="badge bg-danger">Ujian</span>
+                                                    {% elif quiz.quiz_type == 'quiz' %}
                                                         <span class="badge bg-label-info">Kuis Harian</span>
                                                     {% endif %}
 
