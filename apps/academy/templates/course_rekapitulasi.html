@@ -1,5 +1,4 @@
 {% extends layout_path %}
-
 {% load static %}
 {% load i18n %}
 
@@ -30,6 +29,7 @@
         text-decoration: none;
         display: block;
         margin-bottom: 2px;
+        font-weight: 600;
     }
     /* Pastikan header rata tengah */
     table.dataTable thead th {
@@ -106,18 +106,24 @@
           <th rowspan="2" class="bg-light">No</th>
           <th rowspan="2" class="bg-light">Nama Mahasiswa</th> 
           <th rowspan="2" class="bg-light">NIM</th>
-          <th rowspan="2" class="bg-light">Prodi</th>
-          <th rowspan="2" class="bg-light">Kelas</th>
-          <th rowspan="2" class="bg-light">Kelompok</th>
+          <th rowspan="2" class="bg-light">Kelompok</th> 
 
           {% if agendas %}
             <th colspan="{{ agendas.count }}" class="bg-label-info text-center text-info">Riwayat Kehadiran</th>
           {% endif %}
 
-          <th rowspan="2" class="bg-label-secondary">Skor Kehadiran</th>
+          <th rowspan="2" class="bg-label-secondary">Skor Absen</th>
 
-          {% if assignments %}
-            <th colspan="{{ assignments.count }}" class="text-center bg-label-success text-success">Nilai Tugas</th>
+          {% if assignments_individu %}
+            <th colspan="{{ assignments_individu|length }}" class="text-center bg-label-primary text-primary">
+                <i class="ri-user-line me-1"></i> Tugas Individu
+            </th>
+          {% endif %}
+
+          {% if assignments_group %}
+            <th colspan="{{ assignments_group|length }}" class="text-center bg-label-warning text-warning">
+                <i class="ri-team-line me-1"></i> Tugas Kelompok
+            </th>
           {% endif %}
 
           {% if quizzes %}
@@ -126,6 +132,7 @@
 
           <th rowspan="2" class="bg-label-primary text-primary">Avg</th>
         </tr>
+        
         <tr>
             {% for ag in agendas %}
                 <th class="small col-absen" title="{{ ag.title }} - {{ ag.agenda_date|date:'d M' }}">
@@ -133,21 +140,34 @@
                 </th>
             {% endfor %}
 
-            {% for task in assignments %}
+            {% for task in assignments_individu %}
                 <th class="small" title="{{ task.title }}">
-                    T{{ forloop.counter }}
+                    <span class="text-primary fw-bold">I-{{ forloop.counter }}</span>
                 </th>
             {% endfor %}
 
-           {% for quiz in quizzes %}
+            {% for task in assignments_group %}
+                <th class="small bg-label-warning bg-opacity-10" title="{{ task.title }}">
+                    <span class="text-warning fw-bold">G-{{ forloop.counter }}</span>
+                </th>
+            {% endfor %}
+
+            {% for quiz in quizzes %}
                 <th class="small" title="{{ quiz.title }}">
                     <span class="text-danger fw-bold">
-                        {{ quiz.quiz_type|default:"Quiz"|upper }}
+                        {% if quiz.quiz_type == 'uts' %}
+                            UTS
+                        {% elif quiz.quiz_type == 'uas' %}
+                            UAS
+                        {% else %}
+                            Q{{ forloop.counter }}
+                        {% endif %}
                     </span>
                 </th>
             {% endfor %}
         </tr>
       </thead>
+      
       <tbody>
         {% for item in rekap_data %}
         <tr>
@@ -161,8 +181,7 @@
             </td>
 
             <td>{{ item.participant.mahasiswa.nim.username }}</td>
-            <td>{{ item.participant.mahasiswa.prodi.nama_prodi|default:"-" }}</td>
-            <td>{{ course.group }}</td>
+            
             <td class="text-center">
                 {% with group_member=item.participant.group_memberships.first %}
                     {% if group_member %}
@@ -195,18 +214,46 @@
                 {{ item.attendance_score }}
             </td>
 
-            {% for grade in item.grades %}
+            {% for grade in item.grades_individu %}
             <td class="text-center align-middle task-cell">
                 <div class="d-flex flex-column align-items-center justify-content-center">
+                    
                     {% if grade.link != '-' %}
-                        <a href="{{ grade.link }}" target="_blank" class="task-link text-primary" title="Buka Jawaban">
+                         <a href="{{ grade.link }}" target="_blank" class="task-link text-primary" title="Buka Jawaban">
                             <i class="ri-link"></i> Link
                         </a>
                     {% endif %}
 
                     {% if grade.status == 'graded' %}
                         <span class="fw-bold {% if grade.score < 60 %}text-danger{% endif %}">
-                            {{ grade.score }}
+                            {{ grade.score|floatformat:0 }}
+                        </span>
+                    {% elif grade.status == 'submitted' %}
+                        <span class="badge bg-label-info" style="font-size: 0.60rem;">Menunggu</span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+
+                    {% if grade.time != '-' %}
+                        <span class="task-time">{{ grade.time }}</span>
+                    {% endif %}
+                </div>
+            </td>
+            {% endfor %}
+
+            {% for grade in item.grades_group %}
+            <td class="text-center align-middle task-cell">
+                <div class="d-flex flex-column align-items-center justify-content-center">
+                    
+                    {% if grade.link != '-' %}
+                         <a href="{{ grade.link }}" target="_blank" class="task-link text-primary" title="Buka Jawaban">
+                            <i class="ri-link"></i> Link
+                        </a>
+                    {% endif %}
+
+                    {% if grade.status == 'graded' %}
+                        <span class="fw-bold {% if grade.score < 60 %}text-danger{% endif %}">
+                            {{ grade.score|floatformat:0 }}
                         </span>
                     {% elif grade.status == 'submitted' %}
                         <span class="badge bg-label-info" style="font-size: 0.60rem;">Menunggu</span>
