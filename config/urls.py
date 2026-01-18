@@ -34,5 +34,6 @@ urlpatterns = [
 # handler400 = SystemView.as_view(template_name="pages_misc_error.html", status=400)
 # handler500 = SystemView.as_view(template_name="pages_misc_error.html", status=500)
 
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

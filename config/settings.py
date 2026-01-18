@@ -13,11 +13,9 @@ import os
 from pathlib import Path
 
 from django.utils.translation import gettext_lazy as _
-from dotenv import load_dotenv
 
 from .template import TEMPLATE_CONFIG, THEME_LAYOUT_DIR, THEME_VARIABLES
 
-load_dotenv()  # take environment variables from .env.
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,19 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", default='')
-
+SECRET_KEY = "K5tRjVxP9qCwZ2gH8sN6mT3dF7aK1pW4eX7yV9uL6kG3jB2tR8qE5zA1rC"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", 'True').lower() in ['true', 'yes', '1']
-
+DEBUG = True
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
-
-# Current DJANGO_ENVIRONMENT
-ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", default="local")
-
 
 # Application definition
 INSTALLED_APPS = [
@@ -83,7 +75,6 @@ TEMPLATES = [
                 "config.context_processors.language_code",
                 "config.context_processors.my_setting",
                 "config.context_processors.get_cookie",
-                "config.context_processors.environment",
             ],
             "libraries": {
                 "theme": "web_project.template_tags.theme",
@@ -170,21 +161,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
+STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / "src" / "assets",
+    BASE_DIR / "static" / "assets",
 ]
 
 # Default URL on which Django application runs for specific environment
-BASE_URL = os.environ.get("BASE_URL", default="http://127.0.0.1:8000")
-
 MEDIA_URL = '/media/'
-
-# Lokasi fisik folder di komputer/server tempat file akan disimpan
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'  
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -223,11 +208,6 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 
 SESSION_COOKIE_AGE = 1209600
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5050",
-]
-
 
 
 SUMMERNOTE_THEME = 'bs4'
