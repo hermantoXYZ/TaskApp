@@ -98,6 +98,7 @@
                         {{ form.max_score }}
                     </div>
                 </div>
+                
 
                 <div class="d-flex justify-content-between align-items-center border-top pt-3">
                     <div>
@@ -108,6 +109,20 @@
                         {{ form.allow_late_submission }}
                     </div>
                 </div>
+                
+                <div class="d-flex justify-content-between align-items-center border-top pt-4">
+                    <div>
+                        <span class="fw-medium d-block">Publish Sekarang?</span>
+                        <small class="text-muted">Tugas akan tampil di dashboard mahasiswa</small>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        {{ form.is_published }}
+                    </div>
+                </div>
+                
+
+   
+                
 
             </div>
         </div>

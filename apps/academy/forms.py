@@ -230,7 +230,7 @@ class CourseMaterialForm(forms.ModelForm):
 class CourseAssignmentForm(forms.ModelForm):
     class Meta:
         model = CourseAssignment
-        fields = ['agenda', 'title', 'description', 'file_instruction', 'due_date', 'max_score', 'allow_late_submission', 'assignment_type']
+        fields = ['agenda', 'title', 'description', 'file_instruction', 'due_date', 'max_score', 'allow_late_submission', 'assignment_type', 'is_published']
         widgets = {
             'assignment_type': forms.Select(attrs={'class': 'form-select'}),
             'agenda': forms.Select(attrs={'class': 'select2 form-select'}),
@@ -241,7 +241,7 @@ class CourseAssignmentForm(forms.ModelForm):
                 'class': 'form-control flatpickr-datetime', 
                 'placeholder': 'Pilih Batas Waktu'
             }),
-            
+            'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'max_score': forms.NumberInput(attrs={'class': 'form-control', 'value': 100}),
             'allow_late_submission': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

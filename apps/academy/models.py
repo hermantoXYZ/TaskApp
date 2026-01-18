@@ -333,6 +333,7 @@ class CourseAssignment(models.Model):
     due_date = models.DateTimeField() # Batas waktu pengumpulan
     max_score = models.IntegerField(default=100) # Nilai maksimal (biasanya 100)
     allow_late_submission = models.BooleanField(default=False, help_text="Izinkan pengumpulan telat?")
+    is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

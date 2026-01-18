@@ -19,53 +19,39 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/app-academy-details.css' %}" />
 <style>
-    .input-warning:checked {
-        background-color: #ff9f43;
-        border-color: #ff9f43;
-    }
-    .course-link {
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-        display: block;
-    }
-    .course-link:hover {
-        color: #666cff; 
-    }
-    .course-link.active {
-        color: #666cff;
-        font-weight: 700;
+    /* === 1. RESPONSIF KONTEN (GAMBAR & VIDEO) === */
+    .course-content-body {
+        width: 100%;
+        overflow-wrap: break-word;
+        overflow: hidden;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #444;
     }
 
-    .card-body img {
-        max-width: 100% !important;  
-        height: auto !important;  
-        display: block !important;  
-        margin: 10px auto !important; 
+    .course-content-body img {
+        max-width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        margin: 1.5rem auto !important;
         border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
 
-    .card-body iframe,
-    .card-body embed,
-    .card-body object {
-        width: 100% !important;     
-        max-width: 100% !important; 
-        min-width: 0 !important;     
-        height: auto !important;     
-        aspect-ratio: 16 / 9;       
+    .course-content-body iframe,
+    .course-content-body embed,
+    .course-content-body object {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 16 / 9; /* Wajib untuk Video/Slide */
         display: block !important;
         margin: 1.5rem 0 !important;
         border-radius: 8px;
-        border: 1px solid #eee;     
-    }
-    @supports not (aspect-ratio: 16 / 9) {
-        .card-body iframe {
-            height: 400px !important;
-        }
+        border: 1px solid #eee;
     }
 
-    /* Styling Item Materi di Sidebar */
+    /* === 2. STYLING SIDEBAR ITEM (MATERI & TUGAS) === */
     .course-item {
         display: flex;
         align-items: flex-start;
@@ -73,30 +59,34 @@
         border-radius: 0.5rem;
         transition: all 0.2s ease;
         text-decoration: none;
-        color: #566a7f; /* Warna teks default theme Anda */
+        color: #566a7f;
         margin-bottom: 0.5rem;
         border: 1px solid transparent;
     }
 
+    /* Hover effect untuk item yang bisa diklik */
     .course-item:not(.locked):hover {
-        background-color: rgba(67, 89, 113, 0.04); 
-        color: #696cff; 
+        background-color: rgba(67, 89, 113, 0.04);
+        color: #696cff;
     }
 
+    /* Active State (Sedang dibuka) */
     .course-item.active {
-        background-color: rgba(105, 108, 255, 0.08); 
+        background-color: rgba(105, 108, 255, 0.08);
         color: #696cff;
         border-color: rgba(105, 108, 255, 0.15);
         font-weight: 600;
     }
 
+    /* Locked State (Belum Publish) */
     .course-item.locked {
-        background-color: #f8f9fa; 
-        color: #a1acb8; 
+        background-color: #f8f9fa;
+        color: #a1acb8;
         cursor: not-allowed;
         border: 1px dashed #d9dee3;
     }
 
+    /* Icon Container */
     .material-icon {
         display: flex;
         align-items: center;
@@ -104,14 +94,20 @@
         width: 24px;
         height: 24px;
         border-radius: 4px;
-        margin-right: 0.5rem;
+        margin-right: 0.75rem;
         background-color: rgba(67, 89, 113, 0.1);
         color: #697a8d;
+        flex-shrink: 0;
     }
     
     .course-item.active .material-icon {
         background-color: #696cff;
         color: #fff;
+    }
+
+    .input-warning:checked {
+        background-color: #ff9f43;
+        border-color: #ff9f43;
     }
 </style>
 {% endblock page_css %}
@@ -130,61 +126,35 @@
       <div class="card-header p-0">
         <div class="nav-align-top">
           <ul class="nav nav-tabs nav-fill" role="tablist">
-            
             <li class="nav-item">
-              <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-learning" aria-controls="navs-learning" aria-selected="true">
-                <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-video-line me-2"></i> Learns
-                </span>
-                <i class="ri-video-line ri-20px d-sm-none"></i>
+              <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-learning">
+                <i class="tf-icons ri-video-line me-2"></i> <span class="d-none d-sm-block">Learns</span>
               </button>
             </li>
-
             <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-announcement" aria-controls="navs-announcement" aria-selected="false">
-                <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-notification-3-line me-2"></i> Info
-                    {% if course.announcements.count > 0 %}
-                        <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2 pt-50">{{ course.announcements.count }}</span>
-                    {% endif %}
-                </span>
-                <i class="ri-notification-3-line ri-20px d-sm-none"></i>
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-announcement">
+                <i class="tf-icons ri-notification-3-line me-2"></i> <span class="d-none d-sm-block">Info</span>
                 {% if course.announcements.count > 0 %}
-                    <span class="badge badge-dot bg-danger position-absolute top-0 end-0 mt-2 me-2 d-sm-none"></span>
+                    <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2">{{ course.announcements.count }}</span>
                 {% endif %}
               </button>
             </li>
-
             <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-quizzes" aria-controls="navs-quizzes" aria-selected="false">
-                <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-survey-line me-2"></i> Quiz
-                    {% if quizzes %}
-                        <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2 pt-50">{{ quizzes.count }}</span>
-                    {% endif %}
-                </span>
-                <i class="ri-survey-line ri-20px d-sm-none"></i>
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-quizzes">
+                <i class="tf-icons ri-survey-line me-2"></i> <span class="d-none d-sm-block">Quiz</span>
+                {% if quizzes %}<span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2">{{ quizzes.count }}</span>{% endif %}
               </button>
             </li>
-
             <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-groups" aria-controls="navs-groups" aria-selected="false">
-                <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-team-line me-2"></i> Tim
-                </span>
-                <i class="ri-team-line ri-20px d-sm-none"></i>
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-groups">
+                <i class="tf-icons ri-team-line me-2"></i> <span class="d-none d-sm-block">Tim</span>
               </button>
             </li>
-
             <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-attendance" aria-controls="navs-attendance" aria-selected="false">
-                <span class="d-none d-sm-block">
-                    <i class="tf-icons ri-calendar-check-line me-2"></i> Kehadiran
-                </span>
-                <i class="ri-calendar-check-line ri-20px d-sm-none"></i>
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-attendance">
+                <i class="tf-icons ri-calendar-check-line me-2"></i> <span class="d-none d-sm-block">Kehadiran</span>
               </button>
             </li>
-
           </ul>
         </div>
       </div>
@@ -202,49 +172,92 @@
                 <div class="d-flex align-items-center">
                   <span class="badge bg-label-danger rounded-pill me-3">{{ course.prodi.nama_prodi }}</span>
                   
-                {% if active_type == 'material' and active_item.is_published %}
-                  <form method="post" action="{% url 'course-player-material' course.uuid active_item.id %}">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-primary" title="Tandai Selesai">
-                          <i class='ri-check-double-line me-1'></i> Selesai
-                      </button>
-                  </form>
+                {% if active_type == 'material' and active_item %}
+                      {% if active_item.is_published or request.user == course.instructor %}
+                      <form method="post" action="{% url 'course-player-material' course.uuid active_item.id %}">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-sm btn-primary" title="Tandai Selesai">
+                              <i class='ri-check-double-line me-1'></i> Selesai
+                          </button>
+                      </form>
+                      {% endif %}
                   {% endif %}
                 </div>
             </div>
 
             <div class="card academy-content shadow-none border">
-                <div class="p-2">
-                    {% if active_type == 'material' and active_item.is_published  %}
-                    {% if not active_item.is_published %}
-                        <div class="alert alert-warning d-flex align-items-center mx-2 mt-2" role="alert">
-                            <i class="ri-eye-off-line me-2"></i>
-                            <div>
-                                <strong>Mode Draft:</strong> Materi ini belum dipublikasikan. Mahasiswa melihat halaman terkunci.
-                            </div>
-                        </div>
-                    {% endif %}
-                        <div class="cursor-pointer">
-                            {% if active_item.material_type == 'video' and  active_item.is_published %}
-                                <div class="plyr__video-embed" id="plyr-video-player">
-                                    <iframe src="{{ active_item.video_url }}" allowfullscreen allowtransparency allow="autoplay"></iframe>
-                                </div>
-                            {% else %}
-                                <div class="p-12 text-center bg-lighter rounded">
-                                    <div class="mb-3"><i class="ri-article-line ri-3x text-primary"></i></div>
-                                    <h4>{{ active_item.title }}</h4>
-                                    <p class="text-muted">Materi ini berupa bahan bacaan.</p>
-                                    {% if active_item.file_attachment %}
-                                        <a href="{{ active_item.file_attachment.url }}" class="btn btn-outline-primary" target="_blank">
-                                            <i class="ri-download-line me-1"></i> Download File
-                                        </a>
-                                    {% endif %}
+                
+                {% if active_type == 'material' %}
+                    
+                    {% if active_item.is_published or request.user == course.instructor %}
+                        
+                        <div class="p-2">
+                            {% if not active_item.is_published %}
+                                <div class="alert alert-warning d-flex align-items-center mx-2 mt-2 shadow-sm" role="alert">
+                                    <i class="ri-eye-off-line me-2 ri-lg"></i>
+                                    <div>
+                                        <strong>Mode Draft:</strong> Materi ini belum dipublikasikan. Mahasiswa melihat halaman terkunci.
+                                    </div>
                                 </div>
                             {% endif %}
+
+                            <div class="cursor-pointer">
+                                {% if active_item.material_type == 'video' %}
+                                    <div class="plyr__video-embed" id="plyr-video-player">
+                                        <iframe src="{{ active_item.video_url }}" allowfullscreen allowtransparency allow="autoplay"></iframe>
+                                    </div>
+                                {% else %}
+                                    <div class="p-12 text-center bg-lighter rounded">
+                                        <div class="mb-3"><i class="ri-article-line ri-3x text-primary"></i></div>
+                                        <h4>{{ active_item.title }}</h4>
+                                        <p class="text-muted">Materi ini berupa bahan bacaan.</p>
+                                        {% if active_item.file_attachment %}
+                                            <a href="{{ active_item.file_attachment.url }}" class="btn btn-outline-primary" target="_blank">
+                                                <i class="ri-download-line me-1"></i> Download File
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
 
-                    {% elif active_type == 'assignment' %}
+                        <div class="card-body pt-3">
+                            <h5 class="mb-4">{{ active_item.title }}</h5>
+                            
+                            <div class="course-content-body mb-6">
+                                {% if active_item.material_type == 'video' and active_item.text_content %}
+                                    <div class="mt-3">{{ active_item.text_content|safe }}</div>
+                                {% elif active_item.material_type == 'reading' %}
+                                    {{ active_item.text_content|safe|default:"<p class='text-muted fst-italic'>Tidak ada konten teks.</p>" }}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="card-body py-5 my-5 text-center">
+                            <div class="mb-4">
+                                <span class="avatar avatar-xl rounded-circle bg-label-secondary mx-auto p-4 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                                    <i class="ri-lock-2-fill ri-4x"></i>
+                                </span>
+                            </div>
+                            <h4 class="mb-2">Materi Belum Tersedia</h4>
+                            <p class="text-muted w-75 mx-auto">
+                                Materi <strong>"{{ active_item.title }}"</strong> saat ini masih dikunci atau dalam tahap penyusunan oleh dosen.
+                            </p>
+                        </div>
+                    {% endif %}
+
+                {% elif active_type == 'assignment' %}
+                    
+                    {% if active_item.is_published or request.user == course.instructor %}
+                        
                         <div class="p-4 bg-label-warning rounded border border-warning border-opacity-25">
+                            {% if not active_item.is_published %}
+                                <div class="alert alert-solid-warning mb-3">
+                                    <i class="ri-eye-off-line me-1"></i> <strong>Draft:</strong> Tugas ini belum dipublikasikan ke mahasiswa.
+                                </div>
+                            {% endif %}
+
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
                                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -253,7 +266,6 @@
                                         {% else %}
                                             <span class="badge bg-label-primary rounded-pill">Individu</span>
                                         {% endif %}
-                                        
                                         <span class="badge bg-label-secondary rounded-pill">Max Score: {{ active_item.max_score }}</span>
                                     </div>
                                     <h4 class="text-warning mb-1 fw-bold">{{ active_item.title }}</h4>
@@ -261,7 +273,6 @@
                                         <i class="ri-time-line me-1"></i> Deadline: <strong>{{ active_item.due_date|date:"l, d F Y - H:i" }}</strong>
                                     </p>
                                 </div>
-                                
                                 {% if active_item.file_instruction %}
                                     <a href="{{ active_item.file_instruction.url }}" class="btn btn-warning text-white shadow-sm" target="_blank">
                                         <i class="ri-download-cloud-2-line me-1"></i> Download Soal
@@ -269,111 +280,85 @@
                                 {% endif %}
                             </div>
                         </div>
+
+                        <div class="card-body pt-3">
+                            <div class="course-content-body mb-6">
+                                {{ active_item.description|safe|linebreaks }}
+                                <hr class="my-6">
+                                <h5>Pengumpulan Tugas</h5>
+                                
+                                {% if submission %}
+                                    <div class="alert alert-success d-flex align-items-start" role="alert">
+                                        <i class="ri-checkbox-circle-line me-3 ri-xl mt-1"></i>
+                                        <div class="w-100">
+                                            <h6 class="alert-heading mb-1">Status: Terkirim</h6>
+                                            <p class="mb-1">
+                                                <small>Waktu: {{ submission.updated_at|date:"d M Y, H:i" }}</small><br>
+                                                {% if submission.submitted_link %}
+                                                    <div class="mt-2 p-2 bg-white rounded border d-inline-block">
+                                                        <i class="ri-link me-1 text-primary"></i>
+                                                        <a href="{{ submission.submitted_link }}" target="_blank" class="fw-bold">{{ submission.submitted_link|truncatechars:30 }}</a>
+                                                    </div>
+                                                {% endif %}
+                                            </p>
+                                            {% if submission.score is not None %}
+                                                <hr>
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="fw-bold text-primary">Nilai: {{ submission.score }}</span>
+                                                    <span class="fst-italic text-muted">{{ submission.feedback|default:"-" }}</span>
+                                                </div>
+                                            {% else %}
+                                                <div class="text-muted small fst-italic mt-2">Menunggu penilaian.</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                {% if not is_overdue or active_item.allow_late_submission %}
+                                    <div class="card bg-lighter border p-4 mt-3">
+                                        <form method="post" action="{% url 'course-player-assignment' course.uuid active_item.id %}">
+                                            {% csrf_token %}
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Link Tugas <span class="text-danger">*</span></label>
+                                                <input type="url" name="submitted_link" class="form-control" value="{{ submission.submitted_link|default:'' }}" required placeholder="https://docs.google.com/...">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Catatan</label>
+                                                <textarea name="submitted_text" class="form-control" rows="2">{{ submission.submitted_text|default:'' }}</textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">Kirim Tugas</button>
+                                        </form>
+                                    </div>
+                                {% elif not submission %}
+                                    <div class="alert alert-danger mt-3">Waktu pengumpulan telah habis.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
                     {% else %}
-                        <div class="p-12 text-center bg-lighter rounded">
-                            <h4>Selamat Datang!</h4>
-                            <p class="text-muted">Silakan pilih konten di sebelah kanan untuk memulai.</p>
+                        <div class="card-body py-5 my-5 text-center">
+                            <div class="mb-4">
+                                <span class="avatar avatar-xl rounded-circle bg-label-warning mx-auto p-4 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                                    <i class="ri-lock-2-fill ri-4x text-white"></i>
+                                </span>
+                            </div>
+                            <h4 class="mb-2">Tugas Belum Dibuka</h4>
+                            <p class="text-muted w-75 mx-auto">Tugas ini belum dipublikasikan oleh dosen.</p>
                         </div>
                     {% endif %}
-                </div>
 
-                <div class="card-body pt-3">
-                    <h5>{% if active_item %} {{ active_item.title }} {% else %} Deskripsi Kursus {% endif %}</h5>
-                    <div class="mb-6">
-                        {% if active_type == 'assignment' %}
-                            
-                            {{ active_item.description|safe|linebreaks }}
-                            <hr class="my-6">
-                            
-                           <h5>Pengumpulan Tugas</h5>
-
-                        {% if submission %}
-                            <div class="alert alert-success d-flex align-items-start" role="alert">
-                                <i class="ri-checkbox-circle-line me-3 ri-xl mt-1"></i>
-                                <div class="w-100">
-                                    <h6 class="alert-heading mb-1">Status: Terkirim</h6>
-                                    
-                                    <p class="mb-1">
-                                        <small>Waktu: {{ submission.updated_at|date:"d M Y, H:i" }}</small><br>
-                                        
-                                        {% if submission.submitted_link %}
-                                            <div class="mt-2 p-2 bg-white rounded border d-inline-block" style="max-width: 100%;">
-                                                <i class="ri-link me-1 text-primary"></i>
-                                                <a href="{{ submission.submitted_link }}" target="_blank" class="fw-bold text-break" title="{{ submission.submitted_link }}">
-                                                    {{ submission.submitted_link|truncatechars:20 }}
-                                                </a>
-                                            </div>
-                                        {% endif %}
-                                    </p>
-
-                                    {% if submission.score is not None %}
-                                        <hr>
-                                        <div class="d-flex justify-content-between">
-                                            <span class="fw-bold text-primary">Nilai: {{ submission.score }} / {{ active_item.max_score }}</span>
-                                            <span class="fst-italic text-muted">Feedback: {{ submission.feedback|default:"-" }}</span>
-                                        </div>
-                                    {% else %}
-                                        <div class="text-muted small fst-italic mt-2">Menunggu penilaian dosen.</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            {% if not is_overdue or active_item.allow_late_submission %}
-                                <button class="btn btn-outline-secondary btn-sm mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#uploadForm">
-                                    <i class="ri-edit-line me-1"></i> Edit Link
-                                </button>
-                            {% else %}
-                                <div class="mt-2 text-danger small fst-italic">
-                                    <i class="ri-lock-line me-1"></i> Pengumpulan ditutup. Anda tidak bisa mengedit lagi.
-                                </div>
-                            {% endif %}
-
-                        {% else %}
-                            {% if is_overdue and not active_item.allow_late_submission %}
-                                <div class="alert alert-danger mt-3">
-                                    <i class="ri-alarm-warning-line me-1"></i> <strong>Waktu Habis!</strong><br>
-                                    Batas waktu pengumpulan: {{ active_item.due_date|date:"d M Y, H:i" }}.
-                                </div>
-                            {% endif %}
-                        {% endif %}
-                    
-                        {% if not is_overdue or active_item.allow_late_submission %}
-                            <div class="{% if submission %}collapse mt-3{% endif %}" id="uploadForm">
-                                <div class="card bg-lighter border p-4">
-
-                                    <form method="post" action="{% url 'course-player-assignment' course.uuid active_item.id %}">
-                                        {% csrf_token %}
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Link Tugas <span class="text-danger">*</span></label>
-                                            <input type="url" name="submitted_link" class="form-control" 
-                                                   placeholder="https://docs.google.com/..." 
-                                                   value="{{ submission.submitted_link|default:'' }}" required>
-                                            <div class="form-text">Masukkan link Google Drive, Github, Figma, atau Youtube. Pastikan akses link Publik.</div>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Catatan (Opsional)</label>
-                                            <textarea name="submitted_text" class="form-control" rows="2" placeholder="Pesan untuk dosen...">{{ submission.submitted_text|default:'' }}</textarea>
-                                        </div>
-
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="ri-send-plane-fill me-1"></i> Kirim Tugas
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        {% endif %}
-                        {% elif active_type == 'material' and active_item.is_published %}
-
-                            {{ active_item.text_content|safe|default:"-" }}
-                            
-                        {% else %}
-                            
-                        {% endif %}
+                {% else %}
+                    <div class="p-12 text-center bg-lighter rounded m-3">
+                        <h4>Selamat Datang!</h4>
+                        <p class="text-muted">Silakan pilih konten di sebelah kanan untuk memulai.</p>
+                        <div class="course-content-body mt-3 text-start px-4">
+                            {{ course.description|safe }}
+                        </div>
                     </div>
-                </div>
+                {% endif %}
             </div>
+
+
           </div>
 
         <div class="tab-pane fade" id="navs-announcement" role="tabpanel">
@@ -708,15 +693,11 @@
     <div class="accordion stick-top accordion-custom-button" id="courseContent">
 
       {% for section in sections %}
-      
       <div class="accordion-item {% if active_item.agenda.id == section.id %}active mb-0{% endif %}">
         
         <div class="accordion-header border-bottom-0" id="heading-{{ section.id }}">
           <button type="button" class="accordion-button {% if active_item.agenda.id != section.id %}collapsed{% endif %}" 
-                  data-bs-toggle="collapse" 
-                  data-bs-target="#chapter-{{ section.id }}" 
-                  aria-expanded="{% if active_item.agenda.id == section.id %}true{% else %}false{% endif %}" 
-                  aria-controls="chapter-{{ section.id }}">
+                  data-bs-toggle="collapse" data-bs-target="#chapter-{{ section.id }}" aria-expanded="{% if active_item.agenda.id == section.id %}true{% else %}false{% endif %}">
             <span class="d-flex flex-column">
               <span class="h5 mb-0">{{ section.title }}</span>
               <span class="text-body fw-normal small">
@@ -726,97 +707,81 @@
           </button>
         </div>
 
-        <div id="chapter-{{ section.id }}" 
-             class="accordion-collapse collapse {% if active_item.agenda.id == section.id %}show{% endif %}" 
-             data-bs-parent="#courseContent">
-          
+        <div id="chapter-{{ section.id }}" class="accordion-collapse collapse {% if active_item.agenda.id == section.id %}show{% endif %}" data-bs-parent="#courseContent">
           <div class="accordion-body py-4 border-top">
             
-        {% for material in section.materials.all %}
-
-    {% if material.is_published or request.user == course.instructor %}
-        
-        <a href="{% url 'course-player-material' course.uuid material.id %}" 
-           class="course-item {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
-            
-            <div class="me-3 pt-1">
-                <input class="form-check-input" type="checkbox" 
-                    {% if material.id in completed_material_ids %}checked{% endif %} 
-                    disabled />
-            </div>
-
-            <div class="w-100">
-                <div class="d-flex justify-content-between align-items-start">
-                    
-                    <div class="d-flex align-items-center">
-                        <div class="material-icon flex-shrink-0">
-                            {% if material.material_type == 'video' %}
-                                <i class="ri-play-circle-line" style="font-size: 14px;"></i>
-                            {% else %}
-                                <i class="ri-article-line" style="font-size: 14px;"></i>
-                            {% endif %}
-                        </div>
+            {% for material in section.materials.all %}
+                {% if material.is_published or request.user == course.instructor %}
+                    <a href="{% url 'course-player-material' course.uuid material.id %}" 
+                       class="course-item {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
                         
-                        <span class="text-wrap lh-sm">
-                            {{ material.title }}
-                        </span>
+                        <div class="me-3 pt-1">
+                            <input class="form-check-input" type="checkbox" {% if material.id in completed_material_ids %}checked{% endif %} disabled />
+                        </div>
+                        <div class="w-100">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex align-items-center">
+                                    <div class="material-icon">
+                                        {% if material.material_type == 'video' %}
+                                            <i class="ri-play-circle-line" style="font-size: 14px;"></i>
+                                        {% else %}
+                                            <i class="ri-article-line" style="font-size: 14px;"></i>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-wrap lh-sm">{{ material.title }}</span>
+                                </div>
+                                {% if not material.is_published %}
+                                    <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
+                                {% endif %}
+                            </div>
+                            <small class="d-block mt-1 ms-5 opacity-75" style="font-size: 0.75rem;">
+                                {{ material.get_duration_display }}
+                            </small>
+                        </div>
+                    </a>
+                {% else %}
+                    <div class="course-item locked">
+                        <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
+                        <div class="w-100">
+                            <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ material.title }}</span></div>
+                            <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum tersedia</small>
+                        </div>
                     </div>
-
-                    {% if not material.is_published %}
-                        <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
-                    {% endif %}
-                </div>
-
-                <small class="d-block mt-1 ms-5 opacity-75" style="font-size: 0.75rem;">
-                    {% if material.material_type == 'video' %}{% endif %} 
-                    {{ material.get_duration_display }}
-                </small>
-            </div>
-        </a>
-
-    {% else %}
-        
-        <div class="course-item locked">
-            
-            <div class="me-3 pt-1 text-center" style="width: 1.2em;">
-                <i class="ri-lock-2-fill text-secondary opacity-50"></i>
-            </div>
-
-            <div class="w-100">
-                <div class="d-flex align-items-center">
-                    <span class="text-wrap lh-sm">{{ material.title }}</span>
-                </div>
-                <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">
-                    Belum tersedia
-                </small>
-            </div>
-        </div>
-
-    {% endif %}
-
-{% endfor %}
-
+                {% endif %}
+            {% endfor %}
 
             {% if section.assignments.all %}
-                {% if section.materials.all %}{% endif %}
-                 <div class="divider">
-          <div class="divider-text">TUGAS</div>
-        </div>
-                {% for task in section.assignments.all %}
-                <div class="d-flex align-items-start mb-4">
-                  <div class="me-3 mt-1">
-                      <input class="form-check-input input-warning" type="checkbox" 
-                             {% if task.id in completed_assignment_ids %}checked{% endif %} disabled />
-                  </div>
-                  <div class="w-100">
-                      <a href="{% url 'course-player-assignment' course.uuid task.id %}" 
-                         class="course-link {% if active_type == 'assignment' and active_item.id == task.id %}active text-warning{% endif %}">
-                        <span class="mb-0 h6">{{ task.title }}</span>
-                        <small class="text-danger d-block">Deadline: {{ task.due_date|date:"d M" }}</small>
-                      </a>
-                  </div>
-                </div>
-                {% endfor %}
+                 {% if section.materials.all %}<div class="divider"><div class="divider-text">TUGAS</div></div>{% endif %}
+                 
+                 {% for task in section.assignments.all %}
+                    {% if task.is_published or request.user == course.instructor %}
+                        <a href="{% url 'course-player-assignment' course.uuid task.id %}" 
+                           class="course-item {% if active_type == 'assignment' and active_item.id == task.id %}active{% endif %}">
+                            <div class="me-3 pt-1">
+                                <input class="form-check-input input-warning" type="checkbox" {% if task.id in completed_assignment_ids %}checked{% endif %} disabled />
+                            </div>
+                            <div class="w-100">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex align-items-center">
+                                        <span class="text-wrap lh-sm">{{ task.title }}</span>
+                                    </div>
+                                    {% if not task.is_published %}
+                                        <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-danger" style="font-size: 0.75rem;">Deadline: {{ task.due_date|date:"d M" }}</small>
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="course-item locked">
+                            <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
+                            <div class="w-100">
+                                <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ task.title }}</span></div>
+                                <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum dibuka</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                 {% endfor %}
             {% endif %}
 
             {% if not section.materials.all and not section.assignments.all %}
@@ -830,5 +795,7 @@
 
     </div>
   </div>
+
+  
 </div>
 {% endblock %}
