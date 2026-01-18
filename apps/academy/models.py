@@ -291,7 +291,6 @@ class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
         ('video', 'Video'),
         ('reading', 'Reading/Article'),
-        ('assignment', 'Assignment'),
     ]
     agenda = models.ForeignKey(CourseAgenda, on_delete=models.CASCADE, related_name='materials')
     title = models.CharField(max_length=255)
@@ -300,9 +299,10 @@ class CourseMaterial(models.Model):
     file_attachment = models.FileField(upload_to='course/materials/', blank=True)
     text_content = models.TextField(blank=True)
     duration_seconds = models.PositiveIntegerField(default=0)
-    is_preview = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0) 
+    is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
 
     class Meta:
         ordering = ['order']

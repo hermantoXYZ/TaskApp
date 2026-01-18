@@ -1,10 +1,9 @@
-
 {% extends layout_path %}
 
 {% load static %}
 {% load i18n %}
 
-{% block title %}{{ active_item.title|default:course.name }} - Learning{% endblock %}
+{% block title %}Preview {{ active_item.title|default:course.name }}{% endblock %}
 
 {% block vendor_css %}
 {{ block.super }}
@@ -20,7 +19,6 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/app-academy-details.css' %}" />
 <style>
-    /* Styling tambahan untuk membedakan Tugas dan Materi */
     .input-warning:checked {
         background-color: #ff9f43;
         border-color: #ff9f43;
@@ -32,11 +30,39 @@
         display: block;
     }
     .course-link:hover {
-        color: #666cff; /* Primary color */
+        color: #666cff; 
     }
     .course-link.active {
         color: #666cff;
         font-weight: 700;
+    }
+
+    .card-body img {
+        max-width: 100% !important;  
+        height: auto !important;  
+        display: block !important;  
+        margin: 10px auto !important; 
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-body iframe,
+    .card-body embed,
+    .card-body object {
+        width: 100% !important;     
+        max-width: 100% !important; 
+        min-width: 0 !important;     
+        height: auto !important;     
+        aspect-ratio: 16 / 9;       
+        display: block !important;
+        margin: 1.5rem 0 !important;
+        border-radius: 8px;
+        border: 1px solid #eee;     
+    }
+    @supports not (aspect-ratio: 16 / 9) {
+        .card-body iframe {
+            height: 400px !important;
+        }
     }
 </style>
 {% endblock page_css %}
@@ -51,6 +77,50 @@
 <div class="col-lg-8">
     
     <div class="card mb-6">
+      
+      <div class="card-header p-0">
+        <div class="nav-align-top">
+          <ul class="nav nav-tabs nav-fill" role="tablist">
+            
+            <li class="nav-item">
+              <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-learning" aria-controls="navs-learning" aria-selected="true">
+                <span class="d-none d-sm-block">
+                    <i class="tf-icons ri-video-line me-2"></i> Learns
+                </span>
+                <i class="ri-video-line ri-20px d-sm-none"></i>
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-announcement" aria-controls="navs-announcement" aria-selected="false">
+                <span class="d-none d-sm-block">
+                    <i class="tf-icons ri-notification-3-line me-2"></i> Info
+                    {% if course.announcements.count > 0 %}
+                        <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2 pt-50">{{ course.announcements.count }}</span>
+                    {% endif %}
+                </span>
+                <i class="ri-notification-3-line ri-20px d-sm-none"></i>
+                {% if course.announcements.count > 0 %}
+                    <span class="badge badge-dot bg-danger position-absolute top-0 end-0 mt-2 me-2 d-sm-none"></span>
+                {% endif %}
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-quizzes" aria-controls="navs-quizzes" aria-selected="false">
+                <span class="d-none d-sm-block">
+                    <i class="tf-icons ri-survey-line me-2"></i> Quiz
+                    {% if quizzes %}
+                        <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2 pt-50">{{ quizzes.count }}</span>
+                    {% endif %}
+                </span>
+                <i class="ri-survey-line ri-20px d-sm-none"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div class="card-body pt-5">
         <div class="tab-content p-0">
           
@@ -63,9 +133,6 @@
                 </div>
                 <div class="d-flex align-items-center">
                   <span class="badge bg-label-danger rounded-pill me-3">{{ course.prodi.nama_prodi }}</span>
-<a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-sm btn-outline-secondary">
-            <i class="ri-arrow-left-line me-1"></i> Kembali
-          </a>
                 </div>
             </div>
 
@@ -96,9 +163,12 @@
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="badge bg-label-danger rounded-pill">
-                                        Tugas
-                                        </span>
+                                        {% if active_item.assignment_type == 'group' %}
+                                            <span class="badge bg-label-info rounded-pill">Tugas Kelompok</span>
+                                        {% else %}
+                                            <span class="badge bg-label-primary rounded-pill">Individu</span>
+                                        {% endif %}
+                                        
                                         <span class="badge bg-label-secondary rounded-pill">Max Score: {{ active_item.max_score }}</span>
                                     </div>
                                     <h4 class="text-warning mb-1 fw-bold">{{ active_item.title }}</h4>
@@ -129,11 +199,249 @@
                             
                             {{ active_item.description|safe|linebreaks }}
                             <hr class="my-6">
+
+                        {% if submission %}
+                            <div class="alert alert-success d-flex align-items-start" role="alert">
+                                <i class="ri-checkbox-circle-line me-3 ri-xl mt-1"></i>
+                                <div class="w-100">
+                                    <h6 class="alert-heading mb-1">Status: Terkirim</h6>
+                                    
+                                    <p class="mb-1">
+                                        <small>Waktu: {{ submission.updated_at|date:"d M Y, H:i" }}</small><br>
+                                        
+                                        {% if submission.submitted_link %}
+                                            <div class="mt-2 p-2 bg-white rounded border d-inline-block" style="max-width: 100%;">
+                                                <i class="ri-link me-1 text-primary"></i>
+                                                <a href="{{ submission.submitted_link }}" target="_blank" class="fw-bold text-break" title="{{ submission.submitted_link }}">
+                                                    {{ submission.submitted_link|truncatechars:20 }}
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </p>
+
+                                    {% if submission.score is not None %}
+                                        <hr>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-bold text-primary">Nilai: {{ submission.score }} / {{ active_item.max_score }}</span>
+                                            <span class="fst-italic text-muted">Feedback: {{ submission.feedback|default:"-" }}</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-muted small fst-italic mt-2">Menunggu penilaian dosen.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                      
+
+                        {% else %}
+                            {% if is_overdue and not active_item.allow_late_submission %}
+                                <div class="alert alert-danger mt-3">
+                                    <i class="ri-alarm-warning-line me-1"></i> <strong>Waktu Habis!</strong><br>
+                                    Batas waktu pengumpulan: {{ active_item.due_date|date:"d M Y, H:i" }}.
+                                </div>
                             {% endif %}
+                        {% endif %}
+                    
+        
+                        {% elif active_type == 'material' %}
+                            {{ active_item.text_content|safe|default:"-" }}
+                        {% else %}
+                            {{ course.description|safe }}
+                        {% endif %}
                     </div>
                 </div>
             </div>
           </div>
+
+        <div class="tab-pane fade" id="navs-announcement" role="tabpanel">
+            <div class="card shadow-none border">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h5 class="mb-0">Papan Pengumuman</h5>
+                        <span class="badge bg-label-primary rounded-pill">{{ announcements.count }} Info</span>
+                    </div>
+
+                    {% if announcements %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for info in announcements %}
+                            
+                            <div class="card border {% if info.is_pinned %}border-primary shadow-sm{% else %}border-secondary border-opacity-25{% endif %}">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if info.is_pinned %}
+                                                <i class="ri-pushpin-fill text-primary ri-lg" title="Disematkan"></i>
+                                            {% else %}
+                                                <i class="ri-article-line text-muted ri-lg"></i>
+                                            {% endif %}
+                                            
+                                            <h6 class="mb-0 fw-bold {% if info.is_pinned %}text-primary{% endif %}">
+                                                {{ info.title }}
+                                            </h6>
+                                        </div>
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="ri-time-line me-1"></i> {{ info.created_at|date:"d M, H:i" }}
+                                        </small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        {% if info.priority == 'urgent' %}
+                                            <span class="badge bg-label-danger me-1">Urgent</span>
+                                        {% elif info.priority == 'high' %}
+                                            <span class="badge bg-label-warning me-1">Penting</span>
+                                        {% elif info.priority == 'low' %}
+                                            <span class="badge bg-label-secondary me-1">Info</span>
+                                        {% else %}
+                                            <span class="badge bg-label-info me-1">Umum</span>
+                                        {% endif %}
+
+                                        <small class="text-muted ms-1">
+                                            Oleh: <strong>{{ info.created_by.first_name|default:"Dosen" }}</strong>
+                                        </small>
+                                    </div>
+
+                                    <div class="bg-lighter rounded p-3 text-body">
+                                        {{ info.content|linebreaks }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="avatar avatar-xl mx-auto mb-3">
+                                <span class="avatar-initial rounded-circle bg-label-secondary">
+                                    <i class="ri-notification-off-line ri-3x"></i>
+                                </span>
+                            </div>
+                            <h6 class="mb-1">Belum ada pengumuman</h6>
+                            <p class="text-muted">Informasi terbaru dari dosen akan muncul di sini.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+          </div>        
+        <div class="tab-pane fade" id="navs-quizzes" role="tabpanel">
+        <div class="card shadow-none border-0">
+            <div class="card-body px-0 pt-0">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                    <div>
+                        <h5 class="mb-1">Daftar Ujian & Evaluasi</h5>
+                        <p class="text-muted small mb-0">Selesaikan ujian berikut sebelum tenggat waktu.</p>
+                    </div>
+                    <span class="badge bg-label-primary rounded-pill">{{ quizzes.count }} Tersedia</span>
+                </div>
+
+                {% if quizzes %}
+                    <div class="row g-3">
+                        {% for quiz in quizzes %}
+                        <div class="col-12">
+                            <div class="card border shadow-none h-100">
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                        
+                                        <div class="d-flex align-items-start gap-3 w-100">
+                                            <div class="avatar avatar-lg flex-shrink-0">
+                                                <div class="avatar-initial rounded {% if quiz.user_is_done %}bg-label-success text-success{% else %}bg-label-primary text-primary{% endif %}">
+                                                    {% if quiz.user_is_done %}
+                                                        <i class="ri-checkbox-circle-fill ri-24px"></i>
+                                                    {% else %}
+                                                        <i class="ri-file-edit-line ri-24px"></i>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="w-100">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <h5 class="mb-1">
+                                                        <a href="#" class="text-heading text-decoration-none stretched-link">
+                                                            {{ quiz.title }}
+                                                        </a>
+                                                    </h5>
+                                                    
+                                                    {% if quiz.quiz_type == 'exam' %}
+                                                        <span class="badge bg-danger d-md-none rounded-pill">Ujian Semester</span>
+                                                    {% elif quiz.user_is_done %}
+                                                        <span class="badge bg-label-success d-md-none rounded-pill">Selesai</span>
+                                                    {% else %}
+                                                        <span class="badge bg-label-warning d-md-none rounded-pill">Belum</span>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <div class="d-flex flex-wrap gap-2 mt-1">
+                                                    
+                                                    {% if quiz.quiz_type == 'exam' %}
+                                                        <span class="badge bg-danger">Ujian</span>
+                                                    {% elif quiz.quiz_type == 'quiz' %}
+                                                        <span class="badge bg-label-info">Kuis Harian</span>
+                                                    {% endif %}
+
+                                                    <span class="badge bg-label-secondary fw-normal">
+                                                        <i class="ri-time-line me-1"></i> {{ quiz.duration_minutes }} Menit
+                                                    </span>
+                                                    <span class="badge bg-label-secondary fw-normal">
+                                                        <i class="ri-list-check me-1"></i> {{ quiz.questions.count }} Soal
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-end d-none d-md-block" style="min-width: 150px; position: relative; z-index: 2;">
+                                            {% if quiz.user_is_done %}
+                                                <div class="mb-1">
+                                                    <small class="text-muted d-block">Nilai Akhir</small>
+                                                    {% if quiz.user_score is not None %}
+                                                        <h3 class="mb-0 text-success">{{ quiz.user_score|floatformat:0 }}</h3>
+                                                    {% else %}
+                                                        <span class="badge bg-label-warning">Menunggu</span>
+                                                    {% endif %}
+                                                </div>
+                                                <a href="#" class="btn btn-sm btn-outline-secondary mt-1 w-100">
+                                                    Detail
+                                                </a>
+                                            {% else %}
+                                                <div class="mb-2">
+                                                    <span class="badge bg-label-primary">Tersedia</span>
+                                                </div>
+                                                <a href="#" class="btn btn-primary w-100">
+                                                    <i class="ri-play-circle-line me-1"></i> Mulai
+                                                </a>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="d-md-none w-100 mt-2" style="position: relative; z-index: 2;">
+                                            {% if quiz.user_is_done %}
+                                                <div class="d-flex justify-content-between align-items-center bg-lighter p-2 rounded mb-2">
+                                                    <span class="fw-bold text-muted">Nilai:</span>
+                                                    <span class="h4 mb-0 text-success">{{ quiz.user_score|floatformat:0|default:"-" }}</span>
+                                                </div>
+                                                <a href="#" class="btn btn-outline-secondary w-100">Lihat Detail</a>
+                                            {% else %}
+                                                <a href="#" class="btn btn-primary w-100">Mulai Ujian</a>
+                                            {% endif %}
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 bg-lighter rounded">
+                        <div class="avatar avatar-xl mx-auto mb-3">
+                            <span class="avatar-initial rounded-circle bg-label-secondary">
+                                <i class="ri-survey-line ri-3x"></i>
+                            </span>
+                        </div>
+                        <h6 class="mb-1">Belum ada ujian</h6>
+                        <p class="text-muted mb-0">Daftar kuis atau ujian akan muncul di sini.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        </div>
         </div>
       </div>
     </div>
@@ -155,7 +463,7 @@
             <span class="d-flex flex-column">
               <span class="h5 mb-0">{{ section.title }}</span>
               <span class="text-body fw-normal small">
-                  {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi
+                  {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi • {{ section.assignments.count }} Tugas
               </span>
             </span>
           </button>

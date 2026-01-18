@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "import_export",
     "apps.academy",
+    'django_summernote',
 ]
 
 MIDDLEWARE = [
@@ -119,6 +120,9 @@ DATABASES = {
         'PASSWORD': '',  # Kata sandi pengguna MySQL, jika tidak ada, biarkan kosong
         'HOST': 'localhost',  # Host server database, localhost untuk XAMPP
         'PORT': '3307',  # Port MySQL (default 3306)
+        'OPTIONS': {
+            'charset': 'utf8mb4',  # <--- TAMBAHKAN ATAU PASTIKAN INI ADA
+        },
     }
 }
 
@@ -223,3 +227,41 @@ SESSION_COOKIE_AGE = 1209600
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5050",
 ]
+
+
+
+SUMMERNOTE_THEME = 'bs4'
+
+SUMMERNOTE_CONFIG = {
+    # Gunakan iframe untuk menghindari konflik CSS
+    'iframe': True,
+    'airMode': False,
+    # Atur ukuran editor
+    'summernote': {
+        'width': '100%',
+        'height': '400px',
+    },
+
+    # Toolbar customization
+        # https://summernote.org/deep-dive/#custom-toolbar-popover
+        'toolbar': [
+            ['style', ['style']],
+            ['font', ['bold', 'underline', 'clear']],
+            ['fontname', ['fontname']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'video']],
+            ['view', ['fullscreen', 'codeview', 'help']],
+            ['history', ['undo', 'redo']],
+            ['heading', ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']],
+            ['fontsize', ['fontsize']],
+            ['hr', ['hr']],
+            ['textstyle', ['superscript', 'subscript']],
+            ['textstyle', ['textstyle']],
+        
+        ],
+
+    # Opsi lainnya, seperti file upload
+    'attachment_require_authentication': True,  # Hanya user login yang bisa upload
+}

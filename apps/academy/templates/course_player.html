@@ -19,7 +19,6 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/app-academy-details.css' %}" />
 <style>
-    /* Styling tambahan untuk membedakan Tugas dan Materi */
     .input-warning:checked {
         background-color: #ff9f43;
         border-color: #ff9f43;
@@ -31,11 +30,88 @@
         display: block;
     }
     .course-link:hover {
-        color: #666cff; /* Primary color */
+        color: #666cff; 
     }
     .course-link.active {
         color: #666cff;
         font-weight: 700;
+    }
+
+    .card-body img {
+        max-width: 100% !important;  
+        height: auto !important;  
+        display: block !important;  
+        margin: 10px auto !important; 
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-body iframe,
+    .card-body embed,
+    .card-body object {
+        width: 100% !important;     
+        max-width: 100% !important; 
+        min-width: 0 !important;     
+        height: auto !important;     
+        aspect-ratio: 16 / 9;       
+        display: block !important;
+        margin: 1.5rem 0 !important;
+        border-radius: 8px;
+        border: 1px solid #eee;     
+    }
+    @supports not (aspect-ratio: 16 / 9) {
+        .card-body iframe {
+            height: 400px !important;
+        }
+    }
+
+    /* Styling Item Materi di Sidebar */
+    .course-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: #566a7f; /* Warna teks default theme Anda */
+        margin-bottom: 0.5rem;
+        border: 1px solid transparent;
+    }
+
+    .course-item:not(.locked):hover {
+        background-color: rgba(67, 89, 113, 0.04); 
+        color: #696cff; 
+    }
+
+    .course-item.active {
+        background-color: rgba(105, 108, 255, 0.08); 
+        color: #696cff;
+        border-color: rgba(105, 108, 255, 0.15);
+        font-weight: 600;
+    }
+
+    .course-item.locked {
+        background-color: #f8f9fa; 
+        color: #a1acb8; 
+        cursor: not-allowed;
+        border: 1px dashed #d9dee3;
+    }
+
+    .material-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        margin-right: 0.5rem;
+        background-color: rgba(67, 89, 113, 0.1);
+        color: #697a8d;
+    }
+    
+    .course-item.active .material-icon {
+        background-color: #696cff;
+        color: #fff;
     }
 </style>
 {% endblock page_css %}
@@ -126,7 +202,7 @@
                 <div class="d-flex align-items-center">
                   <span class="badge bg-label-danger rounded-pill me-3">{{ course.prodi.nama_prodi }}</span>
                   
-                  {% if active_type == 'material' %}
+                {% if active_type == 'material' and active_item.is_published %}
                   <form method="post" action="{% url 'course-player-material' course.uuid active_item.id %}">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-primary" title="Tandai Selesai">
@@ -139,9 +215,17 @@
 
             <div class="card academy-content shadow-none border">
                 <div class="p-2">
-                    {% if active_type == 'material' %}
+                    {% if active_type == 'material' and active_item.is_published  %}
+                    {% if not active_item.is_published %}
+                        <div class="alert alert-warning d-flex align-items-center mx-2 mt-2" role="alert">
+                            <i class="ri-eye-off-line me-2"></i>
+                            <div>
+                                <strong>Mode Draft:</strong> Materi ini belum dipublikasikan. Mahasiswa melihat halaman terkunci.
+                            </div>
+                        </div>
+                    {% endif %}
                         <div class="cursor-pointer">
-                            {% if active_item.material_type == 'video' %}
+                            {% if active_item.material_type == 'video' and  active_item.is_published %}
                                 <div class="plyr__video-embed" id="plyr-video-player">
                                     <iframe src="{{ active_item.video_url }}" allowfullscreen allowtransparency allow="autoplay"></iframe>
                                 </div>
@@ -280,10 +364,12 @@
                                 </div>
                             </div>
                         {% endif %}
-                        {% elif active_type == 'material' %}
+                        {% elif active_type == 'material' and active_item.is_published %}
+
                             {{ active_item.text_content|safe|default:"-" }}
+                            
                         {% else %}
-                            {{ course.description|safe }}
+                            
                         {% endif %}
                     </div>
                 </div>
@@ -634,7 +720,7 @@
             <span class="d-flex flex-column">
               <span class="h5 mb-0">{{ section.title }}</span>
               <span class="text-body fw-normal small">
-                  {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi
+                  {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi • {{ section.assignments.count }} Tugas
               </span>
             </span>
           </button>
@@ -646,22 +732,70 @@
           
           <div class="accordion-body py-4 border-top">
             
-            {% for material in section.materials.all %}
-            <div class="d-flex align-items-start mb-4">
-              <div class="me-3 mt-1">
-                  <input class="form-check-input" type="checkbox" 
-                         {% if material.id in completed_material_ids %}checked{% endif %} disabled />
-              </div>
-              
-              <div class="w-100">
-                  <a href="{% url 'course-player-material' course.uuid material.id %}" 
-                     class="course-link {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
-                    <span class="mb-0 h6">{{ material.title }}</span>
-                    <small class="text-body d-block">{{ material.get_duration_display }}</small>
-                  </a>
-              </div>
+        {% for material in section.materials.all %}
+
+    {% if material.is_published or request.user == course.instructor %}
+        
+        <a href="{% url 'course-player-material' course.uuid material.id %}" 
+           class="course-item {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
+            
+            <div class="me-3 pt-1">
+                <input class="form-check-input" type="checkbox" 
+                    {% if material.id in completed_material_ids %}checked{% endif %} 
+                    disabled />
             </div>
-            {% endfor %}
+
+            <div class="w-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    
+                    <div class="d-flex align-items-center">
+                        <div class="material-icon flex-shrink-0">
+                            {% if material.material_type == 'video' %}
+                                <i class="ri-play-circle-line" style="font-size: 14px;"></i>
+                            {% else %}
+                                <i class="ri-article-line" style="font-size: 14px;"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <span class="text-wrap lh-sm">
+                            {{ material.title }}
+                        </span>
+                    </div>
+
+                    {% if not material.is_published %}
+                        <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
+                    {% endif %}
+                </div>
+
+                <small class="d-block mt-1 ms-5 opacity-75" style="font-size: 0.75rem;">
+                    {% if material.material_type == 'video' %}{% endif %} 
+                    {{ material.get_duration_display }}
+                </small>
+            </div>
+        </a>
+
+    {% else %}
+        
+        <div class="course-item locked">
+            
+            <div class="me-3 pt-1 text-center" style="width: 1.2em;">
+                <i class="ri-lock-2-fill text-secondary opacity-50"></i>
+            </div>
+
+            <div class="w-100">
+                <div class="d-flex align-items-center">
+                    <span class="text-wrap lh-sm">{{ material.title }}</span>
+                </div>
+                <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">
+                    Belum tersedia
+                </small>
+            </div>
+        </div>
+
+    {% endif %}
+
+{% endfor %}
+
 
             {% if section.assignments.all %}
                 {% if section.materials.all %}{% endif %}

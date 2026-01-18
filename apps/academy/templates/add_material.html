@@ -27,9 +27,7 @@
   <div class="col-md mb-6 mb-md-0">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-           Tambah Materi Pembelajaran
-        </h5>
+        <h5 class="mb-0">Tambah Materi Pembelajaran</h5>
          <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary btn-sm">
             <i class="ri-arrow-go-back-line me-1"></i> Kembali
          </a>
@@ -39,6 +37,8 @@
         
         <form method="post" enctype="multipart/form-data" class="row g-5">
           {% csrf_token %}
+          
+          {{ form.media }}
           
           <div class="col-12">
             <h6 class="mb-0">1. Informasi Dasar</h6>
@@ -99,10 +99,8 @@
           </div>
 
           <div class="col-md-12">
-            <div class="form-floating form-floating-outline">
-              {{ form.text_content }}
-              <label for="{{ form.text_content.id_for_label }}">Deskripsi / Teks Bacaan</label>
-            </div>
+            <label class="form-label mb-2">Deskripsi / Teks Bacaan</label>
+            {{ form.text_content }}
           </div>
 
           <div class="col-12">
@@ -119,8 +117,8 @@
 
           <div class="col-md-6 d-flex align-items-center">
              <div class="form-check form-switch mt-2">
-              {{ form.is_preview }}
-              <label class="form-check-label" for="{{ form.is_preview.id_for_label }}">Set sebagai Preview Gratis</label>
+              {{ form.is_published }}
+              <label class="form-check-label" for="{{ form.is_published.id_for_label }}">Publish Materi?</label>
             </div>
           </div>
 

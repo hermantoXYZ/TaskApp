@@ -39,8 +39,8 @@ TEMPLATE_CONFIG = {
 THEME_VARIABLES = {
     "creator_name": "Hermanto",
     "creator_url": "https://andihermanto.id/",
-    "template_name": "FindTask",
-    "template_suffix": "Task App",
+    "template_name": "Task",
+    "template_suffix": "App",
     "template_version": "2.0.0",
     "template_free": False,
     "template_description": "Task App for your Django project.",

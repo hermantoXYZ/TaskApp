@@ -1,7 +1,7 @@
 from django import forms
 from .models import Course, Prodi, CoursePeriod, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, CourseAssignment
 from .models import UserDosen, UserMhs, CourseQuiz, QuizQuestion, QuizOption
-
+from django_summernote.widgets import SummernoteWidget
 
 class CourseQuizForm(forms.ModelForm):
     class Meta:
@@ -199,18 +199,20 @@ class AttendanceForm(forms.ModelForm):
             })
         }
 class CourseMaterialForm(forms.ModelForm):
+    text_content = forms.CharField(widget=SummernoteWidget())
+
     class Meta:
         model = CourseMaterial
-        fields = ['agenda', 'title', 'material_type', 'video_url', 'file_attachment', 'text_content', 'duration_seconds', 'is_preview', 'order']
+        fields = ['agenda', 'title', 'material_type', 'video_url', 'file_attachment', 'text_content', 'duration_seconds', 'order', 'is_published']
         widgets = {
             'agenda': forms.Select(attrs={'class': 'select2 form-select'}),
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Judul Materi'}),
             'material_type': forms.Select(attrs={'class': 'select2 form-select'}),
             'video_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://youtube.com/...'}),
             'file_attachment': forms.FileInput(attrs={'class': 'form-control'}),
-            'text_content': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'text_content': SummernoteWidget(attrs={'summernote': {'width': '100%', 'height': '400px'}}),
             'duration_seconds': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Detik'}),
-            'is_preview': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Urutan'}),
         }
 
