@@ -164,7 +164,8 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / "static" / "assets",
+    os.path.join(BASE_DIR, 'static', 'assets'),
+    os.path.join(BASE_DIR, 'static'),
 ]
 
 # Default URL on which Django application runs for specific environment
