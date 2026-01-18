@@ -360,9 +360,7 @@ class StudentAssignmentSubmission(models.Model):
 class CourseQuiz(models.Model):
     EXAM_TYPES = [
         ('quiz', 'Kuis Harian'),
-        ('uts', 'UTS'),
-        ('uas', 'UAS'),
-        ('remedial', 'Remedial'),
+        ('ujian', 'Ujian Semester'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

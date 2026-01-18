@@ -10,8 +10,8 @@ class CourseQuizForm(forms.ModelForm):
         widgets = {
             'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Deskripsi singkat...'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Misalnya: Quiz Harian/Ujian Semester'}),
             'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
             'passing_score': forms.NumberInput(attrs={'class': 'form-control'}),
             'max_attempts': forms.NumberInput(attrs={'class': 'form-control'}),
