@@ -201,6 +201,20 @@ class Course(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name} ({self.period})"
 
+class CourseGroup(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='groups')
+    name = models.CharField(max_length=100)  
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.course.code}"
+
+    def member_count(self):
+        return self.members.count()
+
+
 class CourseAgenda(models.Model):
     course = models.ForeignKey(Course, related_name='agendas', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
@@ -305,7 +319,13 @@ class StudentMaterialProgress(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
 
 
+ASSIGNMENT_TYPES = [
+        ('individual', 'Individu'),
+        ('group', 'Kelompok'),
+    ]
+
 class CourseAssignment(models.Model):
+    assignment_type = models.CharField(max_length=20, choices=ASSIGNMENT_TYPES, default='individual',)
     agenda = models.ForeignKey(CourseAgenda, on_delete=models.CASCADE, related_name='assignments')
     title = models.CharField(max_length=255)
     description = models.TextField(help_text="Instruksi pengerjaan tugas")
@@ -331,6 +351,7 @@ class StudentAssignmentSubmission(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    group = models.ForeignKey( CourseGroup, on_delete=models.CASCADE, null=True, blank=True, help_text="Menyimpan ID kelompok agar nilai & file terikat ke kelompok, bukan cuma individu" )
     feedback = models.TextField(blank=True, null=True) # Catatan dari dosen
     
     def __str__(self):
@@ -425,18 +446,6 @@ class StudentQuizAnswer(models.Model):
     def __str__(self):
         return f"Ans: {self.question.id}"
     
-class CourseGroup(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='groups')
-    name = models.CharField(max_length=100)  
-    description = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.name} - {self.course.code}"
-
-    def member_count(self):
-        return self.members.count()
 
 class CourseGroupMember(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -453,3 +462,37 @@ class CourseGroupMember(models.Model):
 
     def __str__(self):
         return f"{self.participant.mahasiswa.nim} -> {self.group.name}"
+
+ROOM_TYPES = [
+        ('private', 'Private'),
+        ('group', 'Group'),
+    ]
+
+class ChatRoom(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    participants = models.ManyToManyField(User, related_name='chat_rooms')
+    room_type = models.CharField(max_length=20, choices=ROOM_TYPES, default='private')
+    group = models.OneToOneField(CourseGroup, on_delete=models.CASCADE, null=True, blank=True) # Perlu ditambah
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Chat Room {self.id}"
+
+    def get_partner(self, user):
+        return self.participants.exclude(id=user.id).first()
+
+class ChatMessage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField()  
+    is_read = models.BooleanField(default=False) 
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at'] 
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.content[:20]}..."

@@ -72,6 +72,16 @@
                 <h5 class="mb-0 card-title"><i class="ri-settings-3-line me-2"></i>Pengaturan</h5>
             </div>
             <div class="card-body">
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Tipe Pengerjaan</label>
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text"><i class="ri-group-line"></i></span>
+                        {{ form.assignment_type }}
+                    </div>
+                    <div class="form-text small">
+                        Pilih <strong>Kelompok</strong> jika mahasiswa mengumpulkan per tim.
+                    </div>
+                </div>
                 
                 <div class="mb-3">
                     <label class="form-label fw-medium">Batas Waktu (Deadline)</label>

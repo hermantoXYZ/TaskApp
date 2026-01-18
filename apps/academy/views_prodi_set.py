@@ -156,3 +156,4 @@ def user_edit(request, id, role):
         'form': form,
     }
     return render(request, 'prodi/set/user_edit.html', context)
+

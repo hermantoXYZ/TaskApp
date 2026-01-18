@@ -3,7 +3,7 @@ from django.views.generic import TemplateView
 from web_project import TemplateLayout
 from .forms import CourseForm, AddParticipantForm, AddAgendaForm, AddAnnouncementForm, AttendanceForm, CourseMaterialForm, AddProgramStudiCourseForm, CoursePeriodForm, CourseAssignmentForm, CourseQuizForm, QuizQuestionForm
 from django.contrib import messages
-from .models import Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment, CourseQuiz, QuizQuestion, QuizOption, StudentQuizAttempt, StudentQuizAnswer
+from .models import ChatRoom, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment, CourseQuiz, QuizQuestion, QuizOption, StudentQuizAttempt, StudentQuizAnswer
 from .models import UserMhs, CourseGroup, CourseGroupMember
 from django.utils import timezone
 from web_project.template_helpers.theme import TemplateHelper
@@ -17,6 +17,11 @@ from django.db import transaction
 
 from django.db.models import Sum
 import random
+
+from django.contrib.auth.views import PasswordChangeView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -63,6 +68,25 @@ def LogoutView(request):
     logout(request)
     return redirect('login')
 
+
+class AppPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'auth/reset_password.html'
+    success_url = reverse_lazy('login') 
+
+    def get_context_data(self, **kwargs):
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        context.update({
+            "title": "Ganti Password",
+        })
+        return context
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Password berhasil diubah. Silakan login kembali.")
+        logout(self.request)
+        
+        # 5. Redirect ke halaman Login
+        return redirect(self.success_url)
 class AddCourse(DosenRequiredMixin, AcademyView):
     template_name = "add_academy_course.html"
     def get(self, request, *args, **kwargs):
@@ -695,87 +719,115 @@ class DeleteCourseAssignmentView(DosenRequiredMixin, AcademyView):
         messages.success(request, f'Tugas "{title}" berhasil dihapus.')
         return redirect('manage-curriculum', course_uuid=course.uuid)
     
+# apps/academy/views.py
+
 class AssignmentGradingView(DosenRequiredMixin, AcademyView):
     template_name = "grading_assignment.html"
 
-    # UPDATE: Tambahkan parameter course_uuid
+    # Method GET (Menampilkan Daftar - TIDAK BERUBAH)
     def get(self, request, course_uuid, assignment_id, *args, **kwargs):
-        # 1. Ambil Course & Assignment
         course = get_object_or_404(Course, uuid=course_uuid)
         assignment = get_object_or_404(CourseAssignment, id=assignment_id)
         
-        # 2. Security Check: Pastikan assignment ini milik course tersebut
-        # (Mencegah user iseng ganti-ganti ID di URL)
         if assignment.agenda.course != course:
             messages.error(request, "Tugas tidak ditemukan di kelas ini.")
             return redirect('manage-curriculum', course_uuid=course.uuid)
         
-        # 3. Ambil Semua Peserta
-        participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa')
-        
-        # 4. Logic Grading List (Sama seperti sebelumnya)
         grading_list = []
-        stats = {'total': participants.count(), 'submitted': 0, 'graded': 0}
-        
-        for p in participants:
-            sub = StudentAssignmentSubmission.objects.filter(assignment=assignment, student=p.mahasiswa).first()
-            status = 'missing'
-            is_late = False
+        stats = {'total': 0, 'submitted': 0, 'graded': 0}
 
-            if sub:
-                status = 'submitted'
-                stats['submitted'] += 1
-                if sub.score is not None:
-                    status = 'graded'
-                    stats['graded'] += 1
-                if sub.submitted_at > assignment.due_date:
-                    is_late = True
+        # === LOGIKA TUGAS KELOMPOK ===
+        if assignment.assignment_type == 'group':
+            groups = CourseGroup.objects.filter(course=course).prefetch_related('members__participant__mahasiswa')
+            stats['total'] = CourseParticipant.objects.filter(course=course).count()
 
-            grading_list.append({
-                'participant': p,
-                'student': p.mahasiswa,
-                'submission': sub, 
-                'status': status,
-                'is_late': is_late
-            })
+            for group in groups:
+                members_data = []
+                for member in group.members.all():
+                    mhs = member.participant.mahasiswa
+                    sub = StudentAssignmentSubmission.objects.filter(assignment=assignment, student=mhs).first()
+                    status, is_late = self._get_status(sub, assignment)
+                    
+                    if sub: 
+                        stats['submitted'] += 1
+                        if sub.score is not None: stats['graded'] += 1
 
-        context = self.get_context_data(
-            assignment=assignment,
-            course=course,
-            grading_list=grading_list,
-            stats=stats
-        )
-        return self.render_to_response(context)
+                    members_data.append({
+                        'student': mhs, 'participant': member.participant, 'role': member.role,
+                        'submission': sub, 'status': status, 'is_late': is_late
+                    })
+                
+                grading_list.append({'type': 'group', 'group_obj': group, 'members': members_data})
 
-# ---------------------------------------------------------
-# FUNGSI UNTUK SIMPAN NILAI (Dipanggil tombol Save)
-# ---------------------------------------------------------
-@login_required
-def update_grade_submission(request, submission_id):
-    if request.method == "POST":
-        submission = get_object_or_404(StudentAssignmentSubmission, id=submission_id)
-        
-        # Security Check: Pastikan user adalah Dosen/Staff
-        if not (request.user.is_staff or request.user.is_superuser):
-            messages.error(request, "Anda tidak memiliki izin.")
-            return redirect('app-academy-dashboard')
+            # Handle Mahasiswa Tanpa Kelompok (Orphans)
+            grouped_ids = CourseGroupMember.objects.filter(group__course=course).values_list('participant_id', flat=True)
+            orphans = CourseParticipant.objects.filter(course=course).exclude(id__in=grouped_ids)
+            if orphans.exists():
+                orphan_data = []
+                for p in orphans:
+                    sub = StudentAssignmentSubmission.objects.filter(assignment=assignment, student=p.mahasiswa).first()
+                    status, is_late = self._get_status(sub, assignment)
+                    if sub: 
+                        stats['submitted'] += 1
+                        if sub.score is not None: stats['graded'] += 1
+                    orphan_data.append({'student': p.mahasiswa, 'submission': sub, 'status': status, 'is_late': is_late})
+                grading_list.append({'type': 'no_group', 'group_obj': None, 'members': orphan_data})
 
-        # Ambil data dari Form
+        # === LOGIKA TUGAS INDIVIDU ===
+        else:
+            participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa')
+            stats['total'] = participants.count()
+            for p in participants:
+                sub = StudentAssignmentSubmission.objects.filter(assignment=assignment, student=p.mahasiswa).first()
+                status, is_late = self._get_status(sub, assignment)
+                if sub: 
+                    stats['submitted'] += 1
+                    if sub.score is not None: stats['graded'] += 1
+                grading_list.append({'type': 'individual', 'student': p.mahasiswa, 'submission': sub, 'status': status, 'is_late': is_late})
+
+        return self.render_to_response(self.get_context_data(
+            assignment=assignment, course=course, grading_list=grading_list, stats=stats
+        ))
+
+    # === [BARU] Method POST (Menyimpan Nilai) ===
+    def post(self, request, course_uuid, assignment_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+
+        # 1. Ambil Data dari Form
+        submission_id = request.POST.get('submission_id') # ID diambil dari hidden input
         score = request.POST.get('score')
         feedback = request.POST.get('feedback')
 
-        # Simpan
+        # 2. Validasi Submission
+        submission = get_object_or_404(StudentAssignmentSubmission, id=submission_id)
+
+        # Security Check: Pastikan submission ini memang milik assignment yang sedang dibuka
+        if submission.assignment.id != assignment.id:
+            messages.error(request, "Terjadi kesalahan data (Assignment Mismatch).")
+            return redirect('assignment-grading', course_uuid=course.uuid, assignment_id=assignment.id)
+
+        # 3. Simpan Nilai
         if score:
             submission.score = score
             submission.feedback = feedback
             submission.save()
-            messages.success(request, f"Nilai untuk {submission.student.nim.first_name} berhasil disimpan.")
-        
-        # Redirect kembali ke halaman grading
-        return redirect('assignment-grading', assignment_id=submission.assignment.id)
-    
-    return redirect('app-academy-dashboard')
+            
+            # Buat nama target untuk pesan sukses
+            target_name = submission.student.nim.first_name
+            messages.success(request, f"Nilai untuk {target_name} berhasil disimpan.")
 
+        # 4. Refresh Halaman (Redirect ke URL yang sama)
+        return redirect('assignment-grading', course_uuid=course.uuid, assignment_id=assignment.id)
+
+    def _get_status(self, sub, assignment):
+        status = 'missing'
+        is_late = False
+        if sub:
+            status = 'submitted'
+            if sub.score is not None: status = 'graded'
+            if sub.submitted_at > assignment.due_date: is_late = True
+        return status, is_late
 
 class PublicAgendaMaterialView(TemplateView):
     template_name = "public_agenda_materials.html"
@@ -1094,37 +1146,85 @@ class CourseGroupListView(DosenRequiredMixin, AcademyView):
         ))
 
     # Fitur: Buat Kelompok Baru
+    # Fitur: Buat Kelompok Baru
     def post(self, request, course_uuid, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
-        
+
+        # === 1. BUAT MANUAL ===
         if 'create_group' in request.POST:
             name = request.POST.get('group_name')
             if name:
-                CourseGroup.objects.create(course=course, name=name)
-                messages.success(request, f"Kelompok '{name}' berhasil dibuat.")
+                with transaction.atomic():
+                    # A. Buat Kelompok Database
+                    new_group = CourseGroup.objects.create(course=course, name=name)
+                    
+                    # B. Buat Chat Room (Manual)
+                    ChatRoom.objects.create(
+                        name=f"Grup: {new_group.name}",
+                        room_type='group',
+                        group=new_group 
+                    )
+                messages.success(request, f"Kelompok '{name}' dan Ruang Chat berhasil dibuat.")
             else:
                 messages.error(request, "Nama kelompok tidak boleh kosong.")
         
-        # Fitur: Auto Generate Kelompok (Opsional, sangat berguna)
+        # === 2. AUTO GENERATE (YANG PERLU DITAMBAHKAN) ===
         elif 'auto_generate' in request.POST:
-            total_groups = int(request.POST.get('total_groups', 5))
+            try:
+                total_groups = int(request.POST.get('total_groups', 5))
+                
+                # Logic Hapus Kelompok Lama (Opsional tapi disarankan)
+                if request.POST.get('clear_existing'):
+                    CourseGroup.objects.filter(course=course).delete()
+
+                # Ambil semua peserta aktif
+                participants = list(CourseParticipant.objects.filter(course=course))
+                
+                if not participants:
+                    messages.error(request, "Tidak ada peserta untuk dibagi.")
+                    return redirect('course-groups', course_uuid=course.uuid)
+
+                random.shuffle(participants) # Acak urutan
+                
+                # Gunakan transaction atomic agar data konsisten (Group & Chat terbuat bersamaan)
+                with transaction.atomic():
+                    created_groups = []
+                    group_chat_map = {} # Mapping untuk menyimpan ID Chat Room
+
+                    # A. LOOP BUAT GROUP & CHAT ROOM
+                    for i in range(total_groups):
+                        # 1. Buat Group
+                        g = CourseGroup.objects.create(course=course, name=f"Kelompok {i+1}")
+                        created_groups.append(g)
+
+                        # 2. [TAMBAHAN] Buat Chat Room Manual
+                        chat_room = ChatRoom.objects.create(
+                            name=f"Grup: {g.name}",
+                            room_type='group',
+                            group=g
+                        )
+                        # Simpan object chat room ke mapping biar mudah diambil nanti
+                        group_chat_map[g.id] = chat_room 
+                    
+                    # B. LOOP DISTRIBUSI PESERTA
+                    for index, p in enumerate(participants):
+                        # Algoritma Round Robin (Bagi rata)
+                        target_group = created_groups[index % total_groups] 
+                        
+                        # 3. Masukkan ke Group Member (Database)
+                        CourseGroupMember.objects.create(group=target_group, participant=p)
+                        
+                        # 4. [TAMBAHAN] Masukkan User ke Chat Room Participants
+                        # Ambil chat room yang pasangannya 'target_group'
+                        current_room = group_chat_map[target_group.id]
+                        
+                        # p.mahasiswa.nim merujuk ke User object (OneToOne)
+                        current_room.participants.add(p.mahasiswa.nim)
             
-            # Ambil semua peserta aktif
-            participants = list(CourseParticipant.objects.filter(course=course))
-            random.shuffle(participants) # Acak urutan
-            
-            # Buat Kelompok
-            groups = []
-            for i in range(total_groups):
-                g = CourseGroup.objects.create(course=course, name=f"Kelompok {i+1}")
-                groups.append(g)
-            
-            # Distribusi Peserta
-            for index, p in enumerate(participants):
-                target_group = groups[index % total_groups] # Algoritma Round Robin
-                CourseGroupMember.objects.create(group=target_group, participant=p)
-            
-            messages.success(request, f"Berhasil membagi peserta ke dalam {total_groups} kelompok secara acak.")
+                messages.success(request, f"Berhasil membagi peserta ke dalam {total_groups} kelompok & membuat ruang chat.")
+
+            except ValueError:
+                messages.error(request, "Input jumlah kelompok tidak valid.")
 
         return redirect('course-groups', course_uuid=course.uuid)
 
@@ -1135,8 +1235,6 @@ class CourseGroupDetailView(DosenRequiredMixin, AcademyView):
 
     def get(self, request, group_id, *args, **kwargs):
         group = get_object_or_404(CourseGroup, id=group_id)
-        
-        # Ambil peserta yang belum punya kelompok DI COURSE INI
         assigned_ids = CourseGroupMember.objects.filter(group__course=group.course).values_list('participant_id', flat=True)
         available_participants = CourseParticipant.objects.filter(course=group.course).exclude(id__in=assigned_ids)
 
@@ -1149,33 +1247,146 @@ class CourseGroupDetailView(DosenRequiredMixin, AcademyView):
     def post(self, request, group_id, *args, **kwargs):
         group = get_object_or_404(CourseGroup, id=group_id)
 
-        # Tambah Anggota Manual
+        # === TAMBAH ANGGOTA ===
         if 'add_member' in request.POST:
             participant_id = request.POST.get('participant_id')
             role = request.POST.get('role', 'member')
             if participant_id:
                 participant = get_object_or_404(CourseParticipant, id=participant_id)
-                CourseGroupMember.objects.create(group=group, participant=participant, role=role)
+                
+                with transaction.atomic():
+                    # 1. Tambah ke DB Group
+                    CourseGroupMember.objects.create(group=group, participant=participant, role=role)
+                    
+                    # 2. [LOGIC BARU] Tambah User ke Chat Room
+                    try:
+                        chat_room = ChatRoom.objects.get(group=group)
+                        chat_room.participants.add(participant.mahasiswa.nim)
+                    except ChatRoom.DoesNotExist:
+                        pass # Atau create baru jika mau defensive coding
+
                 messages.success(request, "Anggota berhasil ditambahkan.")
 
-        # Hapus Anggota
+        # === HAPUS ANGGOTA ===
         elif 'remove_member' in request.POST:
             member_id = request.POST.get('member_id')
-            CourseGroupMember.objects.filter(id=member_id, group=group).delete()
+            member_obj = get_object_or_404(CourseGroupMember, id=member_id, group=group)
+            user_to_remove = member_obj.participant.mahasiswa.nim # Simpan User-nya dulu
+
+            with transaction.atomic():
+                # 1. Hapus dari DB Group
+                member_obj.delete()
+
+                # 2. [LOGIC BARU] Kick User dari Chat Room
+                try:
+                    chat_room = ChatRoom.objects.get(group=group)
+                    chat_room.participants.remove(user_to_remove)
+                except ChatRoom.DoesNotExist:
+                    pass
+
             messages.success(request, "Anggota dihapus dari kelompok.")
         
-        # Edit Nama Kelompok
+        # === EDIT NAMA GROUP ===
         elif 'edit_group' in request.POST:
-            group.name = request.POST.get('group_name')
+            new_name = request.POST.get('group_name')
+            group.name = new_name
             group.save()
+
+            # [LOGIC BARU] Update juga nama Chat Room-nya biar sinkron
+            ChatRoom.objects.filter(group=group).update(name=f"Grup: {new_name}")
+            
             messages.success(request, "Nama kelompok diperbarui.")
 
+        # === HAPUS GROUP ===
         elif 'delete_group' in request.POST:
-            course_uuid = group.course.uuid # Simpan UUID course untuk redirect
-            group_name = group.name
-            group.delete() # Hapus permanen
-            messages.success(request, f"Kelompok '{group_name}' berhasil dihapus.")
-            # Redirect kembali ke halaman daftar kelompok
+            course_uuid = group.course.uuid 
+            # ChatRoom otomatis terhapus karena CASCADE di models.py
+            group.delete() 
+            messages.success(request, "Kelompok berhasil dihapus.")
             return redirect('course-groups', course_uuid=course_uuid)
 
         return redirect('group-detail', group_id=group.id)
+    
+
+class InstructorCoursePreviewView(DosenRequiredMixin, AcademyView):
+    template_name = "dosen_course_player.html" # Menggunakan template yang SAMA
+
+    # Security: Hanya Dosen Pembuat atau Admin yang bisa akses
+    def test_func(self):
+        course = get_object_or_404(Course, uuid=self.kwargs['course_uuid'])
+        return self.request.user == course.instructor or self.request.user.is_superuser
+
+    def get(self, request, course_uuid, material_id=None, assignment_id=None, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        
+        # Ambil semua section/materi (Sama seperti view mahasiswa)
+        sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials', 'assignments')
+
+        # === 1. LOGIK ACTIVE ITEM (COPY PASTE DARI VIEW MAHASISWA) ===
+        # Dosen tetap perlu logic ini agar saat buka link, langsung muncul materi pertama
+        active_item = None
+        active_type = None
+
+        if material_id:
+            active_item = get_object_or_404(CourseMaterial, id=material_id)
+            active_type = 'material'
+        elif assignment_id:
+            active_item = get_object_or_404(CourseAssignment, id=assignment_id)
+            active_type = 'assignment'
+        else:
+            # Default: Ambil item pertama
+            first_material = CourseMaterial.objects.filter(
+                agenda__course=course
+            ).order_by('agenda__agenda_date', 'order').first()
+
+            first_assignment = CourseAssignment.objects.filter(
+                agenda__course=course
+            ).order_by('agenda__agenda_date').first()
+
+            if first_material and first_assignment:
+                if first_material.agenda.agenda_date <= first_assignment.agenda.agenda_date:
+                    active_item = first_material
+                    active_type = 'material'
+                else:
+                    active_item = first_assignment
+                    active_type = 'assignment'
+            elif first_material:
+                active_item = first_material
+                active_type = 'material'
+            elif first_assignment:
+                active_item = first_assignment
+                active_type = 'assignment'
+
+        # === 2. AMBIL DATA UMUM SAJA ===
+        # Kita tampilkan pengumuman agar dosen bisa me-review tampilannya
+        announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
+        
+        # Tampilkan list kuis (tapi tanpa status 'user_is_done')
+        quizzes = CourseQuiz.objects.filter(course=course, is_published=True).order_by('start_time')
+
+        # === 3. CONTEXT ===
+        # Perhatikan: Kita kirim list kosong [] atau None untuk data-data mahasiswa
+        # agar tidak error di template, tapi 'is_instructor' kita set True.
+        
+        context = self.get_context_data(
+            is_instructor=True,          # <--- KUNCI UTAMA
+            course=course,
+            sections=sections,
+            active_item=active_item,
+            active_type=active_type,
+            announcements=announcements,
+            quizzes=quizzes,
+            
+            # Data Mahasiswa dikosongkan/None
+            submission=None,
+            completed_material_ids=[], 
+            completed_assignment_ids=[],
+            attendance_report=[],
+            total_hadir=0,
+            my_group=None,
+            group_members=[],
+            is_overdue=False
+        )
+        return self.render_to_response(context)
+        
+    # View Dosen TIDAK PERLU method POST karena dosen tidak submit tugas/absen di sini.

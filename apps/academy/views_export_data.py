@@ -118,7 +118,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             if assignments.count() > 0:
                 avg_score = round(total_score_collected / assignments.count(), 1)
 
-                student_quiz_grades = []
+            student_quiz_grades = []
             
             for quiz in quizzes:
                 # Ambil attempt terbaik atau terakhir yang sudah selesai
@@ -156,7 +156,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             rekap_data=rekap_data, 
             total_agendas=total_agendas
         ))
-
     def export_to_excel(self, request, course, agendas, assignments, quizzes, data):
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -176,9 +175,10 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         link_fill = PatternFill(start_color="E6F7FF", end_color="E6F7FF", fill_type="solid")
 
         # --- HEADER ROW 1 ---
-        headers = ["No", "Nama Mahasiswa", "NIM", "Prodi", "Kelas", "Kode MK"] 
+        # [UPDATE] Menambahkan "Kelompok"
+        headers = ["No", "Nama Mahasiswa", "NIM", "Prodi", "Kelas", "Kelompok", "Kode MK"] 
         
-        # Hitung kolom awal agenda
+        # Hitung kolom awal agenda (otomatis menyesuaikan panjang headers)
         agenda_start_col = len(headers) + 1
         
         # Header Absensi
@@ -194,20 +194,20 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             headers.append(f"{prefix} Waktu")
             headers.append(f"{prefix} Nilai")
         
-        # [BARU] Hitung kolom awal Tugas (Penting untuk logika hyperlink nanti)
-        # Rumus: 6 (Identitas) + Agendas + 1 (Skor Absen) + 1 (Start Excel Index)
-        assignment_start_col = 6 + len(agendas) + 1 + 1
+        # [UPDATE] Hitung kolom awal Tugas (Berubah karena ada tambahan kolom Kelompok)
+        # Rumus: 7 (Identitas + Kelompok) + Agendas + 1 (Skor Absen) + 1 (Start Excel Index)
+        assignment_start_col = 7 + len(agendas) + 1 + 1
 
         # Header Kuis
-        quiz_start_col = len(headers) + 1
+        quiz_start_col = len(headers) + len(agendas) + 1 + (len(assignments) * 3) + 1
+        
+        # ATAU gunakan logika dinamis append headers
         for i, quiz in enumerate(quizzes):
-            # Gunakan getattr untuk menghindari error jika quiz_type tidak ada
-            quiz_type = getattr(quiz, 'quiz_type', 'quiz')
-            if quiz_type == 'uts': label = "UTS"
-            elif quiz_type == 'uas': label = "UAS"
-            else: label = f"Q-{i+1}"
+            # Ambil tipe quiz, default ke 'Quiz' jika kosong
+            q_type = getattr(quiz, 'quiz_type', 'Quiz')
+            label = str(q_type).upper() 
+            
             headers.append(label)
-
         headers.append("Rata-rata Nilai")
 
         ws.append(headers)
@@ -217,7 +217,12 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             cell.font = bold_font
             cell.alignment = center_align
             cell.border = border
-            if quiz_start_col <= cell.col_idx < quiz_start_col + len(quizzes):
+            # Cek range kolom quiz untuk warna berbeda
+            # Kita hitung ulang index kolom quiz start secara dinamis agar aman
+            current_col_idx = cell.col_idx
+            total_cols_before_quiz = 7 + len(agendas) + 1 + (len(assignments) * 3) 
+            
+            if total_cols_before_quiz < current_col_idx <= (total_cols_before_quiz + len(quizzes)):
                 cell.fill = quiz_fill
             else:
                 cell.fill = header_fill
@@ -255,7 +260,15 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 if mhs.prodi:
                     prodi_str = mhs.prodi.nama_prodi
 
-            row = [idx + 1, nama_str, nim_str, prodi_str, course.group, course.code]
+            # [LOGIC BARU] Ambil Nama Kelompok
+            group_name = "-"
+            # Asumsi: participant punya related_name 'group_memberships'
+            group_member = item['participant'].group_memberships.first()
+            if group_member:
+                group_name = group_member.group.name
+
+            # [UPDATE] Masukkan group_name ke dalam list row
+            row = [idx + 1, nama_str, nim_str, prodi_str, course.group, group_name, course.code]
 
             # Absensi
             for stat in item['agenda_statuses']:
@@ -263,9 +276,9 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 row.append(code_map.get(stat['status'], '-'))
             row.append(item['attendance_score'])
 
-            # Tugas (Isi row biasa dulu)
+            # Tugas
             for grade in item['grades']:
-                row.append(grade['link']) # Masukkan URL mentah dulu
+                row.append(grade['link']) 
                 row.append(grade['time'])
                 val = grade['score'] if grade['score'] is not None else 0 
                 row.append(val)
@@ -281,24 +294,21 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             # Tulis baris ke Excel
             ws.append(row)
             
-            # --- [LOGIC BARU] UBAH URL TUGAS MENJADI HYPERLINK "Link" ---
-            current_row = ws.max_row # Baris yang baru saja ditulis
+            # --- LOGIC HYPERLINK "Link" ---
+            current_row = ws.max_row
             
-            # Loop kembali data grades untuk mencari link yang valid
             for k, grade in enumerate(item['grades']):
                 url = grade['link']
                 
-                # Cek apakah ini URL yang valid (bukan "-" dan diawali http)
                 if url and url != "-" and str(url).startswith('http'):
                     # Hitung posisi kolom Excel:
                     # Start Kolom Tugas + (Indeks Tugas ke-k * 3 kolom per tugas)
-                    # 3 kolom itu: Link, Waktu, Nilai. Link ada di urutan pertama.
                     col_idx = assignment_start_col + (k * 3)
                     
                     cell = ws.cell(row=current_row, column=col_idx)
-                    cell.value = "Link"        # Ubah teks menjadi "Link"
-                    cell.hyperlink = url       # Set tujuannya ke URL asli
-                    cell.font = link_font      # Beri warna biru underline
+                    cell.value = "Link"       
+                    cell.hyperlink = url       
+                    cell.font = link_font     
                     cell.alignment = center_align
 
         # Auto Adjust Column Width
@@ -315,7 +325,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 except:
                     pass
             
-            # [LOGIC BARU] Kolom Link tidak perlu lebar-lebar karena isinya cuma kata "Link"
             if "Link" in header_val:
                 final_width = 12 
             else:

@@ -228,8 +228,9 @@ class CourseMaterialForm(forms.ModelForm):
 class CourseAssignmentForm(forms.ModelForm):
     class Meta:
         model = CourseAssignment
-        fields = ['agenda', 'title', 'description', 'file_instruction', 'due_date', 'max_score', 'allow_late_submission']
+        fields = ['agenda', 'title', 'description', 'file_instruction', 'due_date', 'max_score', 'allow_late_submission', 'assignment_type']
         widgets = {
+            'assignment_type': forms.Select(attrs={'class': 'form-select'}),
             'agenda': forms.Select(attrs={'class': 'select2 form-select'}),
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Judul Tugas'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Instruksi pengerjaan...'}),

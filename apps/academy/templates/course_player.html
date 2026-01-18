@@ -164,9 +164,12 @@
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="badge bg-label-danger rounded-pill">
-                                        Tugas
-                                        </span>
+                                        {% if active_item.assignment_type == 'group' %}
+                                            <span class="badge bg-label-info rounded-pill">Tugas Kelompok</span>
+                                        {% else %}
+                                            <span class="badge bg-label-primary rounded-pill">Individu</span>
+                                        {% endif %}
+                                        
                                         <span class="badge bg-label-secondary rounded-pill">Max Score: {{ active_item.max_score }}</span>
                                     </div>
                                     <h4 class="text-warning mb-1 fw-bold">{{ active_item.title }}</h4>
@@ -205,13 +208,16 @@
                                 <i class="ri-checkbox-circle-line me-3 ri-xl mt-1"></i>
                                 <div class="w-100">
                                     <h6 class="alert-heading mb-1">Status: Terkirim</h6>
+                                    
                                     <p class="mb-1">
                                         <small>Waktu: {{ submission.updated_at|date:"d M Y, H:i" }}</small><br>
                                         
                                         {% if submission.submitted_link %}
-                                            <div class="mt-2 p-2 bg-white rounded border d-inline-block">
+                                            <div class="mt-2 p-2 bg-white rounded border d-inline-block" style="max-width: 100%;">
                                                 <i class="ri-link me-1 text-primary"></i>
-                                                <a href="{{ submission.submitted_link }}" target="_blank" class="fw-bold">{{ submission.submitted_link }}</a>
+                                                <a href="{{ submission.submitted_link }}" target="_blank" class="fw-bold text-break" title="{{ submission.submitted_link }}">
+                                                    {{ submission.submitted_link|truncatechars:20 }}
+                                                </a>
                                             </div>
                                         {% endif %}
                                     </p>
@@ -250,6 +256,7 @@
                         {% if not is_overdue or active_item.allow_late_submission %}
                             <div class="{% if submission %}collapse mt-3{% endif %}" id="uploadForm">
                                 <div class="card bg-lighter border p-4">
+
                                     <form method="post" action="{% url 'course-player-assignment' course.uuid active_item.id %}">
                                         {% csrf_token %}
                                         
@@ -390,6 +397,7 @@
                 </div>
             </div>
           </div>
+        
         <div class="tab-pane fade" id="navs-quizzes" role="tabpanel">
         <div class="card shadow-none border-0">
             <div class="card-body px-0 pt-0">
@@ -429,7 +437,11 @@
                                                         </a>
                                                     </h5>
                                                     
-                                                    {% if quiz.user_is_done %}
+                                                    {% if quiz.quiz_type == 'uts' %}
+                                                        <span class="badge bg-danger d-md-none rounded-pill">UTS</span>
+                                                    {% elif quiz.quiz_type == 'uas' %}
+                                                        <span class="badge bg-danger d-md-none rounded-pill">UAS</span>
+                                                    {% elif quiz.user_is_done %}
                                                         <span class="badge bg-label-success d-md-none rounded-pill">Selesai</span>
                                                     {% else %}
                                                         <span class="badge bg-label-warning d-md-none rounded-pill">Belum</span>
@@ -437,14 +449,20 @@
                                                 </div>
                                                 
                                                 <div class="d-flex flex-wrap gap-2 mt-1">
+                                                    
+                                                    {% if quiz.quiz_type == 'uts' %}
+                                                        <span class="badge bg-danger">UTS</span>
+                                                    {% elif quiz.quiz_type == 'uas' %}
+                                                        <span class="badge bg-danger">UAS</span>
+                                                    {% else %}
+                                                        <span class="badge bg-label-info">Kuis Harian</span>
+                                                    {% endif %}
+
                                                     <span class="badge bg-label-secondary fw-normal">
                                                         <i class="ri-time-line me-1"></i> {{ quiz.duration_minutes }} Menit
                                                     </span>
                                                     <span class="badge bg-label-secondary fw-normal">
                                                         <i class="ri-list-check me-1"></i> {{ quiz.questions.count }} Soal
-                                                    </span>
-                                                    <span class="badge bg-label-secondary fw-normal">
-                                                        <i class="ri-history-line me-1"></i> Max: {{ quiz.max_attempts }}x
                                                     </span>
                                                 </div>
                                             </div>

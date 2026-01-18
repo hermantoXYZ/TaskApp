@@ -2,7 +2,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Profile Mahasiswa{% endblock %}
+{% block title %}Profile Dosen{% endblock %}
 
 {% block vendor_css %}
 {{ block.super }}
@@ -36,15 +36,16 @@
       <div class="card-body pt-12">
         <div class="user-avatar-section">
           <div class="d-flex align-items-center flex-column">
-            {% if usermhs.photo %}
-                <img class="img-fluid rounded-3 mb-4" src="{{ usermhs.photo.url }}" height="120" width="120" alt="User avatar" style="object-fit: cover;" />
+            {% if userdosen.photo %}
+                <img class="img-fluid rounded-3 mb-4" src="{{ userdosen.photo.url }}" height="120" width="120" alt="User avatar" style="object-fit: cover;" />
             {% else %}
                 <img class="img-fluid rounded-3 mb-4" src="{% static 'img/avatars/1.png' %}" height="120" width="120" alt="Default avatar" />
             {% endif %}
             
             <div class="user-info text-center">
-              <h5>{{ usermhs.nim.first_name }}</h5>
-              <span class="badge bg-label-primary rounded-pill">Mahasiswa</span>
+              <h5>{{ userdosen.nip.first_name }} {{ userdosen.nip.last_name }}</h5>
+              <span class="badge bg-label-primary rounded-pill">Dosen Pengajar</span>
+              <p class="text-muted mt-2 small">{{ userdosen.prodi.nama_prodi|default:"-" }}</p>
             </div>
           </div>
         </div>
@@ -53,34 +54,38 @@
         <div class="info-container">
           <ul class="list-unstyled mb-6">
             <li class="mb-2">
-              <span class="fw-medium text-heading me-2">NIM:</span>
-              <span>{{ usermhs.nim.username }}</span>
+              <span class="fw-medium text-heading me-2">NIP:</span>
+              <span>{{ userdosen.nip.username }}</span>
+            </li>
+            <li class="mb-2">
+              <span class="fw-medium text-heading me-2">NIDN:</span>
+              <span>{{ userdosen.nidn|default:"-" }}</span>
             </li>
             <li class="mb-2">
               <span class="fw-medium text-heading me-2">Email:</span>
-              <span>{{ usermhs.nim.email|default:"-" }}</span>
+              <span>{{ userdosen.nip.email|default:"-" }}</span>
             </li>
             <li class="mb-2">
               <span class="fw-medium text-heading me-2">Status:</span>
-              <span class="badge bg-label-success rounded-pill">Aktif</span>
+              <span class="badge bg-label-success rounded-pill">{{ userdosen.status_kepegawaian|default:"Aktif" }}</span>
             </li>
             <li class="mb-2">
               <span class="fw-medium text-heading me-2">No. HP:</span>
-              <span>{{ usermhs.telp|default:"-" }}</span>
+              <span>{{ userdosen.telp|default:"-" }}</span>
             </li>
             <li class="mb-2">
-              <span class="fw-medium text-heading me-2">Gender:</span>
-              <span>{{ usermhs.gender }}</span>
+              <span class="fw-medium text-heading me-2">Jabatan:</span>
+              <span>{{ userdosen.jafung|default:"-" }}</span>
             </li>
           </ul>
-          
         </div>
       </div>
     </div>
-    </div>
+  </div>
+
   <div class="col-xl-8 col-lg-7 col-md-7 order-0 order-md-1">
     
-     <div class="nav-align-top">
+    <div class="nav-align-top">
       <ul class="nav nav-pills flex-column flex-md-row mb-6 row-gap-2">
         <li class="nav-item">
             <a class="nav-link active" href="javascript:void(0);">
@@ -95,6 +100,7 @@
         </li>
       </ul>
     </div>
+
     <div class="card mb-6">
       <h5 class="card-header">Perbarui Informasi Profil</h5>
       <div class="card-body">
@@ -102,6 +108,8 @@
         <form method="POST" enctype="multipart/form-data" class="row g-4">
             {% csrf_token %}
             
+            <div class="col-12"><h6 class="text-muted mt-2">Data Pribadi</h6></div>
+
             <div class="col-md-6">
                 <div class="form-floating form-floating-outline">
                     {{ form.tempat_lahir }}
@@ -134,19 +142,61 @@
                 <div class="text-danger small">{{ form.telp.errors }}</div>
             </div>
 
-            <div class="col-12">
+            <div class="col-12"><hr><h6 class="text-muted mt-2">Data Akademik & Kepegawaian</h6></div>
+
+            <div class="col-md-6">
                 <div class="form-floating form-floating-outline">
-                    {{ form.alamat }}
-                    <label for="{{ form.alamat.id_for_label }}">Alamat Domisili</label>
+                    {{ form.nidn }}
+                    <label for="{{ form.nidn.id_for_label }}">NIDN</label>
                 </div>
-                <div class="text-danger small">{{ form.alamat.errors }}</div>
+                <div class="text-danger small">{{ form.nidn.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.status_kepegawaian }}
+                    <label for="{{ form.status_kepegawaian.id_for_label }}">Status Kepegawaian</label>
+                </div>
+                <div class="text-danger small">{{ form.status_kepegawaian.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.jafung }}
+                    <label for="{{ form.jafung.id_for_label }}">Jabatan Fungsional</label>
+                </div>
+                <div class="text-danger small">{{ form.jafung.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.pangkat }}
+                    <label for="{{ form.pangkat.id_for_label }}">Pangkat</label>
+                </div>
+                <div class="text-danger small">{{ form.pangkat.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.golongan }}
+                    <label for="{{ form.golongan.id_for_label }}">Golongan</label>
+                </div>
+                <div class="text-danger small">{{ form.golongan.errors }}</div>
+            </div>
+
+             <div class="col-md-6">
+                <div class="form-floating form-floating-outline">
+                    {{ form.bidang_keahlian }}
+                    <label for="{{ form.bidang_keahlian.id_for_label }}">Bidang Keahlian</label>
+                </div>
+                <div class="text-danger small">{{ form.bidang_keahlian.errors }}</div>
             </div>
 
             <div class="col-12">
                 <div class="card shadow-none bg-label-primary border border-primary mb-3">
                     <div class="card-body">
                         <h6 class="mb-1"><i class="ri-upload-2-line me-2"></i>Ganti Foto Profil</h6>
-                        <small class="d-block mb-3">Format JPG, GIF atau PNG. Maksimal 800K.</small>
+                        <small class="d-block mb-3">Format JPG, GIF atau PNG. Maksimal 2MB.</small>
                         {{ form.photo }}
                     </div>
                 </div>
@@ -160,21 +210,23 @@
 
       </div>
     </div>
-    </div>
   </div>
+</div>
 {% endblock %}
 
 {% block page_js %}
 {{ block.super }}
 <script>
-    // Inisialisasi Flatpickr untuk tanggal lahir jika belum otomatis jalan
+    // Inisialisasi Flatpickr untuk tanggal lahir
     document.addEventListener('DOMContentLoaded', function() {
-        flatpickr(".flatpickr-date", {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "d F Y",
-            allowInput: true
-        });
+        if(typeof flatpickr !== 'undefined') {
+            flatpickr("input[type=date]", {
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d F Y",
+                allowInput: true
+            });
+        }
     });
 </script>
 {% endblock page_js %}

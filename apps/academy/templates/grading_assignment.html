@@ -12,6 +12,12 @@
                 <span class="text-muted fw-light">Penilaian /</span> {{ assignment.title }}
             </h4>
             <div class="text-muted small">
+                {% if assignment.assignment_type == 'group' %}
+                    <span class="badge bg-label-info me-2">TUGAS KELOMPOK</span>
+                {% else %}
+                    <span class="badge bg-label-primary me-2">INDIVIDU</span>
+                {% endif %}
+                
                 <i class="ri-calendar-event-line me-1"></i> Deadline: <strong>{{ assignment.due_date|date:"d M Y, H:i" }}</strong> 
                 <span class="mx-2">|</span> 
                 <i class="ri-award-line me-1"></i> Max Score: <strong>{{ assignment.max_score }}</strong>
@@ -66,98 +72,192 @@
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
-                        <th>Mahasiswa</th>
+                        <th>Mahasiswa / Tim</th>
                         <th>Status</th>
                         <th>File Jawaban</th>
                         <th width="30%">Input Nilai</th>
                     </tr>
                 </thead>
                 <tbody class="table-border-bottom-0">
+                    
                     {% for item in grading_list %}
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-3">
-                                    {% if item.student.photo %}
-                                        <img src="{{ item.student.photo.url }}" alt class="rounded-circle">
-                                    {% else %}
-                                        <span class="avatar-initial rounded-circle bg-label-secondary">{{ item.student.nim.first_name|first }}</span>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <h6 class="mb-0">{{ item.student.nim.first_name }} {{ item.student.nim.last_name }}</h6>
-                                    <small class="text-muted">{{ item.student.nim.username }}</small>
-                                </div>
-                            </div>
-                        </td>
-
-                        <td>
-                            {% if item.status == 'missing' %}
-                                <span class="badge bg-label-secondary">Belum Submit</span>
-                            {% elif item.status == 'submitted' %}
-                                <span class="badge bg-label-warning">Perlu Dinilai</span>
-                            {% elif item.status == 'graded' %}
-                                <span class="badge bg-label-success">Selesai</span>
-                            {% endif %}
+                        
+                        {% if item.type == 'group' or item.type == 'no_group' %}
                             
-                            {% if item.is_late %}
-                                <br><small class="text-danger fw-bold" style="font-size: 10px;">TERLAMBAT</small>
-                            {% endif %}
-                        </td>
+                            <tr class="bg-label-secondary">
+                                <td colspan="4" class="fw-bold text-primary">
+                                    <i class="ri-team-fill me-2"></i> 
+                                    {% if item.type == 'no_group' %}
+                                        Mahasiswa Tanpa Kelompok
+                                    {% else %}
+                                        {{ item.group_obj.name }} ({{ item.members|length }} Anggota)
+                                    {% endif %}
+                                </td>
+                            </tr>
 
-                        <td>
-                            {% if item.submission %}
-                                <div class="d-flex flex-column gap-1">
-                                    <small class="text-muted" style="font-size: 0.75rem;">
-                                        <i class="ri-time-line me-1"></i> {{ item.submission.updated_at|date:"d M, H:i" }}
-                                    </small>
-                                    
-                                    {% if item.submission.submitted_file %}
-                                        <a href="{{ item.submission.submitted_file.url }}" target="_blank" class="btn btn-sm btn-label-primary">
-                                            <i class="ri-download-line me-1"></i> Download File
-                                        </a>
+                            {% for member in item.members %}
+                            <tr>
+                                <td class="ps-5 border-start border-3"> <div class="d-flex align-items-center">
+                                        <div class="avatar avatar-xs me-2">
+                                            <span class="avatar-initial rounded-circle bg-label-secondary" style="font-size:0.7rem">
+                                                {{ member.student.nim.first_name|slice:":1" }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 small fw-bold">
+                                                {{ member.student.nim.first_name }} {{ member.student.nim.last_name }}
+                                                {% if member.role == 'leader' %}
+                                                    <i class="ri-vip-crown-fill text-warning ms-1" title="Ketua"></i>
+                                                {% endif %}
+                                            </h6>
+                                            <small class="text-muted" style="font-size: 10px;">{{ member.student.nim.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {% if member.status == 'missing' %}
+                                        <span class="badge bg-label-secondary" style="font-size: 0.7rem;">Belum</span>
+                                    {% elif member.status == 'submitted' %}
+                                        <span class="badge bg-label-warning" style="font-size: 0.7rem;">Menunggu</span>
+                                    {% elif member.status == 'graded' %}
+                                        <span class="badge bg-label-success" style="font-size: 0.7rem;">Selesai</span>
                                     {% endif %}
                                     
-                                    {% if item.submission.submitted_text %}
-                                        <button type="button" class="btn btn-sm btn-icon btn-label-info" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ item.submission.submitted_text }}">
-                                            <i class="ri-text"></i>
-                                        </button>
+                                    {% if member.is_late %}
+                                        <span class="text-danger fw-bold ms-1" style="font-size: 10px;">LATE</span>
                                     {% endif %}
-                                </div>
-                            {% else %}
-                                <span class="text-muted small">-</span>
-                            {% endif %}
-                        </td>
+                                </td>
 
-                        <td>
-                            {% if item.submission %}
-                                <form action="{% url 'update-grade-submission' item.submission.id %}" method="POST" class="d-flex flex-column gap-2">
+                                <td>
+                                    {% if member.submission %}
+                                        <div class="d-flex flex-column gap-1">
+                                            <small class="text-muted" style="font-size: 10px;">
+                                                {{ member.submission.updated_at|date:"d M, H:i" }}
+                                            </small>
+                                            
+                                            {% if member.submission.submitted_link %}
+                                                <div style="max-width: 200px;">
+                                                    <a href="{{ member.submission.submitted_link }}" target="_blank" class="fw-bold text-primary small text-break" title="{{ member.submission.submitted_link }}">
+                                                        <i class="ri-link me-1"></i> Link Tugas
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {% if member.submission.submitted_text %}
+                                      
+                                                <small class="text-muted" style="font-size: 10px;">
+                                                {{ member.submission.submitted_text }}
+                                            </small>
+                                            
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                  {% if member.submission %} 
+                                                <form method="POST" class="d-flex flex-column gap-2">
                                     {% csrf_token %}
                                     
+                                    <input type="hidden" name="submission_id" value="{{ member.submission.id }}">
+
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text fw-bold">Nilai</span>
                                         <input type="number" name="score" class="form-control" 
-                                               placeholder="0" 
-                                               value="{{ item.submission.score|default:'' }}" 
-                                               max="{{ assignment.max_score }}" required>
-                                        <button class="btn btn-primary" type="submit" title="Simpan"><i class="ri-save-line"></i></button>
+                                            placeholder="0" 
+                                            value="{{ member.submission.score|default:'' }}" 
+                                            max="{{ assignment.max_score }}" required>
+                                        <button class="btn btn-primary" type="submit"><i class="ri-save-line"></i></button>
                                     </div>
-
+                                    
                                     <textarea name="feedback" class="form-control form-control-sm" rows="1" 
-                                              placeholder="Catatan Feedback...">{{ item.submission.feedback|default:'' }}</textarea>
+                                            placeholder="Catatan Feedback...">{{ member.submission.feedback|default:'' }}</textarea>
                                 </form>
+
                             {% else %}
-                                <small class="text-muted fst-italic">Menunggu submisi.</small>
+                                <small class="text-muted fst-italic">Menunggu uploads.</small>
                             {% endif %}
-                        </td>
-                    </tr>
+                            
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        
+                        {% else %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar avatar-sm me-3">
+                                            <span class="avatar-initial rounded-circle bg-label-secondary">{{ item.student.nim.first_name|first }}</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ item.student.nim.first_name }} {{ item.student.nim.last_name }}</h6>
+                                            <small class="text-muted">{{ item.student.nim.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {% if item.status == 'missing' %}
+                                        <span class="badge bg-label-secondary">Belum Submit</span>
+                                    {% elif item.status == 'submitted' %}
+                                        <span class="badge bg-label-warning">Perlu Dinilai</span>
+                                    {% elif item.status == 'graded' %}
+                                        <span class="badge bg-label-success">Selesai</span>
+                                    {% endif %}
+                                    {% if item.is_late %}<br><small class="text-danger fw-bold" style="font-size: 10px;">TERLAMBAT</small>{% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item.submission %}
+                                        <div class="d-flex flex-column gap-1">
+                                            <small class="text-muted" style="font-size: 0.75rem;">{{ item.submission.updated_at|date:"d M, H:i" }}</small>
+                                            {% if item.submission.submitted_link %}
+                                                <a href="{{ item.submission.submitted_link }}" target="_blank" class="fw-bold text-primary" title="{{ item.submission.submitted_link }}">
+                                                    <i class="ri-link me-1"></i> Link Tugas
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                               {% if item.submission %}
+                                   <form method="POST" class="d-flex flex-column gap-2">
+                                    {% csrf_token %}
+                                    
+                                    <input type="hidden" name="submission_id" value="{{ item.submission.id }}">
+
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text fw-bold">Nilai</span>
+                                        <input type="number" name="score" class="form-control" 
+                                            placeholder="0" 
+                                            value="{{ item.submission.score|default:'' }}" 
+                                            max="{{ assignment.max_score }}" required>
+                                        <button class="btn btn-primary" type="submit"><i class="ri-save-line"></i></button>
+                                    </div>
+                                    
+                                    <textarea name="feedback" class="form-control form-control-sm" rows="1" 
+                                            placeholder="Catatan Feedback...">{{ item.submission.feedback|default:'' }}</textarea>
+                                </form>
+                                {% else %}
+                                <small class="text-muted fst-italic">Menunggu uploads.</small>
+                            {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+
                     {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center py-5">
-                            <i class="ri-user-unfollow-line ri-2x text-muted mb-2"></i>
-                            <p class="mb-0">Belum ada mahasiswa di kelas ini.</p>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <i class="ri-user-unfollow-line ri-2x text-muted mb-2"></i>
+                                <p class="mb-0">Belum ada mahasiswa di kelas ini.</p>
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>

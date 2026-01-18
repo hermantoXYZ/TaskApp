@@ -108,6 +108,7 @@
           <th rowspan="2" class="bg-light">NIM</th>
           <th rowspan="2" class="bg-light">Prodi</th>
           <th rowspan="2" class="bg-light">Kelas</th>
+          <th rowspan="2" class="bg-light">Kelompok</th>
 
           {% if agendas %}
             <th colspan="{{ agendas.count }}" class="bg-label-info text-center text-info">Riwayat Kehadiran</th>
@@ -138,15 +139,11 @@
                 </th>
             {% endfor %}
 
-            {% for quiz in quizzes %}
+           {% for quiz in quizzes %}
                 <th class="small" title="{{ quiz.title }}">
-                    {% if quiz.exam_type == 'uts' %}
-                        <span class="text-danger fw-bold">UTS</span>
-                    {% elif quiz.exam_type == 'uas' %}
-                        <span class="text-danger fw-bold">UAS</span>
-                    {% else %}
-                        Q{{ forloop.counter }}
-                    {% endif %}
+                    <span class="text-danger fw-bold">
+                        {{ quiz.quiz_type|default:"Quiz"|upper }}
+                    </span>
                 </th>
             {% endfor %}
         </tr>
@@ -166,6 +163,15 @@
             <td>{{ item.participant.mahasiswa.nim.username }}</td>
             <td>{{ item.participant.mahasiswa.prodi.nama_prodi|default:"-" }}</td>
             <td>{{ course.group }}</td>
+            <td class="text-center">
+                {% with group_member=item.participant.group_memberships.first %}
+                    {% if group_member %}
+                        <span class="badge bg-label-primary">{{ group_member.group.name }}</span>
+                    {% else %}
+                        <span class="text-muted small">-</span>
+                    {% endif %}
+                {% endwith %}
+            </td>
 
             {% for stat in item.agenda_statuses %}
             <td class="text-center col-absen">

@@ -1,0 +1,221 @@
+
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ active_item.title|default:course.name }} - Learning{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/plyr/plyr.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/plyr/plyr.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/pages/app-academy-details.css' %}" />
+<style>
+    /* Styling tambahan untuk membedakan Tugas dan Materi */
+    .input-warning:checked {
+        background-color: #ff9f43;
+        border-color: #ff9f43;
+    }
+    .course-link {
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    .course-link:hover {
+        color: #666cff; /* Primary color */
+    }
+    .course-link.active {
+        color: #666cff;
+        font-weight: 700;
+    }
+</style>
+{% endblock page_css %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'js/app-academy-course-details.js' %}"></script>
+{% endblock page_js %}
+
+{% block content %}
+<div class="row g-6">
+<div class="col-lg-8">
+    
+    <div class="card mb-6">
+      <div class="card-body pt-5">
+        <div class="tab-content p-0">
+          
+          <div class="tab-pane fade show active" id="navs-learning" role="tabpanel">
+            
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-1">
+                <div class="me-1">
+                  <h5 class="mb-0">{{ course.name }}</h5>
+                  <p class="mb-0">Code: <span class="fw-medium text-heading"> {{ course.code }} </span></p>
+                </div>
+                <div class="d-flex align-items-center">
+                  <span class="badge bg-label-danger rounded-pill me-3">{{ course.prodi.nama_prodi }}</span>
+<a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-sm btn-outline-secondary">
+            <i class="ri-arrow-left-line me-1"></i> Kembali
+          </a>
+                </div>
+            </div>
+
+            <div class="card academy-content shadow-none border">
+                <div class="p-2">
+                    {% if active_type == 'material' %}
+                        <div class="cursor-pointer">
+                            {% if active_item.material_type == 'video' %}
+                                <div class="plyr__video-embed" id="plyr-video-player">
+                                    <iframe src="{{ active_item.video_url }}" allowfullscreen allowtransparency allow="autoplay"></iframe>
+                                </div>
+                            {% else %}
+                                <div class="p-12 text-center bg-lighter rounded">
+                                    <div class="mb-3"><i class="ri-article-line ri-3x text-primary"></i></div>
+                                    <h4>{{ active_item.title }}</h4>
+                                    <p class="text-muted">Materi ini berupa bahan bacaan.</p>
+                                    {% if active_item.file_attachment %}
+                                        <a href="{{ active_item.file_attachment.url }}" class="btn btn-outline-primary" target="_blank">
+                                            <i class="ri-download-line me-1"></i> Download File
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    {% elif active_type == 'assignment' %}
+                        <div class="p-4 bg-label-warning rounded border border-warning border-opacity-25">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge bg-label-danger rounded-pill">
+                                        Tugas
+                                        </span>
+                                        <span class="badge bg-label-secondary rounded-pill">Max Score: {{ active_item.max_score }}</span>
+                                    </div>
+                                    <h4 class="text-warning mb-1 fw-bold">{{ active_item.title }}</h4>
+                                    <p class="mb-0 text-muted small">
+                                        <i class="ri-time-line me-1"></i> Deadline: <strong>{{ active_item.due_date|date:"l, d F Y - H:i" }}</strong>
+                                    </p>
+                                </div>
+                                
+                                {% if active_item.file_instruction %}
+                                    <a href="{{ active_item.file_instruction.url }}" class="btn btn-warning text-white shadow-sm" target="_blank">
+                                        <i class="ri-download-cloud-2-line me-1"></i> Download Soal
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="p-12 text-center bg-lighter rounded">
+                            <h4>Selamat Datang!</h4>
+                            <p class="text-muted">Silakan pilih konten di sebelah kanan untuk memulai.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-body pt-3">
+                    <h5>{% if active_item %} {{ active_item.title }} {% else %} Deskripsi Kursus {% endif %}</h5>
+                    <div class="mb-6">
+                        {% if active_type == 'assignment' %}
+                            
+                            {{ active_item.description|safe|linebreaks }}
+                            <hr class="my-6">
+                            {% endif %}
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="accordion stick-top accordion-custom-button" id="courseContent">
+
+      {% for section in sections %}
+      
+      <div class="accordion-item {% if active_item.agenda.id == section.id %}active mb-0{% endif %}">
+        
+        <div class="accordion-header border-bottom-0" id="heading-{{ section.id }}">
+          <button type="button" class="accordion-button {% if active_item.agenda.id != section.id %}collapsed{% endif %}" 
+                  data-bs-toggle="collapse" 
+                  data-bs-target="#chapter-{{ section.id }}" 
+                  aria-expanded="{% if active_item.agenda.id == section.id %}true{% else %}false{% endif %}" 
+                  aria-controls="chapter-{{ section.id }}">
+            <span class="d-flex flex-column">
+              <span class="h5 mb-0">{{ section.title }}</span>
+              <span class="text-body fw-normal small">
+                  {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <div id="chapter-{{ section.id }}" 
+             class="accordion-collapse collapse {% if active_item.agenda.id == section.id %}show{% endif %}" 
+             data-bs-parent="#courseContent">
+          
+          <div class="accordion-body py-4 border-top">
+            
+            {% for material in section.materials.all %}
+            <div class="d-flex align-items-start mb-4">
+              <div class="me-3 mt-1">
+                  <input class="form-check-input" type="checkbox" 
+                         {% if material.id in completed_material_ids %}checked{% endif %} disabled />
+              </div>
+              
+              <div class="w-100">
+                  <a href="{% url 'course-preview-material' course.uuid material.id %}" 
+                     class="course-link {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
+                    <span class="mb-0 h6">{{ material.title }}</span>
+                    <small class="text-body d-block">{{ material.get_duration_display }}</small>
+                  </a>
+              </div>
+            </div>
+            {% endfor %}
+
+            {% if section.assignments.all %}
+                {% if section.materials.all %}{% endif %}
+                 <div class="divider">
+          <div class="divider-text">TUGAS</div>
+        </div>
+                {% for task in section.assignments.all %}
+                <div class="d-flex align-items-start mb-4">
+                  <div class="me-3 mt-1">
+                      <input class="form-check-input input-warning" type="checkbox" 
+                             {% if task.id in completed_assignment_ids %}checked{% endif %} disabled />
+                  </div>
+                  <div class="w-100">
+                      <a href="{% url 'course-preview-assignment' course.uuid task.id %}" 
+                         class="course-link {% if active_type == 'assignment' and active_item.id == task.id %}active text-warning{% endif %}">
+                        <span class="mb-0 h6">{{ task.title }}</span>
+                        <small class="text-danger d-block">Deadline: {{ task.due_date|date:"d M" }}</small>
+                      </a>
+                  </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if not section.materials.all and not section.assignments.all %}
+                <div class="text-center text-muted fst-italic small">Belum ada konten.</div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -63,8 +63,12 @@
             </a>
 
             <a href="{% url 'add-course-material' course.uuid %}" class="btn btn-outline-primary">
-                <i class="ri-file-add-line me-1"></i> Materi Baru
+                <i class="ri-file-add-line me-1"></i> Materi
             </a>
+            <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-outline-primary">
+                <i class="ri-arrow-go-back-line me-1"></i> 
+            </a>
+
         </div>
     </div>
   </div>
@@ -155,6 +159,9 @@
                                         
                                         <div>
                                             <a href="{% url 'edit-course-material' course.uuid material.id %}" class="btn btn-sm btn-icon btn-text-secondary rounded-pill me-1"><i class="ri-pencil-line"></i></a>
+                                            <a href="{% url 'course-preview-material' course.uuid material.id %}" target="_blank" class="btn btn-icon btn-sm text-secondary me-1" title="Lihat Tampilan Mahasiswa">
+            <i class="ri-eye-line"></i>
+        </a>
                                             <a href="javascript:void(0);" 
                                                class="btn btn-sm btn-icon btn-text-danger rounded-pill"
                                                data-bs-toggle="modal" 

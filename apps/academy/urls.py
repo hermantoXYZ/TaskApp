@@ -1,12 +1,13 @@
 from django.urls import path
-from .views import AcademyView, AddCourse, EditCourse, ListCourse, DeleteCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda
+from .views import AcademyView, AddCourse, EditCourse, ListCourse, DeleteCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, InstructorCoursePreviewView, AppPasswordChangeView
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
 from .views_prodi_set import UserListView, UserListJsonView
 from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView
 from .views_export_data import CourseRecapitulationView
-from .views_apps import KanbanAcademyView, ChatAcademyViews
+from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView
+from .views_dosen import DosenProfileView
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -42,10 +43,14 @@ urlpatterns = [
 
     path('course/<uuid:course_uuid>/rekapitulasi/', CourseRecapitulationView.as_view(), name='course-rekapitulasi'),
 
+    path('course/<uuid:course_uuid>/preview/', InstructorCoursePreviewView.as_view(), name='course-preview'),
+    path('course/<uuid:course_uuid>/preview/material/<int:material_id>/', InstructorCoursePreviewView.as_view(), name='course-preview-material'),
+    path('course/<uuid:course_uuid>/preview/assignment/<int:assignment_id>/', InstructorCoursePreviewView.as_view(), name='course-preview-assignment'),
 
-    path('course/submission/<int:submission_id>/update-grade/', views.update_grade_submission, name='update-grade-submission'),
-    # user
+    # path('course/submission/<int:submission_id>/update-grade/', views.update_grade_submission, name='update-grade-submission'),
+    # # user
     path('profile/mahasiswa', UserProfileView.as_view(), name='profile'),
+    path('dosen/profile/', DosenProfileView.as_view(), name='dosen-profile'),
     path('login/', views.loginView, name='login'),
     path("logout/",LogoutView.as_view(),name="logout",),
     path("app/user/listss/", UserListView.as_view(), name="app-user-lists"),
@@ -54,6 +59,8 @@ urlpatterns = [
 
     # === PUBLIC URLS ===
     path('public/share/<uuid:course_uuid>/agenda/<int:agenda_id>/', views.PublicAgendaMaterialView.as_view(), name='public-agenda-material'),
+
+    path('account/password/change/', AppPasswordChangeView.as_view(), name='password_change'),
 
 
     # QUIZ URLS
@@ -84,6 +91,8 @@ urlpatterns = [
 
     # === KANBAN & CHAT URLS === #
     path('app/kanban/', KanbanAcademyView.as_view(), name="app-kanban"),
-    path('app/chats/', ChatAcademyViews.as_view(), name="app-chat"),
+    path('chat/', ChatAcademyViews.as_view(), name='chat-index'),
+    path('chat/<uuid:room_uuid>/', ChatAcademyViews.as_view(), name='chat-detail'),
+    path('chat/start/<int:target_user_id>/', StartChatView.as_view(), name='chat-start'),
     path("app/academy/dashboard/",login_required(AcademyView.as_view(template_name="app_academy_dashboard.html")),name="app-academy-dashboard",),
 ]
