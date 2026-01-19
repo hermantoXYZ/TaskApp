@@ -171,10 +171,13 @@ STATICFILES_DIRS = [
 ]
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# ln -s /home/losh8327/task/staticfiles /home/losh8327/public_html/task.findstock.id/static
 # Default URL on which Django application runs for specific environment
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'  
 
+# ln -s /home/losh8327/task/media /home/losh8327/public_html/task.findstock.id/media
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
