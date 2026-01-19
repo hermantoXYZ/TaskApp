@@ -194,6 +194,7 @@ class Course(models.Model):
     credit_p = models.PositiveIntegerField()
     duration_weeks = models.PositiveIntegerField()
     prodi = models.ForeignKey( Prodi, on_delete=models.CASCADE, related_name='courses' )
+    link_rps = models.URLField(max_length=200, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

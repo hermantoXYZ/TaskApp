@@ -268,7 +268,7 @@ class ViewsAllCourse(DosenRequiredMixin, AcademyView):
             course=course
         ))
     
-class ListCourse(AcademyView):
+class ListCourse(DosenRequiredMixin, AcademyView):
     template_name = "list_academy_course.html"
     def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
@@ -322,7 +322,7 @@ class AddCourseParticipant(DosenRequiredMixin, AcademyView):
         participants = CourseParticipant.objects.filter(course=course).select_related('mahasiswa')
         return self.render_to_response(self.get_context_data(form=form, course=course, participants=participants))
     
-class DeleteCourseParticipant(AcademyView):
+class DeleteCourseParticipant(DosenRequiredMixin, AcademyView):
     def get(self, request, *args, **kwargs):
         course_uuid = self.kwargs.get('course_uuid')
         participant_id = self.kwargs.get('participant_id')
@@ -333,7 +333,7 @@ class DeleteCourseParticipant(AcademyView):
         messages.success(request, f'Mahasiswa "{mhs_name}" berhasil dihapus dari kelas.')
         return redirect('add-course-participant', course_uuid=course.uuid)
 
-class AddCourseAgenda(AcademyView):
+class AddCourseAgenda(DosenRequiredMixin, AcademyView):
     template_name = "add_agenda.html"
 
     def get(self, request, course_uuid, *args, **kwargs):
@@ -379,7 +379,7 @@ class AddCourseAgenda(AcademyView):
             ag.percent = int((hadir_count / total_participants) * 100) if total_participants > 0 else 0
 
 
-class EditCourseAgenda(AcademyView):
+class EditCourseAgenda(DosenRequiredMixin, AcademyView):
     template_name = "add_agenda.html"
 
     def get(self, request, course_uuid, agenda_id, *args, **kwargs):
@@ -427,7 +427,7 @@ class EditCourseAgenda(AcademyView):
 
 
 
-class DeleteCourseAgenda(AcademyView):
+class DeleteCourseAgenda(DosenRequiredMixin, AcademyView):
     def get(self, request, *args, **kwargs):
         course_uuid = self.kwargs.get('course_uuid') or self.kwargs.get('course_id')
         agenda_id = self.kwargs.get('agenda_id') or self.kwargs.get('pk')
@@ -439,7 +439,7 @@ class DeleteCourseAgenda(AcademyView):
         return redirect('add-course-agenda', course_uuid=course.uuid)
     
 
-class CourseAnnouncementView(AcademyView):
+class CourseAnnouncementView(DosenRequiredMixin, AcademyView):
     template_name = "add_announcement.html"
     def get(self, request, course_uuid, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
@@ -837,10 +837,8 @@ class PublicAgendaMaterialView(TemplateView):
         course_uuid = self.kwargs.get('course_uuid')
         agenda_id = self.kwargs.get('agenda_id')
 
-        # Ambil Agenda (Tanpa cek login user)
         agenda = get_object_or_404(CourseAgenda, id=agenda_id, course__uuid=course_uuid)
         
-        # Ambil Material terkait
         materials = CourseMaterial.objects.filter(agenda=agenda).order_by('order')
 
         context['agenda'] = agenda
@@ -854,7 +852,6 @@ class CourseQuizListView(DosenRequiredMixin, AcademyView):
 
     def get(self, request, course_uuid, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
-        # Ambil kuis urut berdasarkan waktu mulai
         quizzes = CourseQuiz.objects.filter(course=course).order_by('start_time')
         
         return self.render_to_response(self.get_context_data(

@@ -222,12 +222,27 @@
                         id="{{ form.group.id_for_label }}" 
                         value="{{ form.group.value|default_if_none:'' }}" 
                         class="form-control {% if form.group.errors %}is-invalid{% endif %}" 
-                        placeholder="Durasi Minggu"
+                        placeholder="Kelas/Group"
                         required>
                     <label for="{{ form.group.id_for_label }}">Kelas/Group</label>
                     {% if form.group.errors %}
                         <div class="invalid-feedback">
                             {% for error in form.group.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-floating form-floating-outline mb-6">
+                    <input type="link" 
+                        name="{{ form.link_rps.html_name }}" 
+                        id="{{ form.link_rps.id_for_label }}" 
+                        value="{{ form.link_rps.value|default_if_none:'' }}" 
+                        class="form-control {% if form.link_rps.errors %}is-invalid{% endif %}" 
+                        placeholder="Link RPS"
+                        required>
+                    <label for="{{ form.link_rps.id_for_label }}">Link RPS</label>
+                    {% if form.link_rps.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.link_rps.errors %}{{ error }}{% endfor %}
                         </div>
                     {% endif %}
                 </div>

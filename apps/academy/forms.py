@@ -97,7 +97,7 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = [
             'code', 'name', 'description', 'period', 'prodi',
-            'credit_t', 'credit_p', 'duration_weeks', 'is_active', 'coaches', 'group'
+            'credit_t', 'credit_p', 'duration_weeks', 'is_active', 'coaches', 'group', 'link_rps'
         ]
         widgets = {
             'code': forms.TextInput(attrs={
@@ -142,6 +142,10 @@ class CourseForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Contoh: A, B, C'
             }),
+            'link_rps': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://drive.google.com/...'
+            })
         }
  
 
