@@ -100,19 +100,17 @@ WSGI_APPLICATION = "config.wsgi.application"
 #     }
 # }
 
-### MYSQL DATABASES
+
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_findtask',  # Ganti dengan nama database yang Anda buat di phpMyAdmin /bisdigun_app_success
-        'USER': 'root',  # Nama pengguna MySQL, biasanya 'root' di XAMPP /bisdigun_app_root
-        'PASSWORD': '',  # Kata sandi pengguna MySQL, jika tidak ada, biarkan kosong
-        'HOST': 'localhost',  # Host server database, localhost untuk XAMPP
-        'PORT': '3307',  # Port MySQL (default 3306)
+        'NAME': 'db_findstack',
+        'USER': 'root',
+        'PASSWORD': 'root_password_anda',
+        'HOST': '127.0.0.1',
+        'PORT': '3307', 
         'OPTIONS': {
-            'charset': 'utf8mb4',  # <--- TAMBAHKAN ATAU PASTIKAN INI ADA
+            'charset': 'utf8mb4',
         },
     }
 }

@@ -64,6 +64,67 @@
             height: 400px !important;
         }
     }
+    /* Ganti 'pre' menjadi '.card-body pre' */
+.card-body pre {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 50px 20px 20px 20px;
+    border-radius: 8px;
+    position: relative; 
+    overflow-x: auto;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    border: 1px solid #333;
+    margin: 20px 0;
+    white-space: pre-wrap; 
+    display: block;
+}
+
+/* Header Bar Palsu - Tambahkan .card-body di depannya */
+.card-body pre::before {
+    content: "Code";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 35px;
+    background-color: #2d2d2d;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom: 1px solid #333;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-family: sans-serif;
+    z-index: 1;
+}
+
+/* Tombol Mac - Tambahkan .card-body di depannya */
+.card-body pre::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 15px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #ff5f56;
+    box-shadow: 15px 0 0 #ffbd2e, 30px 0 0 #27c93f;
+    z-index: 2;
+}
+
+/* Mengatasi pre code */
+.card-body pre code {
+    background-color: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+    border: none !important;
+    font-family: inherit !important;
+}
 </style>
 {% endblock page_css %}
 

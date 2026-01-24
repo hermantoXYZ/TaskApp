@@ -1,29 +1,19 @@
-version: '1.0'
-
 services:
-  web-project-django:
-    container_name: web_project_django
-    restart: always
-    build: .
-    networks:
-      - db_network
-      - web_network
-
-  web-project-nginx:
-    container_name: web_project_nginx
-    restart: always
-    image: "nginx:latest"
+  db:
+    image: mariadb:10.11.15
+    container_name: mariadb_lokal
+    environment:
+      MARIADB_ROOT_PASSWORD: root
     ports:
-      - "5050:5050"
-    volumes:
-      - ./nginx:/etc/nginx/conf.d
-    networks:
-      - web_network
-    depends_on:
-      - web-project-django
+      - "3307:3306"
 
-networks:
-  db_network:
-    driver: bridge
-  web_network:
-    driver: bridge
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: pma_docker
+    links:
+      - db
+    ports:
+      - "8080:80" # Akses di browser lewat localhost:8080
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
