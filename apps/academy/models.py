@@ -6,7 +6,7 @@ import uuid
 from django.utils import timezone
 import os
 from django.conf import settings
-
+from django.utils.text import slugify
 ########################### TABEL USER MASTER #####################################
 User.add_to_class("__str__", lambda self: f"{self.username} - {self.first_name}")
 
@@ -496,3 +496,39 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"{self.sender.username}: {self.content[:20]}..."
+    
+class BookCategory(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, blank=True) 
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+    
+def rename_books_cover(instance, filename):
+    ext = filename.split('.')[-1]
+    title = instance.title.replace(" ", "_")
+    timestamp = timezone.now().strftime('%Y%m%d%H%M%S')  
+    new_filename = f"{title}_{timestamp}.{ext}"
+    return os.path.join('books/covers/', new_filename)
+    
+class Book(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    author = models.CharField(max_length=255, blank=True, null=True)
+    category = models.ForeignKey(BookCategory, on_delete=models.SET_NULL, null=True, related_name='books')
+    description = models.TextField(blank=True, null=True)
+    cover = models.ImageField(upload_to=rename_books_cover)
+    embed_url = models.URLField(max_length=500)
+    source_url = models.URLField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return self.title

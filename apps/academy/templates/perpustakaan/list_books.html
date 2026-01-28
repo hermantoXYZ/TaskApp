@@ -1,0 +1,213 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Koleksi Perpustakaan{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    
+    <div class="card">
+      
+      <div class="card-header border-bottom d-flex justify-content-between align-items-center row pb-3 gap-3 gap-md-0">
+        <div class="col-md-5 user_role">
+            <h5 class="card-title mb-0">Daftar Koleksi Buku</h5>
+            <small class="text-muted">Kelola semua materi digital dan fisik</small>
+        </div>
+        
+      <div class="col-md-7 d-flex align-items-center justify-content-end gap-2">
+    
+    <div class="input-group input-group-merge" style="width: 250px;">
+        <span class="input-group-text border-end-0 ps-3" style="height: 40px; background-color: white;">
+            <i class="ri-search-line text-muted"></i>
+        </span>
+        <input type="text" 
+               class="form-control border-start-0 ps-1" 
+               placeholder="Cari judul buku..." 
+               id="searchBook"
+               style="height: 40px; box-shadow: none;">
+    </div>
+
+    <a href="{% url 'add-book' %}" 
+       class="btn btn-primary d-flex align-items-center" 
+       style="height: 40px;">
+        <i class="ri-add-line me-1"></i> Buku Baru
+    </a>
+
+</div>
+      </div>
+
+      <div class="table-responsive text-nowrap">
+        <table class="table table-hover" id="tableBooks">
+          <thead class="table-light">
+            <tr>
+              <th width="40%">Buku & Penulis</th>
+              <th width="20%">Kategori</th>
+              <th width="15%">Format</th>
+              <th width="15%">Status</th>
+              <th width="10%">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="table-border-bottom-0">
+            {% for book in books %}
+            <tr>
+              <td>
+                <div class="d-flex justify-content-start align-items-center user-name">
+                  <div class="avatar-wrapper">
+                    <div class="avatar avatar-lg me-3">
+                        {% if book.cover %}
+                          <img src="{{ book.cover.url }}" alt="Cover" class="rounded shadow-sm" style="object-fit: cover;">
+                        {% else %}
+                          <span class="avatar-initial rounded bg-label-secondary">
+                              <i class="ri-book-mark-line"></i>
+                          </span>
+                        {% endif %}
+                    </div>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <a href="#" class="text-heading text-truncate"><span class="fw-medium">{{ book.title }}</span></a>
+                    <small class="text-muted">{{ book.author|default:"Tidak ada penulis" }}</small>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <span class="badge rounded-pill bg-label-info">
+                    <i class="ri-price-tag-3-line me-1"></i> {{ book.category.name|default:"Umum" }}
+                </span>
+              </td>
+
+              <td>
+                <div class="d-flex gap-2">
+                    {% if book.embed_url %}
+                    <a href="#" class="btn btn-sm btn-icon btn-label-primary rounded-pill" data-bs-toggle="tooltip" title="Lihat Preview">
+                        <i class="ri-eye-line"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% if book.source_url %}
+                    <a href="{{ book.source_url }}" target="_blank" class="btn btn-sm btn-icon btn-label-success rounded-pill" data-bs-toggle="tooltip" title="Download / Sumber">
+                        <i class="ri-download-cloud-2-line"></i>
+                    </a>
+                    {% endif %}
+                </div>
+              </td>
+
+              <td>
+                <span class="badge bg-label-success">Available</span>
+              </td>
+
+              <td>
+                <div class="d-flex align-items-center">
+                    <a href="javascript:;" class="text-body" data-bs-toggle="dropdown">
+                        <i class="ri-more-2-line ri-lg"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end m-0">
+                        <a href="{% url 'edit-book' book.id %}" class="dropdown-item">
+                            <i class="ri-pencil-line me-2"></i> Edit Data
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="javascript:;" 
+                           class="dropdown-item text-danger delete-record"
+                           data-bs-toggle="modal" 
+                           data-bs-target="#deleteModal"
+                           data-href="{% url 'delete-book' book.id %}"
+                           data-title="{{ book.title }}">
+                            <i class="ri-delete-bin-7-line me-2"></i> Hapus
+                        </a>
+                    </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center p-5">
+                    <div class="d-flex flex-column align-items-center justify-content-center">
+                        <div class="avatar avatar-xl mb-3">
+                            <span class="avatar-initial rounded-circle bg-label-secondary">
+                                <i class="ri-book-open-line ri-40px"></i>
+                            </span>
+                        </div>
+                        <h6 class="mb-1">Belum ada buku</h6>
+                        <p class="text-muted small">Silakan tambahkan buku baru untuk memulai.</p>
+                        <a href="{% url 'add-book' %}" class="btn btn-primary btn-sm mt-2">Tambah Sekarang</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="card-footer d-flex align-items-center justify-content-between border-top">
+        <small class="text-muted">Menampilkan {{ books.count }} data</small>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+        
+        <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-danger">
+                <i class="ri-delete-bin-2-line ri-32px"></i>
+            </span>
+        </div>
+
+        <h5 class="mb-2 fw-bold">Hapus Buku?</h5>
+        <p class="text-muted mb-4 small">
+            Anda akan menghapus buku <br><strong id="modalBookTitle" class="text-dark"></strong>.
+        </p>
+        
+        <div class="d-flex gap-2 w-100">
+            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">Batal</button>
+            <a href="#" id="confirmDeleteBtn" class="btn btn-danger w-100">Ya, Hapus</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Init Tooltips (Bootstrap 5)
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // Logic Modal Hapus
+        var deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var deleteUrl = button.getAttribute('data-href');
+                var bookTitle = button.getAttribute('data-title');
+                
+                // Isi data ke modal
+                deleteModal.querySelector('#modalBookTitle').textContent = '"' + bookTitle + '"';
+                deleteModal.querySelector('#confirmDeleteBtn').href = deleteUrl;
+            });
+        }
+
+        // Logic Search Sederhana (Client Side)
+        var searchInput = document.getElementById('searchBook');
+        if(searchInput){
+            searchInput.addEventListener('keyup', function() {
+                var value = this.value.toLowerCase();
+                var rows = document.querySelectorAll("#tableBooks tbody tr");
+                
+                rows.forEach(function(row) {
+                    var text = row.textContent.toLowerCase();
+                    row.style.display = text.indexOf(value) > -1 ? "" : "none";
+                });
+            });
+        }
+    });
+</script>
+
+{% endblock %}

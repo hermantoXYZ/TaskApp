@@ -1,0 +1,107 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Tambah Kategori</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-floating form-floating-outline mb-4">
+                        {{ form.name }}
+                        <label for="{{ form.name.id_for_label }}">Nama Kategori</label>
+                        {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ri-save-line me-1"></i> Simpan Kategori
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <h5 class="card-header">Daftar Kategori Buku</h5>
+            <div class="table-responsive text-nowrap">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nama Kategori</th>
+                            <th>Jumlah Buku</th>
+                            <th width="10%">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in categories %}
+                        <tr>
+                            <td><span class="fw-bold text-heading">{{ cat.name }}</span></td>
+                            <td><span class="badge rounded-pill bg-label-primary">{{ cat.books.count }} Buku</span></td>
+                            <td>
+                                <button type="button" 
+                                    class="btn btn-sm btn-icon btn-text-danger rounded-pill"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteCategoryModal"
+                                    data-href="{% url 'delete-category' cat.id %}"
+                                    data-name="{{ cat.name }}">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-4">Belum ada kategori.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        
+        <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-danger">
+                <i class="ri-delete-bin-2-line ri-32px"></i>
+            </span>
+        </div>
+
+        <h5 class="mb-2 fw-bold">Hapus Kategori?</h5>
+        <p class="text-muted mb-4 small">
+            Anda akan menghapus kategori <strong id="catName"></strong>. Tindakan ini tidak dapat dibatalkan.
+        </p>
+        
+        <div class="d-flex gap-2 w-100">
+            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">Batal</button>
+            <a href="#" id="confirmDeleteCatBtn" class="btn btn-danger w-100">Ya, Hapus</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var deleteModal = document.getElementById('deleteCategoryModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Tombol yang memicu modal
+            var deleteUrl = button.getAttribute('data-href');
+            var catName = button.getAttribute('data-name');
+            
+            // Update konten modal
+            deleteModal.querySelector('#catName').textContent = catName;
+            deleteModal.querySelector('#confirmDeleteCatBtn').href = deleteUrl;
+        });
+    }
+});
+</script>
+{% endblock %}

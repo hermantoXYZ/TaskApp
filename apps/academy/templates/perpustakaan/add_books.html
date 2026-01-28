@@ -1,0 +1,154 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if is_edit %}Edit Buku: {{ form.instance.title }}{% else %}Tambah Koleksi Buku{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    
+    <div class="card mb-6">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            {% if is_edit %} 
+                <i class="ri-pencil-line me-1"></i> Edit Koleksi Buku 
+            {% else %} 
+                <i class="ri-add-line me-1"></i> Tambah Koleksi Buku 
+            {% endif %}
+        </h5>
+        
+        <a href="{% url 'list-books' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="ri-arrow-go-back-line me-1"></i> 
+            {% if is_edit %} Batal Edit {% else %} Kembali ke Daftar {% endif %}
+        </a>
+      </div>
+
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="row">
+            
+            <div class="col-md-6 p-4 border-end">
+                <h6 class="mb-4 text-primary"><i class="ri-book-2-line me-2"></i>Informasi Buku</h6>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="text"
+                        name="{{ form.title.html_name }}"
+                        id="{{ form.title.id_for_label }}"
+                        value="{{ form.title.value|default_if_none:'' }}"
+                        class="form-control {% if form.title.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Masukkan judul buku"
+                        required>
+                    <label for="{{ form.title.id_for_label }}">Judul Buku</label>
+                    {% if form.title.errors %}
+                        <div class="invalid-feedback">{% for error in form.title.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="text"
+                        name="{{ form.author.html_name }}"
+                        id="{{ form.author.id_for_label }}"
+                        value="{{ form.author.value|default_if_none:'' }}"
+                        class="form-control {% if form.author.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+                        placeholder="Nama Penulis">
+                    <label for="{{ form.author.id_for_label }}">Penulis / Pengarang</label>
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="form-select">
+                        {% for choice in form.category.field.choices %}
+                            <option value="{{ choice.0 }}" 
+                                {% if form.category.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
+                                {{ choice.1 }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label for="{{ form.category.id_for_label }}">Kategori</label>
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <textarea 
+                        name="{{ form.description.html_name }}"
+                        id="{{ form.description.id_for_label }}"
+                        class="form-control"
+                        placeholder="Deskripsi singkat buku"
+                        style="height: 120px;">{{ form.description.value|default_if_none:'' }}</textarea>
+                    <label for="{{ form.description.id_for_label }}">Deskripsi / Sinopsis</label>
+                </div>
+            </div>
+
+            <div class="col-md-6 p-4">
+                <h6 class="mb-4 text-primary"><i class="ri-links-line me-2"></i>Media & Akses Digital</h6>
+
+                <div class="mb-4">
+                    <label class="form-label">Cover Buku</label>
+                    
+                    {% if is_edit and form.instance.cover %}
+                    <div class="d-flex align-items-center mb-3 p-2 border rounded bg-label-secondary">
+                        <img src="{{ form.instance.cover.url }}" alt="Cover Lama" class="rounded me-3" style="width: 50px; height: 75px; object-fit: cover;">
+                        <div>
+                            <small class="text-muted d-block">Cover saat ini:</small>
+                            <span class="fw-medium small text-truncate d-block" style="max-width: 200px;">
+                                {{ form.instance.cover.name }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <input type="file" 
+                        name="{{ form.cover.html_name }}" 
+                        id="{{ form.cover.id_for_label }}" 
+                        class="form-control {% if form.cover.errors %}is-invalid{% endif %}">
+                    
+                    {% if form.cover.errors %}
+                        <div class="invalid-feedback">{% for error in form.cover.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                    <div class="form-text">Format: JPG, PNG. Biarkan kosong jika tidak ingin mengubah cover.</div>
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="url" 
+                        name="{{ form.embed_url.html_name }}" 
+                        id="{{ form.embed_url.id_for_label }}" 
+                        value="{{ form.embed_url.value|default_if_none:'' }}"
+                        class="form-control" 
+                        placeholder="https://drive.google.com/.../preview">
+                    <label for="{{ form.embed_url.id_for_label }}">Link Embed (Iframe Preview)</label>
+                    <div class="form-text">Gunakan link 'Preview' dari Google Drive untuk tampilan baca di web.</div>
+                </div>
+
+                <div class="form-floating form-floating-outline mb-4">
+                    <input type="url" 
+                        name="{{ form.source_url.html_name }}" 
+                        id="{{ form.source_url.id_for_label }}" 
+                        value="{{ form.source_url.value|default_if_none:'' }}"
+                        class="form-control" 
+                        placeholder="https://drive.google.com/...">
+                    <label for="{{ form.source_url.id_for_label }}">Link Sumber (Download/Original)</label>
+                    <div class="form-text">Link asli untuk didownload atau dibuka di tab baru.</div>
+                </div>
+            </div>
+          </div> 
+          
+          <div class="row mt-2">
+            <div class="col-12 d-flex justify-content-end border-top pt-3 gap-2">
+                <a href="{% url 'list-books' %}" class="btn btn-label-secondary">
+                    Batal
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="ri-save-line me-1"></i> 
+                    {% if is_edit %} Update Perubahan {% else %} Simpan Koleksi {% endif %}
+                </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

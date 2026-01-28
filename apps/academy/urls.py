@@ -4,10 +4,10 @@ from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
 from .views_prodi_set import UserListView, UserListJsonView
-from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView
+from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView
 from .views_export_data import CourseRecapitulationView
 from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView
-from .views_dosen import DosenProfileView
+from .views_dosen import DosenProfileView, AddBookView, ManageCategoryView, DeleteBookView, DeleteCategoryView, ListBookView, EditBookView
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -85,9 +85,20 @@ urlpatterns = [
     path('quiz/attempt/<uuid:attempt_id>/submit/', StudentQuizSubmitView.as_view(), name='student-quiz-submit'), 
     path('quiz/attempt/<uuid:attempt_id>/result/', StudentQuizResultView.as_view(), name='student-quiz-result'),
 
+    path('app/library/', StudentLibraryListView.as_view(), name='student-library-list'),
+    path('app/library/read/<uuid:pk>/', StudentBookDetailView.as_view(), name='student-book-read'),
+
     # === GROUP URLS === #
     path('course/<uuid:course_uuid>/groups/', views.CourseGroupListView.as_view(), name='course-groups'),
     path('groups/<uuid:group_id>/', views.CourseGroupDetailView.as_view(), name='group-detail'),
+
+    # === BOOK URLS === #
+    path('app/books/add/', AddBookView.as_view(), name='add-book'),
+    path('app/books/edit/<uuid:pk>/', EditBookView.as_view(), name='edit-book'),
+    path('app/list/books/', ListBookView.as_view(), name='list-books'),
+    path('app/books/categories/', ManageCategoryView.as_view(), name='manage-category'),
+    path('app/library/books/delete/<uuid:pk>/', DeleteBookView.as_view(), name='delete-book'),
+    path('app/library/categories/delete/<int:pk>/', DeleteCategoryView.as_view(), name='delete-category'),
 
     # === KANBAN & CHAT URLS === #
     path('app/kanban/', KanbanAcademyView.as_view(), name="app-kanban"),

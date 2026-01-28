@@ -2,8 +2,8 @@ from django.views.generic import TemplateView
 from web_project import TemplateLayout
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from .models import UserDosen
-from .forms_dosen import DosenProfileForm
+from .models import UserDosen, Book, BookCategory
+from .forms_dosen import BookCategoryForm, DosenProfileForm, BookForm
 from .decorators_dosen import DosenRequiredMixin # Pastikan Anda punya ini atau gunakan LoginRequiredMixin
 
 
@@ -63,3 +63,122 @@ class DosenProfileView(DosenRequiredMixin, AcademyView):
         else:
             messages.error(request, 'Gagal menyimpan. Periksa kembali isian Anda.')
             return self.render_to_response(self.get_context_data(form=form))
+        
+
+class AddBookView(DosenRequiredMixin, AcademyView):
+    template_name = "perpustakaan/add_books.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'form' not in kwargs:
+            context['form'] = BookForm()
+        context.update({
+            "title": "Tambah Buku",
+            "heading": "Form Tambah Koleksi",
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = BookForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Buku berhasil ditambahkan!')
+            return redirect('list-books') # Setelah simpan, pindah ke halaman daftar
+        return self.render_to_response(self.get_context_data(form=form))
+    
+
+class EditBookView(DosenRequiredMixin, AcademyView):
+    template_name = "perpustakaan/add_books.html" # Kita reuse template Add
+
+    def get_context_data(self, pk, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 1. Ambil data buku yang mau diedit
+        book = get_object_or_404(Book, id=pk)
+        
+        # 2. Masukkan data buku ke dalam form
+        if 'form' not in kwargs:
+            context['form'] = BookForm(instance=book)
+        
+        context.update({
+            "title": "Edit Buku",
+            "heading": f"Edit Buku: {book.title}",
+            "is_edit": True,   # Marker untuk Template
+            "book": book       # Untuk keperluan link 'Batal' dll
+        })
+        return context
+
+    def post(self, request, pk, *args, **kwargs):
+        book = get_object_or_404(Book, id=pk)
+        
+        # 3. Bind data POST ke instance buku tersebut
+        form = BookForm(request.POST, request.FILES, instance=book)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Perubahan pada buku "{book.title}" berhasil disimpan!')
+            return redirect('list-books') # Kembali ke daftar buku
+        else:
+            messages.error(request, 'Gagal mengupdate buku. Periksa kembali form.')
+            return self.render_to_response(self.get_context_data(pk=pk, form=form))
+        
+class ListBookView(DosenRequiredMixin, AcademyView):
+    template_name = "perpustakaan/list_books.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Koleksi Perpustakaan",
+            "books": Book.objects.all().order_by('-created_at'),
+        })
+        return context
+    
+
+class ManageCategoryView(DosenRequiredMixin, AcademyView):
+    template_name = "perpustakaan/manage_category.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'form' not in kwargs:
+            context['form'] = BookCategoryForm()
+        
+        context.update({
+            "title": "Kelola Kategori",
+            "categories": BookCategory.objects.all().order_by('name'),
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = BookCategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Kategori baru berhasil ditambahkan!')
+            return redirect('manage-category')
+        else:
+            messages.error(request, 'Gagal menambah kategori.')
+            return self.render_to_response(self.get_context_data(form=form))
+        
+class DeleteBookView(DosenRequiredMixin, AcademyView):
+    def get(self, request, pk):
+        # Ambil objek buku berdasarkan ID (UUID)
+        book = get_object_or_404(Book, id=pk)
+        title = book.title
+        
+        # Hapus buku
+        book.delete()
+        
+        messages.success(request, f'Buku "{title}" telah berhasil dihapus.')
+        return redirect('list-books')
+
+class DeleteCategoryView(DosenRequiredMixin, AcademyView):
+    def get(self, request, pk):
+        category = get_object_or_404(BookCategory, id=pk)
+        
+        # Proteksi: Jangan hapus jika masih ada buku di kategori ini
+        if category.books.exists():
+            messages.error(request, f'Kategori "{category.name}" tidak bisa dihapus karena masih memiliki koleksi buku.')
+        else:
+            category.delete()
+            messages.success(request, f'Kategori "{category.name}" berhasil dihapus.')
+            
+        return redirect('manage-category')

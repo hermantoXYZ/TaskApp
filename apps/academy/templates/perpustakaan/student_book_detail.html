@@ -1,0 +1,117 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}{{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-3 col-md-4 mb-4">
+        <a href="{% url 'student-library-list' %}" class="btn btn-label-secondary mb-3 w-100">
+            <i class="ri-arrow-left-line me-1"></i> Kembali ke Galeri
+        </a>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    {% if book.cover %}
+                        <img src="{{ book.cover.url }}" alt="Cover" class="img-fluid rounded shadow" style="max-height: 250px;">
+                    {% else %}
+                        <div class="bg-label-secondary rounded py-5">
+                            <i class="ri-book-open-line ri-4x text-muted"></i>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <h5 class="mb-1 text-center fw-bold">{{ book.title }}</h5>
+                <p class="text-muted text-center small mb-3">{{ book.author }}</p>
+
+                <div class="d-grid gap-2">
+                    {% if book.source_url %}
+                    <a href="{{ book.source_url }}" target="_blank" class="btn btn-primary">
+                        <i class="ri-download-cloud-line me-1"></i> Download File
+                    </a>
+                    {% endif %}
+                    <button class="btn btn-outline-secondary" onclick="copyLink()">
+                        <i class="ri-share-forward-line me-1"></i> Bagikan
+                    </button>
+                </div>
+
+                <hr class="my-4">
+
+                <small class="text-uppercase text-muted fw-bold d-block mb-2">Detail Buku</small>
+                <ul class="list-unstyled small text-secondary mb-0">
+                    <li class="mb-2"><i class="ri-price-tag-3-line me-2"></i> {{ book.category.name }}</li>
+                    <li class="mb-2"><i class="ri-calendar-line me-2"></i> {{ book.created_at|date:"d M Y" }}</li>
+                </ul>
+
+                <hr class="my-4">
+                
+                <small class="text-uppercase text-muted fw-bold d-block mb-2">Sinopsis</small>
+                <p class="small text-secondary mb-0 text-justify">
+                    {{ book.description|default:"Tidak ada deskripsi tersedia."|linebreaksbr }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9 col-md-8">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header border-bottom py-3 d-flex justify-content-between align-items-center bg-white">
+                <h6 class="m-0 fw-bold"><i class="ri-book-read-line me-2 text-primary"></i>Mode Baca</h6>
+                <span class="badge bg-label-success">Online Preview</span>
+            </div>
+            
+            <div class="card-body p-0 position-relative bg-light" style="height: 80vh; min-height: 500px;">
+                {% if book.embed_url %}
+                <iframe 
+                    src="{{ book.embed_url }}" 
+                    width="100%" 
+                    height="100%" 
+                    style="border: none;"
+                    allow="autoplay"
+                    allowfullscreen>
+                </iframe>
+                {% else %}
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted p-5 text-center">
+                    <div class="mb-3 bg-white p-3 rounded-circle shadow-sm">
+                        <i class="ri-error-warning-line ri-2x text-warning"></i>
+                    </div>
+                    <h5>Preview Tidak Tersedia</h5>
+                    <p class="mb-3">Penulis tidak menyertakan link pratinjau untuk buku ini.</p>
+                    {% if book.source_url %}
+                        <a href="{{ book.source_url }}" target="_blank" class="btn btn-primary btn-sm">Buka Link Sumber</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if related_books %}
+<div class="row mt-5">
+    <div class="col-12"><h5 class="fw-bold mb-3">Rekomendasi Lainnya</h5></div>
+    {% for rel in related_books %}
+    <div class="col-6 col-md-3 col-lg-2">
+        <a href="{% url 'student-book-read' rel.id %}" class="card h-100 text-center p-2 text-decoration-none shadow-sm hover-card border-0">
+            {% if rel.cover %}
+                <img src="{{ rel.cover.url }}" class="img-fluid rounded mb-2 object-fit-cover" style="height: 140px; width: 100%;">
+            {% else %}
+                <div class="bg-light rounded mb-2 d-flex align-items-center justify-content-center" style="height: 140px;">
+                    <i class="ri-book-line text-muted"></i>
+                </div>
+            {% endif %}
+            <small class="text-heading fw-bold d-block text-truncate mt-1">{{ rel.title }}</small>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+function copyLink() {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link buku berhasil disalin!");
+}
+</script>
+{% endblock %}

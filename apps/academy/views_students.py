@@ -3,12 +3,13 @@ from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from web_project import TemplateLayout
-from .models import UserMhs, UserDosen, Course, CourseParticipant, CourseAgenda, CourseMaterial, CourseAssignment, CourseAnnouncement, StudentMaterialProgress, StudentAssignmentSubmission, CourseAttendance, CourseQuiz, StudentQuizAttempt, StudentQuizAnswer, QuizQuestion, QuizOption, CourseParticipant, CourseGroupMember
+from .models import UserMhs, UserDosen, Course, CourseParticipant, CourseAgenda, CourseMaterial, CourseAssignment, CourseAnnouncement, StudentMaterialProgress, StudentAssignmentSubmission, CourseAttendance, CourseQuiz, StudentQuizAttempt, StudentQuizAnswer, QuizQuestion, QuizOption, CourseParticipant, CourseGroupMember,  Book, BookCategory
 from .forms_mhs import MhsProfileForm  # Pastikan import form Anda
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .decorators_students import StudentsRequiredMixin
 from django.utils import timezone
 from django.db.models import Sum
+from django.db.models import Q
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -500,3 +501,58 @@ class StudentQuizResultView(StudentsRequiredMixin, AcademyView):
                 'correct': correct_answers
             }
         ))
+    
+
+class StudentLibraryListView(StudentsRequiredMixin, AcademyView):
+    template_name = "perpustakaan/student_library_list.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Ambil parameter dari URL untuk Search & Filter
+        search_query = self.request.GET.get('q', '')
+        category_filter = self.request.GET.get('category', '')
+        
+        # Query Dasar: Ambil semua buku, urutkan terbaru
+        books = Book.objects.all().select_related('category').order_by('-created_at')
+
+        # Logic Pencarian (Judul atau Penulis)
+        if search_query:
+            books = books.filter(
+                Q(title__icontains=search_query) | 
+                Q(author__icontains=search_query)
+            )
+
+        # Logic Filter Kategori
+        if category_filter:
+            books = books.filter(category__name=category_filter)
+
+        context.update({
+            "title": "Perpustakaan Digital",
+            "books": books,
+            "categories": BookCategory.objects.all().order_by('name'), # Untuk dropdown/pill filter
+            "search_query": search_query,
+            "active_category": category_filter,
+        })
+        return context
+
+class StudentBookDetailView(StudentsRequiredMixin, AcademyView):
+    template_name = "perpustakaan/student_book_detail.html"
+
+    def get_context_data(self, pk, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Ambil buku berdasarkan UUID (pk)
+        book = get_object_or_404(Book, id=pk)
+        
+        # Rekomendasi: Buku lain dalam kategori yang sama (kecuali buku ini sendiri)
+        related_books = Book.objects.filter(
+            category=book.category
+        ).exclude(id=pk).order_by('?')[:4] # Random 4 buku
+
+        context.update({
+            "title": book.title,
+            "book": book,
+            "related_books": related_books
+        })
+        return context
