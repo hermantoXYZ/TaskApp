@@ -19,7 +19,6 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/app-academy-details.css' %}" />
 <style>
-    /* === 1. RESPONSIF KONTEN (GAMBAR & VIDEO) === */
     .course-content-body {
         width: 100%;
         overflow-wrap: break-word;
@@ -63,8 +62,6 @@
         margin-bottom: 0.5rem;
         border: 1px solid transparent;
     }
-
-    /* Hover effect untuk item yang bisa diklik */
     .course-item:not(.locked):hover {
         background-color: rgba(67, 89, 113, 0.04);
         color: #696cff;
@@ -601,15 +598,26 @@
                                             {% if quiz.user_is_done %}
                                                 <div class="mb-1">
                                                     <small class="text-muted d-block">Nilai Akhir</small>
-                                                    {% if quiz.user_score is not None %}
-                                                        <h3 class="mb-0 text-success">{{ quiz.user_score|floatformat:0 }}</h3>
-                                                    {% else %}
-                                                        <span class="badge bg-label-warning">Menunggu</span>
-                                                    {% endif %}
+                                                    <h3 class="mb-0 text-success">{{ quiz.user_score|floatformat:0 }}</h3>
                                                 </div>
-                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-sm btn-outline-secondary mt-1 w-100">
-                                                    Detail
-                                                </a>
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-sm btn-outline-secondary mt-1 w-100">Detail</a>
+
+                                            {% elif quiz.is_expired %}
+                                                <div class="mb-2">
+                                                    <span class="badge bg-label-danger">Waktu Habis</span>
+                                                </div>
+                                                <button class="btn btn-secondary w-100" disabled>
+                                                    <i class="ri-lock-line me-1"></i> Ditutup
+                                                </button>
+
+                                            {% elif quiz.is_not_started %}
+                                                <div class="mb-2">
+                                                    <span class="badge bg-label-warning">Belum Dibuka</span>
+                                                </div>
+                                                <button class="btn btn-secondary w-100" disabled>
+                                                    <i class="ri-time-line me-1"></i> Belum Mulai
+                                                </button>
+
                                             {% else %}
                                                 <div class="mb-2">
                                                     <span class="badge bg-label-primary">Tersedia</span>

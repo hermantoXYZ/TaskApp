@@ -891,6 +891,45 @@ class QuizCreateView(DosenRequiredMixin, AcademyView):
         ))
 
 
+
+class CourseQuizUpdateView(DosenRequiredMixin, AcademyView):
+    template_name = "quiz/quiz_form.html"  # <--- Template SAMA
+
+    def get(self, request, course_uuid, quiz_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        # Ambil data kuis yang mau diedit
+        quiz = get_object_or_404(CourseQuiz, id=quiz_id, course=course)
+        
+        # Masukkan data lama ke form (instance=quiz)
+        form = CourseQuizForm(instance=quiz)
+        
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course,
+            quiz=quiz,
+            is_edit=True   # Flag untuk memberitahu template ini mode EDIT
+        ))
+
+    def post(self, request, course_uuid, quiz_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        quiz = get_object_or_404(CourseQuiz, id=quiz_id, course=course)
+        
+        # Bind data POST ke object quiz yang sudah ada
+        form = CourseQuizForm(request.POST, instance=quiz)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Informasi kuis berhasil diperbarui.")
+            return redirect('course-quiz-list', course_uuid=course.uuid)
+        
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course,
+            quiz=quiz,
+            is_edit=True
+        ))
+    
+
 class QuizManageView(DosenRequiredMixin, AcademyView):
     template_name = "quiz/quiz_manage.html"
 
@@ -1056,9 +1095,8 @@ class QuizSubmissionListView(DosenRequiredMixin, AcademyView):
     template_name = "quiz/submission_list.html"
 
     def get(self, request, quiz_id, *args, **kwargs):
+        # --- LOGIC MENAMPILKAN DATA (SAMA SEPERTI SEBELUMNYA) ---
         quiz = get_object_or_404(CourseQuiz, id=quiz_id)
-        
-        # Ambil semua percobaan (attempt) yang sudah selesai (finished_at tidak kosong)
         attempts = StudentQuizAttempt.objects.filter(
             quiz=quiz, 
             finished_at__isnull=False
@@ -1069,6 +1107,22 @@ class QuizSubmissionListView(DosenRequiredMixin, AcademyView):
             course=quiz.course,
             attempts=attempts
         ))
+
+    def post(self, request, quiz_id, *args, **kwargs):
+        # --- LOGIC RESET / HAPUS ATTEMPT ---
+        attempt_id = request.POST.get('attempt_id') # Ambil ID dari input hidden di HTML
+        
+        if attempt_id:
+            attempt = get_object_or_404(StudentQuizAttempt, id=attempt_id)
+            nama_mhs = attempt.participant.mahasiswa.nim.first_name
+            
+            # Hapus data
+            attempt.delete()
+            
+            messages.success(request, f"Ujian {nama_mhs} berhasil di-reset. Mahasiswa bisa mengerjakan ulang.")
+        
+        # Refresh halaman yang sama
+        return redirect('quiz-submissions', quiz_id=quiz_id)
 
 
 # --- VIEW: FORM PENILAIAN / GRADING (Sisi Dosen) ---

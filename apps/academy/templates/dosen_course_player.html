@@ -3,7 +3,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Preview {{ active_item.title|default:course.name }}{% endblock %}
+{% block title %}{{ active_item.title|default:course.name }} - Learning{% endblock %}
 
 {% block vendor_css %}
 {{ block.super }}
@@ -19,24 +19,49 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/app-academy-details.css' %}" />
 <style>
+    /* === UPDATE UI SIDEBAR === */
+    .course-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        color: #566a7f;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .course-item:hover {
+        background-color: rgba(67, 89, 113, 0.04);
+        color: #696cff;
+    }
+
+    /* Active State (Sedang dibuka) */
+    .course-item.active {
+        background-color: rgba(105, 108, 255, 0.08);
+        color: #696cff;
+        border-color: rgba(105, 108, 255, 0.15);
+        font-weight: 600;
+    }
+
+    /* Ikon di Sidebar (Pengganti Checkbox) */
+    .item-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+
+    /* === CONTENT STYLING === */
     .input-warning:checked {
         background-color: #ff9f43;
         border-color: #ff9f43;
     }
-    .course-link {
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-        display: block;
-    }
-    .course-link:hover {
-        color: #666cff; 
-    }
-    .course-link.active {
-        color: #666cff;
-        font-weight: 700;
-    }
-
+    
     .card-body img {
         max-width: 100% !important;  
         height: auto !important;  
@@ -59,72 +84,36 @@
         border-radius: 8px;
         border: 1px solid #eee;     
     }
-    @supports not (aspect-ratio: 16 / 9) {
-        .card-body iframe {
-            height: 400px !important;
-        }
+    
+    /* Code Block Styling */
+    .card-body pre {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 50px 20px 20px 20px;
+        border-radius: 8px;
+        position: relative; 
+        overflow-x: auto;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        border: 1px solid #333;
+        margin: 20px 0;
+        white-space: pre-wrap; 
+        display: block;
     }
-    /* Ganti 'pre' menjadi '.card-body pre' */
-.card-body pre {
-    background-color: #1e1e1e !important;
-    color: #e0e0e0 !important;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    padding: 50px 20px 20px 20px;
-    border-radius: 8px;
-    position: relative; 
-    overflow-x: auto;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    border: 1px solid #333;
-    margin: 20px 0;
-    white-space: pre-wrap; 
-    display: block;
-}
 
-/* Header Bar Palsu - Tambahkan .card-body di depannya */
-.card-body pre::before {
-    content: "Code";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 35px;
-    background-color: #2d2d2d;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    border-bottom: 1px solid #333;
-    color: #888;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-family: sans-serif;
-    z-index: 1;
-}
+    .card-body pre::before {
+        content: "Code"; position: absolute; top: 0; left: 0; width: 100%; height: 35px;
+        background-color: #2d2d2d; border-top-left-radius: 8px; border-top-right-radius: 8px;
+        border-bottom: 1px solid #333; color: #888; display: flex; align-items: center;
+        justify-content: center; font-size: 12px; font-family: sans-serif; z-index: 1;
+    }
 
-/* Tombol Mac - Tambahkan .card-body di depannya */
-.card-body pre::after {
-    content: "";
-    position: absolute;
-    top: 12px;
-    left: 15px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: #ff5f56;
-    box-shadow: 15px 0 0 #ffbd2e, 30px 0 0 #27c93f;
-    z-index: 2;
-}
-
-/* Mengatasi pre code */
-.card-body pre code {
-    background-color: transparent !important;
-    color: inherit !important;
-    padding: 0 !important;
-    border: none !important;
-    font-family: inherit !important;
-}
+    .card-body pre::after {
+        content: ""; position: absolute; top: 12px; left: 15px; width: 10px; height: 10px;
+        border-radius: 50%; background-color: #ff5f56; box-shadow: 15px 0 0 #ffbd2e, 30px 0 0 #27c93f; z-index: 2;
+    }
 </style>
 {% endblock page_css %}
 
@@ -161,9 +150,6 @@
                     {% endif %}
                 </span>
                 <i class="ri-notification-3-line ri-20px d-sm-none"></i>
-                {% if course.announcements.count > 0 %}
-                    <span class="badge badge-dot bg-danger position-absolute top-0 end-0 mt-2 me-2 d-sm-none"></span>
-                {% endif %}
               </button>
             </li>
 
@@ -200,7 +186,7 @@
             <div class="card academy-content shadow-none border">
                 <div class="p-2">
                     {% if active_type == 'material' %}
-                        <div class="cursor-pointer">
+                         <div class="cursor-pointer">
                             {% if active_item.material_type == 'video' %}
                                 <div class="plyr__video-embed" id="plyr-video-player">
                                     <iframe src="{{ active_item.video_url }}" allowfullscreen allowtransparency allow="autoplay"></iframe>
@@ -292,17 +278,30 @@
                                 </div>
                             </div>
                       
-
                         {% else %}
                             {% if is_overdue and not active_item.allow_late_submission %}
                                 <div class="alert alert-danger mt-3">
                                     <i class="ri-alarm-warning-line me-1"></i> <strong>Waktu Habis!</strong><br>
                                     Batas waktu pengumpulan: {{ active_item.due_date|date:"d M Y, H:i" }}.
                                 </div>
+                            {% else %}
+                                <div class="card bg-lighter border p-4 mt-3">
+                                    <form method="post" action="{% url 'course-player-assignment' course.uuid active_item.id %}">
+                                        {% csrf_token %}
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Link Tugas <span class="text-danger">*</span></label>
+                                            <input type="url" name="submitted_link" class="form-control" required placeholder="https://docs.google.com/...">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Catatan (Opsional)</label>
+                                            <textarea name="submitted_text" class="form-control" rows="2"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Kirim Tugas</button>
+                                    </form>
+                                </div>
                             {% endif %}
                         {% endif %}
                     
-        
                         {% elif active_type == 'material' %}
                             {{ active_item.text_content|safe|default:"-" }}
                         {% else %}
@@ -382,6 +381,7 @@
                 </div>
             </div>
           </div>        
+
         <div class="tab-pane fade" id="navs-quizzes" role="tabpanel">
         <div class="card shadow-none border-0">
             <div class="card-body px-0 pt-0">
@@ -416,7 +416,7 @@
                                             <div class="w-100">
                                                 <div class="d-flex justify-content-between align-items-start">
                                                     <h5 class="mb-1">
-                                                        <a href="#" class="text-heading text-decoration-none stretched-link">
+                                                        <a href="{% url 'student-quiz-start' quiz.id %}" class="text-heading text-decoration-none stretched-link">
                                                             {{ quiz.title }}
                                                         </a>
                                                     </h5>
@@ -458,14 +458,14 @@
                                                         <span class="badge bg-label-warning">Menunggu</span>
                                                     {% endif %}
                                                 </div>
-                                                <a href="#" class="btn btn-sm btn-outline-secondary mt-1 w-100">
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-sm btn-outline-secondary mt-1 w-100">
                                                     Detail
                                                 </a>
                                             {% else %}
                                                 <div class="mb-2">
                                                     <span class="badge bg-label-primary">Tersedia</span>
                                                 </div>
-                                                <a href="#" class="btn btn-primary w-100">
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-primary w-100">
                                                     <i class="ri-play-circle-line me-1"></i> Mulai
                                                 </a>
                                             {% endif %}
@@ -477,9 +477,9 @@
                                                     <span class="fw-bold text-muted">Nilai:</span>
                                                     <span class="h4 mb-0 text-success">{{ quiz.user_score|floatformat:0|default:"-" }}</span>
                                                 </div>
-                                                <a href="#" class="btn btn-outline-secondary w-100">Lihat Detail</a>
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-outline-secondary w-100">Lihat Detail</a>
                                             {% else %}
-                                                <a href="#" class="btn btn-primary w-100">Mulai Ujian</a>
+                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-primary w-100">Mulai Ujian</a>
                                             {% endif %}
                                         </div>
 
@@ -523,7 +523,7 @@
                   aria-controls="chapter-{{ section.id }}">
             <span class="d-flex flex-column">
               <span class="h5 mb-0">{{ section.title }}</span>
-              <span class="text-body fw-normal small">
+               <span class="text-body fw-normal small">
                   {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi • {{ section.assignments.count }} Tugas
               </span>
             </span>
@@ -537,41 +537,53 @@
           <div class="accordion-body py-4 border-top">
             
             {% for material in section.materials.all %}
-            <div class="d-flex align-items-start mb-4">
-              <div class="me-3 mt-1">
-                  <input class="form-check-input" type="checkbox" 
-                         {% if material.id in completed_material_ids %}checked{% endif %} disabled />
-              </div>
-              
-              <div class="w-100">
-                  <a href="{% url 'course-preview-material' course.uuid material.id %}" 
-                     class="course-link {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
-                    <span class="mb-0 h6">{{ material.title }}</span>
-                    <small class="text-body d-block">{{ material.get_duration_display }}</small>
-                  </a>
-              </div>
-            </div>
+            
+            <a href="{% url 'course-preview-material' course.uuid material.id %}" 
+               class="course-item {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
+                
+                <div class="item-icon">
+                   {% if material.id in completed_material_ids %}
+                       <i class="ri-checkbox-circle-fill text-primary" style="font-size: 1.5rem;"></i>
+                   {% else %}
+                       {% if material.material_type == 'video' %}
+                           <i class="ri-play-circle-line text-secondary" style="font-size: 1.5rem;"></i>
+                       {% else %}
+                           <i class="ri-article-line text-secondary" style="font-size: 1.5rem;"></i>
+                       {% endif %}
+                   {% endif %}
+                </div>
+
+                <div class="w-100">
+                    <span class="d-block text-wrap lh-sm fw-medium">{{ material.title }}</span>
+                    <small class="d-block mt-1 text-muted">{{ material.get_duration_display }}</small>
+                </div>
+            </a>
             {% endfor %}
 
             {% if section.assignments.all %}
                 {% if section.materials.all %}{% endif %}
                  <div class="divider">
-          <div class="divider-text">TUGAS</div>
-        </div>
-                {% for task in section.assignments.all %}
-                <div class="d-flex align-items-start mb-4">
-                  <div class="me-3 mt-1">
-                      <input class="form-check-input input-warning" type="checkbox" 
-                             {% if task.id in completed_assignment_ids %}checked{% endif %} disabled />
-                  </div>
-                  <div class="w-100">
-                      <a href="{% url 'course-preview-assignment' course.uuid task.id %}" 
-                         class="course-link {% if active_type == 'assignment' and active_item.id == task.id %}active text-warning{% endif %}">
-                        <span class="mb-0 h6">{{ task.title }}</span>
-                        <small class="text-danger d-block">Deadline: {{ task.due_date|date:"d M" }}</small>
-                      </a>
-                  </div>
-                </div>
+                    <div class="divider-text">TUGAS</div>
+                 </div>
+                 
+                 {% for task in section.assignments.all %}
+                
+                <a href="{% url 'course-preview-assignment' course.uuid task.id %}" 
+                   class="course-item {% if active_type == 'assignment' and active_item.id == task.id %}active{% endif %}">
+                    
+                     <div class="item-icon">
+                        {% if task.id in completed_assignment_ids %}
+                            <i class="ri-checkbox-circle-fill text-warning" style="font-size: 1.5rem;"></i>
+                        {% else %}
+                            <i class="ri-task-line text-secondary" style="font-size: 1.5rem;"></i>
+                        {% endif %}
+                    </div>
+
+                    <div class="w-100">
+                        <span class="d-block text-wrap lh-sm fw-medium">{{ task.title }}</span>
+                        <small class="text-danger d-block mt-1">Deadline: {{ task.due_date|date:"d M" }}</small>
+                    </div>
+                </a>
                 {% endfor %}
             {% endif %}
 

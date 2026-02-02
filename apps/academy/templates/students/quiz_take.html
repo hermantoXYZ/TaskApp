@@ -6,6 +6,8 @@
 {% block page_js %}
 <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 {% endblock %}
 
 {% block content %}
@@ -42,12 +44,14 @@
     </div>
 </div>
 
-<div class="row" id="exam-content"> <div class="col-md-10 col-lg-8 mx-auto">
+<div class="row" id="exam-content"> 
+    <div class="col-md-10 col-lg-8 mx-auto">
         <form method="POST" action="{% url 'student-quiz-submit' attempt.id %}" id="quizForm">
             {% csrf_token %}
             
             {% for q in questions %}
-            <div class="card mb-4 shadow-sm user-select-none"> <div class="card-header bg-label-secondary d-flex justify-content-between align-items-center py-2 px-3">
+            <div class="card mb-4 shadow-sm user-select-none"> 
+                <div class="card-header bg-label-secondary d-flex justify-content-between align-items-center py-2 px-3">
                     <span class="fw-bold text-dark">Soal No. {{ forloop.counter }}</span>
                     <span class="badge bg-white text-dark border">{{ q.score_weight }} Poin</span>
                 </div>
@@ -82,6 +86,7 @@
                             </label>
                             {% endfor %}
                         </div>
+                    
                     {% elif q.question_type == 'essay' %}
                         <label class="form-label fw-bold text-primary">Jawaban Uraian Anda:</label>
                         <textarea class="form-control" name="question_{{ q.id }}" rows="5" placeholder="Tulis jawaban Anda disini..."></textarea>
@@ -96,7 +101,7 @@
                         <h5 class="text-white mb-0">Selesai Mengerjakan?</h5>
                         <small class="text-white-50">Pastikan semua jawaban sudah terisi.</small>
                     </div>
-                    <button type="submit" class="btn btn-light btn-lg text-primary fw-bold" onclick="return confirm('Apakah Anda yakin ingin mengumpulkan jawaban?');">
+                    <button type="button" class="btn btn-light btn-lg text-primary fw-bold" onclick="handleManualSubmit()">
                         <i class="ri-checkbox-circle-line me-2"></i> KIRIM JAWABAN
                     </button>
                 </div>
@@ -109,7 +114,8 @@
     // --- KONFIGURASI ---
     let timeRemaining = {{ remaining_seconds }};
     let violationCount = 0;
-    const maxViolations = 3; // Maksimal pelanggaran sebelum auto-submit
+    const maxViolations = 3; 
+    let isSubmitting = false; // FLAG PENTING: Mencegah pelanggaran saat submit
     
     const timerDisplay = document.getElementById('timer-display');
     const quizForm = document.getElementById('quizForm');
@@ -137,7 +143,7 @@
             (minutes < 10 ? "0" : "") + minutes + ":" +
             (seconds < 10 ? "0" : "") + seconds;
         
-        if (timeRemaining < 300) { // < 5 menit
+        if (timeRemaining < 300) { // < 5 menit animasi berkedip
             timerDisplay.parentElement.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
         }
         timeRemaining--;
@@ -146,60 +152,61 @@
     updateTimer();
 
     // --- 2. LOGIC FULLSCREEN ENFORCER ---
-    
-    // Fungsi Masuk Fullscreen
     function requestFullScreen() {
         var elem = document.documentElement;
         if (elem.requestFullscreen) {
             elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) { /* Safari */
+        } else if (elem.webkitRequestFullscreen) { 
             elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) { /* IE11 */
+        } else if (elem.msRequestFullscreen) { 
             elem.msRequestFullscreen();
         }
-        securityOverlay.classList.add('d-none'); // Sembunyikan overlay
+        securityOverlay.classList.add('d-none'); 
     }
 
-    // Tombol di overlay
     btnEnterFullscreen.addEventListener('click', function() {
         requestFullScreen();
     });
 
-    // Deteksi jika user keluar dari Fullscreen (Tekan ESC)
+    // Deteksi Keluar Fullscreen
     document.addEventListener('fullscreenchange', exitHandler);
     document.addEventListener('webkitfullscreenchange', exitHandler);
     document.addEventListener('mozfullscreenchange', exitHandler);
     document.addEventListener('MSFullscreenChange', exitHandler);
 
     function exitHandler() {
+        // Jika sedang submit, abaikan logika fullscreen
+        if (isSubmitting) return;
+
         if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
-            // User keluar fullscreen
-            securityOverlay.classList.remove('d-none'); // Munculkan overlay lagi
+            securityOverlay.classList.remove('d-none');
             recordViolation("Terdeteksi keluar dari mode layar penuh.");
         }
     }
 
-    // --- 3. LOGIC DETEKSI PINDAH TAB (VISIBILITY API) ---
+    // --- 3. LOGIC DETEKSI PINDAH TAB ---
     document.addEventListener("visibilitychange", function() {
+        // Jika sedang submit, abaikan logika pindah tab
+        if (isSubmitting) return;
+
         if (document.hidden) {
             recordViolation("Terdeteksi membuka tab atau aplikasi lain.");
         }
     });
 
     window.addEventListener("blur", function() {
-         // Blur event kadang terlalu sensitif, kita gunakan visibilitychange sebagai trigger utama
-         // Tapi bisa diaktifkan jika ingin sangat ketat
-         // recordViolation("Fokus hilang dari browser."); 
+         // Opsional: Bisa diaktifkan jika ingin sangat ketat
+         // if (!isSubmitting) recordViolation("Fokus hilang dari browser."); 
     });
 
-    // --- 4. ANTI KLIK KANAN & COPY PASTE ---
-    document.addEventListener('contextmenu', event => event.preventDefault()); // Matikan klik kanan
-    document.addEventListener('copy', event => event.preventDefault()); // Matikan copy
-    document.addEventListener('cut', event => event.preventDefault()); // Matikan cut
-    document.addEventListener('paste', event => event.preventDefault()); // Matikan paste
+    // --- 4. ANTI CHEAT (Keyboard & Mouse) ---
+    document.addEventListener('contextmenu', event => event.preventDefault()); 
+    document.addEventListener('copy', event => event.preventDefault()); 
+    document.addEventListener('cut', event => event.preventDefault()); 
+    document.addEventListener('paste', event => event.preventDefault()); 
     
     document.addEventListener('keydown', function(e) {
-        // Matikan F12, Ctrl+Shift+I (Inspect Element), Alt+Tab (sebisanya)
+        // Block F12, Inspect, dll
         if(e.keyCode == 123) { e.preventDefault(); return false; }
         if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { e.preventDefault(); return false; }
         if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
@@ -207,38 +214,86 @@
         if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { e.preventDefault(); return false; }
     });
 
-    // --- HELPER FUNCTIONS ---
+    // --- 5. FUNGSI PELANGGARAN & SUBMIT ---
 
     function recordViolation(reason) {
+        // Jangan catat jika sedang proses submit
+        if (isSubmitting) return;
+
         violationCount++;
         violationCounterDisplay.innerText = violationCount;
         warningBox.style.display = 'block';
 
-        // Update pesan di overlay jika user sedang di overlay
         overlayMessage.innerHTML = `<span class='text-danger fw-bold'>PELANGGARAN TERDETEKSI! (${violationCount}/${maxViolations})</span><br>${reason}<br>Kembali ke ujian segera atau jawaban akan terkirim otomatis.`;
 
-        // Alert Browser (Peringatan Keras)
-        alert(`PERINGATAN PELANGGARAN ${violationCount}/${maxViolations}!\n\nAlasan: ${reason}\n\nJika mencapai ${maxViolations} pelanggaran, ujian akan otomatis dikumpulkan.`);
+        // Gunakan SweetAlert untuk peringatan (lebih aman dari alert biasa)
+        Swal.fire({
+            icon: 'warning',
+            title: `Pelanggaran ${violationCount}/${maxViolations}`,
+            text: reason,
+            confirmButtonText: 'Kembali Mengerjakan',
+            allowOutsideClick: false
+        }).then(() => {
+            // Paksa fullscreen lagi jika user klik oke
+            requestFullScreen();
+        });
 
         if (violationCount >= maxViolations) {
-            submitExam("Batas pelanggaran keamanan terlampaui (Keluar Tab/Fullscreen).");
+            submitExam("Batas pelanggaran keamanan terlampaui.");
         }
     }
 
-    function submitExam(reason) {
-        // Mencegah submit double
-        if (!quizForm.dataset.submitted) {
-            quizForm.dataset.submitted = "true";
-            alert(reason);
-            
-            // Opsional: Bisa tambahkan input hidden untuk kirim alasan submit ke server
-            // let input = document.createElement("input");
-            // input.type = "hidden";
-            // input.name = "force_submit_reason";
-            // input.value = reason;
-            // quizForm.appendChild(input);
+    // Fungsi Submit Manual (Tombol Klik)
+    function handleManualSubmit() {
+        Swal.fire({
+            title: 'Kumpulkan Jawaban?',
+            text: "Pastikan semua soal telah terisi. Anda tidak bisa mengubahnya setelah ini.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#666cff', // Sesuaikan warna tema Anda
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Kirim!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                isSubmitting = true; // Set flag submit
+                
+                // Tampilkan loading
+                Swal.fire({
+                    title: 'Mengirim Jawaban...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
-            quizForm.submit();
+                quizForm.submit();
+            }
+        });
+    }
+
+    // Fungsi Submit Otomatis (Waktu Habis / Pelanggaran)
+    function submitExam(reason) {
+        if (!quizForm.dataset.submitted) {
+            isSubmitting = true; // Set flag submit
+            quizForm.dataset.submitted = "true";
+            
+            Swal.fire({
+                icon: 'info',
+                title: 'Ujian Berakhir',
+                text: reason,
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            }).then(() => {
+                quizForm.submit();
+            });
+            
+            // Fallback submit jika modal macet
+            setTimeout(() => {
+                quizForm.submit();
+            }, 3000);
         }
     }
 

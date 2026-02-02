@@ -66,6 +66,7 @@ urlpatterns = [
     # QUIZ URLS
     path('course/<uuid:course_uuid>/quizzes/', views.CourseQuizListView.as_view(), name='course-quiz-list'),
     path('course/<uuid:course_uuid>/quizzes/create/', views.QuizCreateView.as_view(), name='course-quiz-create'),
+    path('course/<uuid:course_uuid>/quiz/<uuid:quiz_id>/edit/', views.CourseQuizUpdateView.as_view(), name='course-quiz-edit'),
     path('quiz/<uuid:quiz_id>/manage/', views.QuizManageView.as_view(), name='quiz-manage'),
     path('quiz/<uuid:quiz_id>/add-question/<str:q_type>/', views.AddQuizQuestionView.as_view(), name='quiz-add-question'),
     path('quiz/<uuid:quiz_id>/delete/', views.DeleteQuizView.as_view(), name='quiz-delete'),

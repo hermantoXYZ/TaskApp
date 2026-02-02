@@ -190,14 +190,29 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
                         group_members = my_group.members.select_related('participant__mahasiswa__nim').order_by('role', 'participant__mahasiswa__nim__first_name')
                         
                     for quiz in quizzes:
-                        # Cek apakah sudah ada attempt yang FINISHED (selesai)
+                        now = timezone.now()
                         is_done = StudentQuizAttempt.objects.filter(
                             quiz=quiz, 
                             participant=participant, 
                             finished_at__isnull=False
                         ).exists()
-                        # Tempel atribut sementara ke object quiz
+
                         quiz.user_is_done = is_done
+
+                        last_attempt = StudentQuizAttempt.objects.filter(
+                            quiz=quiz, 
+                            participant=participant, 
+                            finished_at__isnull=False
+                        ).order_by('-finished_at').first()
+                        quiz.user_is_done = last_attempt is not None
+
+                        if last_attempt:
+                            quiz.user_score = last_attempt.total_score
+                        else:
+                            quiz.user_score = None
+
+                        quiz.is_expired = now > quiz.end_time
+                        quiz.is_not_started = now < quiz.start_time
 
         # === 4. SUSUN LAPORAN ABSENSI ===
         for agenda in sections:
@@ -299,6 +314,9 @@ class StudentQuizStartView(StudentsRequiredMixin, AcademyView):
     def get(self, request, quiz_id, *args, **kwargs):
         quiz = get_object_or_404(CourseQuiz, id=quiz_id)
         
+        if timezone.now() > quiz.end_time:
+            messages.error(request, "Waktu ujian telah berakhir.")
+            return redirect('course-player', course_uuid=quiz.course.uuid)
         # 1. Identifikasi Mahasiswa & Peserta Course
         mhs_profile = get_object_or_404(UserMhs, nim=request.user)
         participant = get_object_or_404(CourseParticipant, course=quiz.course, mahasiswa=mhs_profile)

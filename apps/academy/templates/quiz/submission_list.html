@@ -44,10 +44,28 @@
                     </td>
                     <td><span class="badge bg-label-success">Selesai</span></td>
                     <td>
-                        <a href="{% url 'quiz-grade-submission' att.id %}" class="btn btn-sm btn-primary">
-                            <i class="ri-file-search-line me-1"></i> Periksa / Nilai
-                        </a>
-                    </td>
+    <div class="dropdown">
+        <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+            <i class="ri-more-2-line"></i>
+        </button>
+        <div class="dropdown-menu">
+            <a class="dropdown-item" href="{% url 'quiz-grade-submission' att.id %}">
+                <i class="ri-file-search-line me-1"></i> Periksa / Nilai
+            </a>
+            
+            <div class="dropdown-divider"></div>
+
+            <form method="POST" action="" onsubmit="return confirm('Yakin ingin mereset ujian {{ att.participant.mahasiswa.nim.first_name }}? Data akan hilang permanen.');">
+                {% csrf_token %}
+                <input type="hidden" name="attempt_id" value="{{ att.id }}">
+                
+                <button type="submit" class="dropdown-item text-danger">
+                    <i class="ri-refresh-line me-1"></i> Reset / Ulangi
+                </button>
+            </form>
+        </div>
+    </div>
+</td>
                 </tr>
                 {% empty %}
                 <tr>
