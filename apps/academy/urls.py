@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AcademyView, AddCourse, EditCourse, ListCourse, DeleteCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, InstructorCoursePreviewView, AppPasswordChangeView
+from .views import AcademyView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, InstructorCoursePreviewView, AppPasswordChangeView
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
@@ -15,7 +15,6 @@ urlpatterns = [
     path('views/academy/course/<uuid:course_uuid>/', ViewsAllCourse.as_view(), name='edit-all-academy-course'),
     path('edit/academy/course/<uuid:course_uuid>/', EditCourse.as_view(), name='edit-academy-course'),
     path('list/academy/course/', ListCourse.as_view(), name='list-academy-course'),
-    path('course/delete/<uuid:course_uuid>/', DeleteCourse.as_view(), name='delete_course'),
     path('course/<uuid:course_uuid>/participant/', views.AddCourseParticipant.as_view(), name='add-course-participant'),
     path('course/<uuid:course_uuid>/participant/<int:participant_id>/delete/', views.DeleteCourseParticipant.as_view(), name='delete-participant'),
     path('course/<uuid:course_uuid>/agenda/', AddCourseAgenda.as_view(), name='add-course-agenda'),

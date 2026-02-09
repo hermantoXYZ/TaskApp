@@ -57,15 +57,6 @@
           <td>
              <div class="d-flex align-items-center gap-2">
                 <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-sm btn-icon btn-outline-secondary btn-text-secondary rounded-pill waves-effect waves-light"><i class="ri-eye-line ri-20px"></i></a>
-                
-                <button type="button" 
-                        class="btn btn-sm btn-icon btn-text-danger btn-outline-danger rounded-pill waves-effect waves-light"
-                        data-bs-toggle="modal" 
-                        data-bs-target="#deleteModal"
-                        data-href="{% url 'delete_course' course_uuid=course.uuid %}"
-                        title="Hapus">
-                    <i class="ri-delete-bin-7-line ri-20px"></i>
-                </button>
                 <a href="{% url 'edit-academy-course' course.uuid %}" class="btn btn-sm btn-icon btn-outline-primary btn-text-primary rounded-pill waves-effect waves-light">
     <i class="ri-pencil-line ri-20px"></i>
 </a>
@@ -84,55 +75,9 @@
     </table>
   </div>
 </div>
-
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
-    <div class="modal-content">
-      
-      <div class="modal-body text-center p-4">
-        
-        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-        
-        <div class="avatar avatar-xl mx-auto mb-3">
-            <span class="avatar-initial rounded-circle bg-label-danger">
-                <i class="ri-delete-bin-2-line ri-32px"></i>
-            </span>
-        </div>
-
-        <h5 class="mb-2 fw-bold">Hapus Data Ini?</h5>
-        <p class="text-muted mb-4 small">Tindakan ini tidak dapat dibatalkan.</p>
-        
-        <div class="d-flex gap-2 w-100">
-            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">
-              Batal
-            </button>
-            <a href="#" id="confirmDeleteBtn" class="btn btn-danger w-100">
-                Ya, Hapus
-            </a>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 
 {% block page_js %}
 {{ block.super }}
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var deleteModal = document.getElementById('deleteModal');
-        if (deleteModal) {
-            deleteModal.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget;
-                var deleteUrl = button.getAttribute('data-href');
-                var confirmBtn = deleteModal.querySelector('#confirmDeleteBtn');
-                if (confirmBtn) {
-                    confirmBtn.href = deleteUrl;
-                }
-            });
-        }
-    });
-</script>
 {% endblock page_js %}

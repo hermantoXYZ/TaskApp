@@ -276,13 +276,13 @@ class ListCourse(DosenRequiredMixin, AcademyView):
             context['courses'] = courses
             return context
     
-class DeleteCourse(DosenRequiredMixin, AcademyView):
-    def get(self, request, *args, **kwargs):
-        course_uuid = kwargs.get('course_uuid')
-        course = get_object_or_404(Course, uuid=course_uuid)
-        course.delete()
-        messages.success(request, f'Course {course.code} berhasil dihapus.')
-        return redirect('list-academy-course')
+# class DeleteCourse(DosenRequiredMixin, AcademyView):
+#     def get(self, request, *args, **kwargs):
+#         course_uuid = kwargs.get('course_uuid')
+#         course = get_object_or_404(Course, uuid=course_uuid)
+#         course.delete()
+#         messages.success(request, f'Course {course.code} berhasil dihapus.')
+#         return redirect('list-academy-course')
     
 class AddCourseParticipant(DosenRequiredMixin, AcademyView):
     template_name = "add_participant.html"
