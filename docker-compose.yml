@@ -17,3 +17,6 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
+      UPLOAD_LIMIT: 500M      # <--- Tambah ini (Batas upload 500MB)
+      MEMORY_LIMIT: 512M      # <--- Tambah ini (Batas memory)
+      MAX_EXECUTION_TIME: 600 # <--- Tambah ini (Waktu tunggu

@@ -104,7 +104,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_task_findstock',
+        'NAME': 'db_task',
         'USER': 'root',
         'PASSWORD': 'root_password_anda',
         'HOST': '127.0.0.1',
