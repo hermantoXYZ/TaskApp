@@ -660,7 +660,7 @@ class StudentBookDetailView(LoginRequiredMixin, AcademyView):
         return context
     
 
-class CourseLeaderboardView(StudentsRequiredMixin, AcademyView):
+class CourseLeaderboardView(LoginRequiredMixin, AcademyView):
     template_name = "students/course_leaderboard.html"
 
     def get_context_data(self, **kwargs):
