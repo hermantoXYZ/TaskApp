@@ -4,18 +4,47 @@
 {% block title %}Perpustakaan Digital{% endblock %}
 
 {% block content %}
+
+<style>
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .hover-card { 
+        transition: transform 0.2s, box-shadow 0.2s; 
+    }
+    .hover-card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; 
+    }
+</style>
+
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card bg-label-primary text-center py-5 shadow-none border-0">
-            <div class="card-body">
+        <div class="card bg-label-primary text-center py-5 shadow-none border-0 position-relative overflow-hidden">
+            <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" 
+                 style="background-image: radial-gradient(#666cf1 1px, transparent 1px); background-size: 20px 20px;">
+            </div>
+
+            <div class="card-body position-relative z-1">
                 <h3 class="text-primary fw-bold mb-2">Perpustakaan Digital</h3>
-                <p class="mb-4 text-muted">Jelajahi koleksi buku, modul, dan referensi lainnya.</p>
+                <p class="mb-4 text-muted">Jelajahi koleksi buku, modul, dan referensi akademik.</p>
                 
-                <form method="get" class="mx-auto position-relative" style="max-width: 600px;">
+                <form method="get" class="mx-auto" style="max-width: 600px;">
+                    {% if request.GET.category %}
+                        <input type="hidden" name="category" value="{{ request.GET.category }}">
+                    {% endif %}
+                    
                     <div class="input-group input-group-lg input-group-merge bg-white rounded-pill shadow-sm">
-                        <span class="input-group-text border-0 ps-4 bg-transparent"><i class="ri-search-line"></i></span>
+                        <span class="input-group-text border-0 ps-4 bg-transparent text-primary">
+                            <i class="ri-search-line"></i>
+                        </span>
                         <input type="text" name="q" class="form-control border-0 bg-transparent" 
-                               placeholder="Cari judul buku, penulis..." value="{{ search_query }}">
+                               placeholder="Cari judul buku, penulis..." 
+                               value="{{ request.GET.q|default:'' }}">
                         <button class="btn btn-primary rounded-pill px-4 m-1" type="submit">Cari</button>
                     </div>
                 </form>
@@ -24,38 +53,44 @@
     </div>
 </div>
 
-<div class="d-flex overflow-auto gap-2 mb-4 pb-2 align-items-center">
-    <span class="text-muted small fw-bold me-2 text-uppercase">Kategori:</span>
-    <a href="{% url 'student-library-list' %}" 
-       class="btn btn-sm rounded-pill {% if not active_category %}btn-dark{% else %}btn-outline-secondary{% endif %} text-nowrap">
-       Semua
-    </a>
-    {% for cat in categories %}
-    <a href="?category={{ cat.name }}" 
-       class="btn btn-sm rounded-pill {% if active_category == cat.name %}btn-dark{% else %}btn-outline-secondary{% endif %} text-nowrap">
-        {{ cat.name }}
-    </a>
-    {% endfor %}
+<div class="d-flex align-items-center mb-4">
+    <span class="fw-bold text-muted small text-uppercase me-3 flex-shrink-0">Filter:</span>
+    
+    <div class="d-flex overflow-auto gap-2 pb-2 hide-scrollbar w-100">
+        <a href="{% url 'student-library-list' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}" 
+           class="btn btn-sm rounded-pill flex-shrink-0 {% if not request.GET.category %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+           Semua
+        </a>
+
+        {% for cat in categories %}
+        <a href="?category={{ cat.name }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" 
+           class="btn btn-sm rounded-pill flex-shrink-0 {% if request.GET.category == cat.name %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            {{ cat.name }}
+        </a>
+        {% endfor %}
+    </div>
 </div>
 
 <div class="row g-4">
     {% for book in books %}
-    <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
-        <div class="card h-100 border-0 shadow-sm hover-card product-card">
-            <div class="position-relative">
+    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <div class="card h-100 border-0 shadow-sm hover-card product-card group">
+            <div class="position-relative overflow-hidden rounded-top">
                 <a href="{% url 'student-book-read' book.id %}">
                     {% if book.cover %}
-                        <img src="{{ book.cover.url }}" class="card-img-top object-fit-cover rounded-top" alt="{{ book.title }}" style="height: 220px;">
+                        <img src="{{ book.cover.url }}" class="card-img-top object-fit-cover" alt="{{ book.title }}" style="height: 240px; width: 100%;">
                     {% else %}
-                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center text-muted rounded-top" style="height: 220px;">
+                        <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="height: 240px; width: 100%;">
                             <div class="text-center">
-                                <i class="ri-book-line ri-2x mb-1"></i>
-                                <small class="d-block">No Cover</small>
+                                <i class="ri-book-open-line ri-3x mb-2 text-secondary opacity-50"></i>
+                                <small class="d-block text-uppercase fw-bold" style="font-size: 10px;">No Cover</small>
                             </div>
                         </div>
                     {% endif %}
                 </a>
-                <span class="badge bg-white text-dark position-absolute top-0 end-0 m-2 shadow-sm opacity-75">
+                
+                <span class="badge bg-white text-dark position-absolute top-0 start-0 m-2 shadow-sm opacity-90" 
+                      style="font-size: 0.7rem; backdrop-filter: blur(4px);">
                     {{ book.category.name|default:"Umum" }}
                 </span>
             </div>
@@ -64,24 +99,25 @@
                 <h6 class="card-title mb-1 small fw-bold text-truncate" title="{{ book.title }}">
                     <a href="{% url 'student-book-read' book.id %}" class="text-heading stretched-link">{{ book.title }}</a>
                 </h6>
-                <small class="text-muted mb-2 text-truncate">{{ book.author|default:"Anonim" }}</small>
+                <small class="text-muted mb-2 text-truncate" style="font-size: 0.8rem;">
+                    <i class="ri-quill-pen-line me-1"></i> {{ book.author|default:"Anonim" }}
+                </small>
             </div>
         </div>
     </div>
     {% empty %}
     <div class="col-12 text-center py-5">
-        <div class="avatar avatar-xl mx-auto mb-3">
-            <span class="avatar-initial rounded-circle bg-label-secondary"><i class="ri-search-2-line ri-40px"></i></span>
+        <div class="avatar avatar-xl bg-label-secondary rounded-circle mx-auto mb-3">
+            <i class="ri-search-2-line ri-40px"></i>
         </div>
-        <h5 class="mb-1">Tidak ada buku ditemukan</h5>
-        <p class="text-muted">Coba kata kunci lain atau reset filter kategori.</p>
-        <a href="{% url 'student-library-list' %}" class="btn btn-outline-primary btn-sm mt-2">Lihat Semua Buku</a>
+        <h5 class="mb-1 text-dark">Tidak ada buku ditemukan</h5>
+        <p class="text-muted mb-3">Kami tidak dapat menemukan buku dengan kata kunci/kategori tersebut.</p>
+        
+        <a href="{% url 'student-library-list' %}" class="btn btn-primary btn-sm rounded-pill px-4">
+            <i class="ri-refresh-line me-1"></i> Reset Filter
+        </a>
     </div>
     {% endfor %}
 </div>
 
-<style>
-.hover-card { transition: transform 0.2s, box-shadow 0.2s; }
-.hover-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-</style>
 {% endblock %}

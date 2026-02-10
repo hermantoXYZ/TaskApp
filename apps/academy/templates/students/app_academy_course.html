@@ -30,28 +30,34 @@
 {% block content %}
 <div class="app-academy">
   
-  <div class="card p-0 mb-6">
-    <div class="card-body d-flex flex-column flex-md-row justify-content-between p-0 pt-6">
-      <div class="app-academy-md-25 card-body py-0 pt-6 ps-12">
-        <img src="{% static 'img/illustrations/bulb-' %}{{ COOKIES.style|default:style }}.png" class="img-fluid app-academy-img-height scaleX-n1-rtl" alt="Bulb in hand" data-app-light-img="illustrations/bulb-light.png" data-app-dark-img="illustrations/bulb-dark.png" height="90" />
-      </div>
-      <div class="app-academy-md-50 card-body d-flex align-items-md-center flex-column text-md-center mb-6 py-6">
-        <span class="card-title mb-4 lh-lg px-md-12 h4 text-heading">
-          Selamat Datang, {{ request.user.first_name|default:request.user.username }}<br>
-        </span>
-        <p class="mb-4 px-0 px-md-2">
-          Akses materi perkuliahan, tugas dengan mudah tanpa hambatan..<br>
-        </p>
-        <div class="d-flex align-items-center justify-content-between app-academy-md-80">
-          <input type="search" placeholder="Cari mata kuliah..." class="form-control form-control-sm me-4" />
-          <button type="submit" class="btn btn-primary btn-icon"><i class="ri-search-line ri-22px"></i></button>
+  <div class="card mb-6 overflow-hidden position-relative bg-primary">
+    <div class="position-absolute bottom-0 start-0 bg-white opacity-10 rounded-circle" style="width: 150px; height: 150px; margin-bottom: -40px; margin-left: -40px;"></div>
+
+    <div class="card-body p-0">
+        <div class="row g-0 align-items-center">
+            
+            <div class="col-md-3 d-none d-md-flex justify-content-center align-items-end pt-4">
+                <img src="{% static 'img/illustrations/bulb-light.png' %}" 
+                     class="img-fluid" height="100" style="opacity: 0.9; transform: rotate(-10deg);" alt="Bulb">
+            </div>
+
+            <div class="col-md-6 text-center py-5 px-4">
+                <h3 class="text-white fw-bold mb-1">Welcome back, {{ request.user.first_name|capfirst }}!</h3>
+                <p class="text-white text-opacity-75 mb-4">Lanjutkan progres belajarmu hari ini.</p>
+                
+                <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="input-group input-group-lg input-group-merge shadow-sm">
+                    <span class="input-group-text border-0 ps-3 bg-white"><i class="ri-search-line"></i></span>
+                    <input type="text" class="form-control border-0 ps-2 bg-white" placeholder="Apa yang ingin Anda pelajari hari ini?" />
+                    <button class="btn btn-primary px-4" type="button">Cari</button>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="app-academy-md-25 d-flex align-items-end justify-content-end">
-        <img src="{% static 'img/illustrations/pencil-rocket.png' %}" alt="pencil rocket" height="180" class="scaleX-n1-rtl" />
-      </div>
+            </div>
+        </div>
     </div>
-  </div>
+</div>
 
   <div class="card mb-6">
     <div class="card-header d-flex flex-wrap justify-content-between gap-4">
@@ -156,7 +162,7 @@
     </div>
   </div>
 
-  <div class="row gy-4 mb-6">
+  <!-- <div class="row gy-4 mb-6">
     <div class="col-lg-6">
       <div class="card shadow-none bg-label-info h-100">
         <div class="card-body d-flex justify-content-between flex-wrap-reverse">
@@ -193,7 +199,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 
   
 </div>
