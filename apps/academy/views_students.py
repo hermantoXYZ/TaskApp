@@ -219,6 +219,8 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
                         quiz.user_is_done = last_attempt is not None
 
                         if last_attempt:
+                            quiz.user_is_done = True
+                            quiz.last_attempt_id = last_attempt.id
                             quiz.user_score = last_attempt.total_score
                         else:
                             quiz.user_score = None
@@ -280,7 +282,7 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
             progress.completed_at = timezone.now()
             progress.save()
             
-            messages.success(request, 'Materi selesai!')
+            messages.success(request, 'Materi selesai dibaca dengan baik..!')
             return redirect('course-player-material', course_uuid=course.uuid, material_id=material_id)
 
         elif assignment_id:
@@ -503,35 +505,104 @@ class StudentQuizSubmitView(StudentsRequiredMixin, AcademyView):
         messages.success(request, "Jawaban berhasil dikirim. Terima kasih!")
         return redirect('student-quiz-result', attempt_id=attempt.id)
 
-
-# --- VIEW: HALAMAN HASIL / RESULT ---
 class StudentQuizResultView(StudentsRequiredMixin, AcademyView):
     template_name = "students/quiz_result.html"
 
-    def get(self, request, attempt_id, *args, **kwargs):
+    # === [TAMBAHAN BARU] ===
+    # Method ini akan dijalankan sebelum halaman dirender
+    def get(self, request, *args, **kwargs):
+        attempt_id = kwargs.get('attempt_id')
+        
+        # 1. Ambil attempt dan pastikan milik user yang login
         attempt = get_object_or_404(
             StudentQuizAttempt, 
             id=attempt_id, 
             participant__mahasiswa__nim=request.user
         )
-        
-        # Hitung jumlah soal benar/salah (Statistik sederhana)
-        total_questions = attempt.quiz.questions.count()
-        correct_answers = StudentQuizAnswer.objects.filter(
-            attempt=attempt, 
-            score_obtained__gt=0
-        ).count()
 
-        return self.render_to_response(self.get_context_data(
-            attempt=attempt,
-            quiz=attempt.quiz,
-            course_uuid=attempt.quiz.course.uuid,
-            stats={
-                'total': total_questions,
-                'correct': correct_answers
+        # 2. SECURITY CHECK: Apakah ujian sudah selesai?
+        if not attempt.finished_at:
+            messages.warning(request, "Anda belum menyelesaikan ujian ini. Silakan selesaikan (Submit) terlebih dahulu.")
+            # Redirect paksa ke halaman pengerjaan (Take Quiz)
+            return redirect('student-quiz-take', attempt_id=attempt.id)
+        
+        # 3. Jika sudah selesai, lanjutkan ke proses render biasa (get_context_data)
+        return super().get(request, *args, **kwargs)
+    # =======================
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        attempt_id = self.kwargs.get('attempt_id') 
+        
+        # Ambil ulang attempt (atau bisa simpan di self.attempt saat di get() biar hemat query)
+        attempt = get_object_or_404(
+            StudentQuizAttempt, 
+            id=attempt_id, 
+            participant__mahasiswa__nim=self.request.user
+        )
+
+        # ... (sisa kode logic get_context_data Anda yang sebelumnya tetap sama) ...
+        # 1. Ambil pertanyaan
+        questions = attempt.quiz.questions.all().order_by('order')
+        
+        # 2. Ambil jawaban user
+        user_answers = StudentQuizAnswer.objects.filter(attempt=attempt).select_related('selected_option')
+        answer_map = {ans.question.id: ans for ans in user_answers}
+
+        detailed_results = []
+        total_correct = 0
+        total_questions = questions.count()
+
+        for q in questions:
+            user_ans = answer_map.get(q.id)
+            
+            # Logic cari correct option
+            if hasattr(q, 'options'):
+                correct_option = q.options.filter(is_correct=True).first()
+            else:
+                correct_option = q.quizoption_set.filter(is_correct=True).first()
+
+            is_correct = False
+            user_selected_option = None
+            user_text_answer = None
+            score_obtained = 0
+
+            if user_ans:
+                user_selected_option = user_ans.selected_option
+                user_text_answer = user_ans.text_answer
+                score_obtained = user_ans.score_obtained
+                
+                if score_obtained > 0:
+                    is_correct = True
+                    total_correct += 1
+            
+            detailed_results.append({
+                'question': q,
+                'user_answer_obj': user_ans,
+                'user_selected_option': user_selected_option,
+                'user_text_answer': user_text_answer,
+                'correct_option': correct_option,
+                'is_correct': is_correct,
+                'score': score_obtained
+            })
+
+        is_exam_closed = timezone.now() > attempt.quiz.end_time
+
+        context.update({
+            "title": "Hasil Kuis",
+            "attempt": attempt,
+            "quiz": attempt.quiz,
+            "show_discussion": is_exam_closed,
+            "course_uuid": attempt.quiz.course.uuid, 
+            "detailed_results": detailed_results,
+            "stats": {
+                'total': total_questions,  
+                'correct': total_correct, 
+                'final_score': attempt.total_score
             }
-        ))
-    
+        })
+        return context
 
 class StudentLibraryListView(StudentsRequiredMixin, AcademyView):
     template_name = "perpustakaan/student_library_list.html"

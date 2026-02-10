@@ -181,7 +181,18 @@
 <div class="col-lg-8">
     
     <div class="card mb-6">
-      
+{% if messages %}
+  {% for message in messages %}
+       <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
+          <span class="alert-icon rounded">
+            <i class="ri-error-warning-line ri-22px"></i>
+          </span>
+          <div>
+            {{ message }}
+        </div>
+      </div>
+  {% endfor %}
+  {% endif %}
       <div class="card-header p-0">
         <div class="nav-align-top">
           <ul class="nav nav-tabs nav-fill" role="tablist">
@@ -562,9 +573,15 @@
                                             <div class="w-100">
                                                 <div class="d-flex justify-content-between align-items-start">
                                                     <h5 class="mb-1">
-                                                        <a href="{% url 'student-quiz-start' quiz.id %}" class="text-heading text-decoration-none stretched-link">
-                                                            {{ quiz.title }}
-                                                        </a>
+                                                        {% if quiz.user_is_done %}
+                                                            <a href="{% url 'student-quiz-result' quiz.last_attempt_id %}" class="text-heading text-decoration-none stretched-link">
+                                                                {{ quiz.title }}
+                                                            </a>
+                                                        {% else %}
+                                                            <a href="{% url 'student-quiz-start' quiz.id %}" class="text-heading text-decoration-none stretched-link">
+                                                                {{ quiz.title }}
+                                                            </a>
+                                                        {% endif %}
                                                     </h5>
                                                     
                                                     {% if quiz.quiz_type == 'exam' %}
@@ -600,7 +617,9 @@
                                                     <small class="text-muted d-block">Nilai Akhir</small>
                                                     <h3 class="mb-0 text-success">{{ quiz.user_score|floatformat:0 }}</h3>
                                                 </div>
-                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-sm btn-outline-secondary mt-1 w-100">Detail</a>
+                                                <a href="{% url 'student-quiz-result' quiz.last_attempt_id %}" class="btn btn-sm btn-outline-success mt-1 w-100">
+                                                    <i class="ri-bar-chart-box-line me-1"></i> Lihat Hasil
+                                                </a>
 
                                             {% elif quiz.is_expired %}
                                                 <div class="mb-2">
@@ -634,7 +653,11 @@
                                                     <span class="fw-bold text-muted">Nilai:</span>
                                                     <span class="h4 mb-0 text-success">{{ quiz.user_score|floatformat:0|default:"-" }}</span>
                                                 </div>
-                                                <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-outline-secondary w-100">Lihat Detail</a>
+                                                <a href="{% url 'student-quiz-result' quiz.last_attempt_id %}" class="btn btn-outline-success w-100">
+                                                    Lihat Hasil
+                                                </a>
+                                            {% elif quiz.is_expired %}
+                                                <button class="btn btn-secondary w-100" disabled>Ditutup</button>
                                             {% else %}
                                                 <a href="{% url 'student-quiz-start' quiz.id %}" class="btn btn-primary w-100">Mulai Ujian</a>
                                             {% endif %}

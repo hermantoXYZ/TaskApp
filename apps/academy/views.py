@@ -591,7 +591,7 @@ class EditCourseMaterialView(DosenRequiredMixin, AcademyView):
         material = get_object_or_404(CourseMaterial, id=material_id)
         if material.agenda.course != course:
             messages.error(request, "Materi tidak valid untuk kursus ini.")
-            return redirect('manage-curriculum', course_uuid=course.uuid)
+            return redirect('edit-course-material', course_uuid=course.uuid, material_id=material.id)
 
         form = CourseMaterialForm(instance=material, course_uuid=course.uuid)
         
@@ -608,7 +608,7 @@ class EditCourseMaterialView(DosenRequiredMixin, AcademyView):
 
         # PERBAIKAN: Ganti 'material.section' menjadi 'material.agenda'
         if material.agenda.course != course:
-            return redirect('manage-curriculum', course_uuid=course.uuid)
+            return redirect('edit-course-material', course_uuid=course.uuid, material_id=material.id)
 
         form = CourseMaterialForm(request.POST, request.FILES, instance=material, course_uuid=course.uuid)
 
@@ -616,7 +616,7 @@ class EditCourseMaterialView(DosenRequiredMixin, AcademyView):
             form.save()
             messages.success(request, f'Materi "{material.title}" berhasil diperbarui.')
             # Redirect kembali ke halaman Agenda
-            return redirect('manage-curriculum', course_uuid=course.uuid)
+            return redirect('edit-course-material', course_uuid=course.uuid, material_id=material.id)
         
         return self.render_to_response(self.get_context_data(
             form=form, 
