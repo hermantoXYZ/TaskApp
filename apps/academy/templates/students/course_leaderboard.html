@@ -1,0 +1,232 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Leaderboard - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    
+   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h4 class="fw-bold mb-1">
+                <span class="text-muted fw-light">Course /</span> Leaderboard
+            </h4>
+            
+            <p class="text-muted mb-0">
+                Peringkat keaktifan mahasiswa di kelas <strong>{{ course.name }} - ({{ course.group }})</strong>.
+                <span class="fst-italic ms-1 text-secondary small opacity-75"><br>*Disclaimer: Not based on a validated instrument.</span>
+            </p>
+            
+        </div>
+        <a href="{% url 'course-player' course.uuid %}" class="btn btn-outline-secondary">
+            <i class="ri-arrow-left-line me-1"></i> Kembali ke Materi
+        </a>
+    </div>
+
+    {% if leaderboard|length >= 3 %}
+    <div class="row mb-5 g-4 align-items-end mt-10">
+        
+        <div class="col-md-4 order-2 order-md-1">
+            <div class="card border border-primary position-relative mt-5">
+                <div class="position-absolute top-0 start-50 translate-middle">
+                    <div class="avatar avatar-xl border border-4 border-white rounded-circle bg-white p-1">
+                         {% if leaderboard.1.photo_url %}
+                            <img src="{{ leaderboard.1.photo_url }}" class="rounded-circle object-fit-cover w-100 h-100">
+                         {% else %}
+                            <span class="avatar-initial rounded-circle bg-label-secondary w-100 h-100">{{ leaderboard.1.name|slice:":1"|upper }}</span>
+                         {% endif %}
+                    </div>
+                    <span class="badge bg-secondary rounded-pill position-absolute bottom-0 end-0 shadow-sm border border-white">#2</span>
+                </div>
+                <div class="card-body text-center pt-5 mt-2">
+                    <h5 class="mb-0 fw-bold text-truncate">{{ leaderboard.1.full_name }}</h5>
+                    <small class="text-muted d-block mb-3">{{ leaderboard.1.username }}</small>
+                    
+                    <div class="d-flex justify-content-center align-items-baseline gap-1 mb-2">
+                        <h2 class="text-primary mb-0 fw-bold">{{ leaderboard.1.percent }}</h2>
+                        <span class="text-primary fw-bold">%</span>
+                    </div>
+                    <span class="badge bg-label-primary rounded-pill">
+                        {{ leaderboard.1.total_completed }} / {{ max_stats.total_items }} Poin
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 order-1 order-md-2">
+            <div class="card border border-warning shadow-lg position-relative">
+                <div class="card-header text-center bg-warning text-white py-2 mb-4 rounded-top fw-bold">
+                    <i class="ri-vip-crown-fill me-1"></i> TOP STUDENT
+                </div>
+                <div class="position-absolute top-0 start-50 translate-middle mt-5">
+                    <div class="avatar avatar-xl border border-4 border-warning rounded-circle bg-white p-1" style="width: 90px; height: 90px;">
+                         {% if leaderboard.0.photo_url %}
+                            <img src="{{ leaderboard.0.photo_url }}" class="rounded-circle object-fit-cover w-100 h-100">
+                         {% else %}
+                            <span class="avatar-initial rounded-circle bg-label-warning text-warning w-100 h-100 fs-3">{{ leaderboard.0.name|slice:":1"|upper }}</span>
+                         {% endif %}
+                    </div>
+                     <span class="badge bg-warning text-white rounded-pill position-absolute bottom-0 end-0 shadow-sm border border-white">#1</span>
+                </div>
+                <div class="card-body text-center pt-5 mt-3">
+                    <h4 class="mb-0 fw-bold text-truncate">{{ leaderboard.0.full_name }}</h4>
+                    <small class="text-muted d-block mb-3">{{ leaderboard.0.username }}</small>
+                    
+                    <div class="d-flex justify-content-center align-items-baseline gap-1 mb-2">
+                        <h1 class="text-warning mb-0 display-4 fw-bold">{{ leaderboard.0.percent }}</h1>
+                        <span class="text-warning h3 fw-bold">%</span>
+                    </div>
+                    <span class="badge bg-warning text-white rounded-pill px-3">
+                        {{ leaderboard.0.total_completed }} / {{ max_stats.total_items }} Poin
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 order-3 order-md-3">
+            <div class="card border border-primary position-relative mt-5">
+                <div class="position-absolute top-0 start-50 translate-middle">
+                    <div class="avatar avatar-xl border border-4 border-white rounded-circle bg-white p-1">
+                         {% if leaderboard.2.photo_url %}
+                            <img src="{{ leaderboard.2.photo_url }}" class="rounded-circle object-fit-cover w-100 h-100">
+                         {% else %}
+                            <span class="avatar-initial rounded-circle bg-label-secondary w-100 h-100">{{ leaderboard.2.name|slice:":1"|upper }}</span>
+                         {% endif %}
+                    </div>
+                    <span class="badge text-white rounded-pill position-absolute bottom-0 end-0 shadow-sm border border-white" style="background: #cd7f32;">#3</span>
+                </div>
+                <div class="card-body text-center pt-5 mt-2">
+                    <h5 class="mb-0 fw-bold text-truncate">{{ leaderboard.2.full_name }}</h5>
+                    <small class="text-muted d-block mb-3">{{ leaderboard.2.username }}</small>
+                    
+                    <div class="d-flex justify-content-center align-items-baseline gap-1 mb-2">
+                        <h2 class="text-primary mb-0 fw-bold">{{ leaderboard.2.percent }}</h2>
+                        <span class="text-primary fw-bold">%</span>
+                    </div>
+                    <span class="badge bg-label-primary rounded-pill">
+                        {{ leaderboard.2.total_completed }} / {{ max_stats.total_items }} Poin
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Daftar Peringkat Lengkap</h5>
+            <div class="text-muted small">
+                <span class="me-3"><i class="ri-book-open-line text-primary"></i> Materi</span>
+                <span class="me-3"><i class="ri-file-list-3-line text-warning"></i> Tugas</span>
+                <span class="me-3"><i class="ri-calendar-check-line text-info"></i> Absen</span>
+                <span><i class="ri-survey-line text-success"></i> Kuis</span>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th width="5%" class="text-center">Rank</th>
+                        <th width="25%">Mahasiswa</th>
+                        <th width="20%">Progress Bar</th>
+                        <th class="text-center">Detail Poin</th>
+                        <th class="text-center">Last Login</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in leaderboard %}
+                    <tr class="{% if p.is_me %}table-primary{% endif %}">
+                        <td class="text-center fw-bold h5 text-secondary">
+                            {% if p.rank == 1 %}🥇
+                            {% elif p.rank == 2 %}🥈
+                            {% elif p.rank == 3 %}🥉
+                            {% else %}{{ p.rank }}{% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3">
+                                    {% if p.photo_url %}
+                                        <img src="{{ p.photo_url }}" class="rounded-circle object-fit-cover w-100 h-100">
+                                    {% else %}
+                                        <span class="avatar-initial rounded-circle bg-label-secondary">
+                                            {{ p.name|slice:":1"|upper }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold text-heading">
+                                        {{ p.full_name|truncatechars:15 }}
+                                        {% if p.is_me %}<span class="badge bg-primary ms-1" style="font-size: 0.6rem;">ANDA</span>{% endif %}
+                                    </span>
+                                    <small class="text-muted">{{ p.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress w-100 me-2" style="height: 6px;">
+                                    <div class="progress-bar {% if p.percent == 100 %}bg-success{% elif p.percent >= 50 %}bg-primary{% else %}bg-warning{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ p.percent }}%" 
+                                         aria-valuenow="{{ p.percent }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="fw-bold {% if p.percent == 100 %}text-success{% else %}text-muted{% endif %}">{{ p.percent }}%</small>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <span class="badge bg-label-primary" data-bs-toggle="tooltip" title="Materi Selesai: {{ p.stats.materials }} / {{ max_stats.materials }}">
+                                    <i class="ri-book-open-line me-1"></i> {{ p.stats.materials }}
+                                </span>
+                                <span class="badge bg-label-warning" data-bs-toggle="tooltip" title="Tugas Submit: {{ p.stats.assignments }} / {{ max_stats.assignments }}">
+                                    <i class="ri-file-list-3-line me-1"></i> {{ p.stats.assignments }}
+                                </span>
+                                <span class="badge bg-label-info" data-bs-toggle="tooltip" title="Kehadiran: {{ p.stats.attendance }} / {{ max_stats.attendance }}">
+                                    <i class="ri-calendar-check-line me-1"></i> {{ p.stats.attendance }}
+                                </span>
+                                <span class="badge bg-label-success" data-bs-toggle="tooltip" title="Kuis Selesai: {{ p.stats.quizzes }} / {{ max_stats.quizzes }}">
+                                    <i class="ri-survey-line me-1"></i> {{ p.stats.quizzes }}
+                                </span>
+                            </div>
+                        </td>
+                       <td class="text-center">
+                            {% if p.last_login %}
+                                <div class="d-flex flex-column align-items-center">
+                                    <span class="badge bg-label-secondary fw-normal">
+                                        <i class="ri-time-line me-1"></i> {{ p.last_login|timesince }} lalu
+                                    </span>
+                                </div>
+                            {% else %}
+                                <span class="badge bg-label-secondary opacity-50 fw-normal">Belum Login</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="avatar avatar-xl bg-label-secondary rounded-circle mx-auto mb-3">
+                                <i class="ri-user-unfollow-line ri-2x"></i>
+                            </div>
+                            <h6 class="mb-1">Belum ada data partisipan</h6>
+                            <small>Data akan muncul setelah mahasiswa mulai beraktivitas.</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Initialize Tooltips for the badges
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+{% endblock %}

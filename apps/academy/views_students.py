@@ -1,3 +1,4 @@
+import logging
 from django.views.generic import TemplateView
 from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib import messages
@@ -9,7 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .decorators_students import StudentsRequiredMixin
 from django.utils import timezone
 from django.db.models import Sum
-from django.db.models import Q
+from django.db.models import Q, F, Count
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -656,4 +657,85 @@ class StudentBookDetailView(LoginRequiredMixin, AcademyView):
             "book": book,
             "related_books": related_books
         })
+        return context
+    
+
+class CourseLeaderboardView(StudentsRequiredMixin, AcademyView):
+    template_name = "students/course_leaderboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        course_uuid = self.kwargs.get('course_uuid')
+        course = get_object_or_404(Course, uuid=course_uuid)
+        
+        # 1. Hitung Total Items (Denominator)
+        total_materials = CourseMaterial.objects.filter(agenda__course=course, is_published=True).count()
+        total_assignments = CourseAssignment.objects.filter(agenda__course=course, is_published=True).count()
+        total_agendas = CourseAgenda.objects.filter(course=course).count() 
+        total_quizzes = CourseQuiz.objects.filter(course=course, is_published=True).count()
+        total_items = total_materials + total_assignments + total_agendas + total_quizzes
+
+        leaderboard_data = []
+        
+        # 2. Query Data Partisipan & Hitung Progress
+        # select_related('mahasiswa__nim') sudah memuat data User (termasuk last_login)
+        participants = CourseParticipant.objects.filter(course=course)\
+            .select_related('mahasiswa__nim')\
+            .annotate(
+                count_materials=Count('material_progress', 
+                    filter=Q(material_progress__is_completed=True), distinct=True),
+                
+                count_assignments=Count('mahasiswa__submissions', 
+                    filter=Q(mahasiswa__submissions__assignment__agenda__course=course), distinct=True),
+                
+                count_attendance=Count('attendances', 
+                    filter=Q(attendances__status__in=['present', 'sick', 'excused']), distinct=True),
+                
+                count_quizzes=Count('quiz_attempts__quiz', 
+                    filter=Q(quiz_attempts__finished_at__isnull=False), distinct=True)
+            )\
+            .annotate(
+                total_completed=F('count_materials') + F('count_assignments') + F('count_attendance') + F('count_quizzes')
+            )\
+            .order_by('-total_completed', 'mahasiswa__nim__first_name')
+
+        # 3. Format Data
+        for rank, p in enumerate(participants, 1):
+            percent = 0
+            if total_items > 0:
+                percent = int((p.total_completed / total_items) * 100)
+            
+            if percent > 100: percent = 100
+            
+            leaderboard_data.append({
+                'rank': rank,
+                'name': p.mahasiswa.nim.first_name,
+                'full_name': f"{p.mahasiswa.nim.first_name}",
+                'username': p.mahasiswa.nim.username,
+                'photo_url': p.mahasiswa.photo.url if p.mahasiswa.photo else None,
+                'percent': percent,
+                
+                # [BARU] Tambahkan Last Login di sini
+                'last_login': p.mahasiswa.nim.last_login, 
+
+                'stats': {
+                    'materials': p.count_materials,      
+                    'assignments': p.count_assignments,
+                    'attendance': p.count_attendance,
+                    'quizzes': p.count_quizzes,
+                    'total_user': p.total_completed
+                },
+                'is_me': p.mahasiswa.nim.username == self.request.user.username 
+            })
+
+        context['course'] = course
+        context['leaderboard'] = leaderboard_data
+        context['max_stats'] = {
+            'materials': total_materials,
+            'assignments': total_assignments,
+            'attendance': total_agendas,
+            'quizzes': total_quizzes,
+            'total_items': total_items
+        }
+        
         return context

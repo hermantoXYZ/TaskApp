@@ -4,7 +4,7 @@ from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
 from .views_prodi_set import UserListView, UserListJsonView
-from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView
+from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView, CourseLeaderboardView
 from .views_export_data import CourseRecapitulationView
 from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView
 from .views_dosen import DosenProfileView, AddBookView, ManageCategoryView, DeleteBookView, DeleteCategoryView, ListBookView, EditBookView
@@ -73,6 +73,7 @@ urlpatterns = [
     # === MAHASISWA QUIZ ACCESS ===
     path('app/academy/course/', StudentCourseListView.as_view(), name='app-academy-course'),
     path('course/<uuid:course_uuid>/learn/', CoursePlayerView.as_view(), name='course-player'),
+    path('course/<uuid:course_uuid>/leaderboard/', CourseLeaderboardView.as_view(), name='course-leaderboard'),
     path('course/<uuid:course_uuid>/learn/material/<int:material_id>/', CoursePlayerView.as_view(), name='course-player-material'),
     path('course/<uuid:course_uuid>/learn/assignment/<int:assignment_id>/', CoursePlayerView.as_view(), name='course-player-assignment'),
 
