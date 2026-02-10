@@ -95,6 +95,18 @@
         </li>
       </ul>
     </div>
+  {% if messages %}
+  {% for message in messages %}
+       <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
+          <span class="alert-icon rounded">
+            <i class="ri-error-warning-line ri-22px"></i>
+          </span>
+          <div>
+            {{ message }}
+        </div>
+      </div>
+  {% endfor %}
+  {% endif %}
     <div class="card mb-6">
       <h5 class="card-header">Perbarui Informasi Profil</h5>
       <div class="card-body">

@@ -7,8 +7,6 @@ from django.urls import reverse
 from django.views.generic import TemplateView
 from web_project import TemplateLayout
 from django.contrib import messages
-
-# Pastikan import models sesuai struktur project
 from .models import (
     Course, CourseParticipant, CourseAgenda, CourseAssignment, 
     CourseAttendance, StudentAssignmentSubmission, CourseQuiz, 
@@ -26,35 +24,23 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
 
     def get(self, request, course_uuid, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
-    
-        # 1. Ambil Data Dasar & Optimasi Query
         participants = CourseParticipant.objects.filter(course=course)\
             .select_related('mahasiswa', 'mahasiswa__prodi')\
             .prefetch_related('group_memberships__group')\
             .order_by('mahasiswa__nim')
 
         agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
-        
-        # --- Pisahkan Tugas (Individu vs Kelompok) ---
         all_assignments = CourseAssignment.objects.filter(agenda__course=course).order_by('due_date')
         assignments_individu = [t for t in all_assignments if t.assignment_type != 'group']
         assignments_group = [t for t in all_assignments if t.assignment_type == 'group']
 
         quizzes = CourseQuiz.objects.filter(course=course).order_by('created_at') 
         total_agendas = agendas.count()
-        
-        # Konfigurasi Poin Absensi
         POINTS_MAP = {'present': 100, 'late': 75, 'sick': 60, 'excused': 50, 'absent': 0, '-': 0}
-
-        # 2. Optimasi Query Absensi
         all_attendances = CourseAttendance.objects.filter(agenda__course=course)
         attendance_map = {(att.participant_id, att.agenda_id): att.status for att in all_attendances}
-
-        # 3. Optimasi Submission (Ambil semua sekaligus untuk performa)
         all_submissions = StudentAssignmentSubmission.objects.filter(assignment__agenda__course=course)
         submission_map = {(sub.assignment.id, sub.student.nim): sub for sub in all_submissions}
-
-        # --- KONFIGURASI BOBOT (Total 100%) ---
         WEIGHTS = {
             'attendance': 15, # 15%
             'task_ind': 20,   # 20%
@@ -66,7 +52,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         rekap_data = [] 
 
         for p in participants:
-            # --- A. SKOR KEHADIRAN ---
             student_agenda_statuses = []
             current_total_points = 0 
             
@@ -79,13 +64,10 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             if total_agendas > 0:
                 max_possible_points = total_agendas * 100
                 attendance_score = round((current_total_points / max_possible_points) * 100, 1)
-
-            # --- B. NILAI TUGAS (Fungsi Helper Lokal) ---
             def get_grades_list(task_list, student_obj):
                 grades_result = []
                 total_score = 0
-                count_graded = 0 # (Opsional: jika ingin rata-rata hanya dari yg dinilai)
-                
+                count_graded = 0 
                 for task in task_list:
                     sub = submission_map.get((task.id, student_obj.nim))
                     
@@ -118,18 +100,14 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                     if status == 'graded':
                         total_score += score
                 
-                # Hitung Rata-rata Kategori Ini
                 avg_val = 0
                 if len(task_list) > 0:
                     avg_val = total_score / len(task_list)
                 
                 return grades_result, avg_val
-
-            # --- PROSES NILAI TUGAS ---
             grades_individu, avg_tugas_ind = get_grades_list(assignments_individu, p.mahasiswa)
             grades_group, avg_tugas_grp = get_grades_list(assignments_group, p.mahasiswa)
 
-            # --- C. NILAI KUIS & UJIAN ---
             student_quiz_grades = []
             
             val_quiz_total = 0
@@ -144,12 +122,10 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 
                 score_val = attempt.total_score if attempt else 0
                 
-                # Klasifikasi Skor (Exam vs Quiz Biasa)
                 if quiz.quiz_type == 'exam':
                     val_exam_total += score_val
                     count_exam += 1
                 else:
-                    # Kuis Harian / Remedial
                     val_quiz_total += score_val
                     count_quiz += 1
 
@@ -159,7 +135,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                     'is_finished': True if attempt else False
                 })
 
-            # Hitung Rata-rata Kuis
             avg_quiz = 0
             if count_quiz > 0:
                 avg_quiz = val_quiz_total / count_quiz
@@ -169,7 +144,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             if count_exam > 0:
                 avg_exam = val_exam_total / count_exam
 
-            # --- D. HITUNG NILAI AKHIR (WEIGHTED AVERAGE) ---
             final_avg = (
                 (float(attendance_score) * (WEIGHTS['attendance'] / 100)) +
                 (float(avg_tugas_ind) * (WEIGHTS['task_ind'] / 100)) +
@@ -202,7 +176,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             quizzes=quizzes,
             rekap_data=rekap_data, 
             total_agendas=total_agendas,
-            weights=WEIGHTS # Kirim bobot ke template
+            weights=WEIGHTS 
         ))
 
     def export_to_excel(self, request, course, agendas, assignments_ind, assignments_grp, quizzes, data):
@@ -271,21 +245,46 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             else:
                 cell.fill = header_fill
 
-        # --- HEADER LINKS (AGENDA) ---
         scheme = request.scheme
         host = request.get_host()
         base_url = f"{scheme}://{host}"
+
         for i, ag in enumerate(agendas):
             col_idx = agenda_start_col + i
             cell = ws.cell(row=1, column=col_idx)
+            first_material = ag.materials.filter(is_published=True).order_by('order').first()
+            first_assignment = ag.assignments.filter(is_published=True).order_by('due_date').first()
+
+            relative_path = ""
+
             try:
-                relative_path = reverse('public-agenda-material', kwargs={'course_uuid': course.uuid, 'agenda_id': ag.id})
+                if first_material:
+                    relative_path = reverse('course-preview-public-material', kwargs={
+                        'course_uuid': course.uuid, 
+                        'material_id': first_material.id
+                    })
+                    
+                elif first_assignment:
+                    relative_path = reverse('course-preview-public-assignment', kwargs={
+                        'course_uuid': course.uuid, 
+                        'assignment_id': first_assignment.id
+                    })
+                    
+                else:
+                    relative_path = reverse('course-preview-public', kwargs={
+                        'course_uuid': course.uuid
+                    })
+
                 full_link = f"{base_url}{relative_path}"
+                
+                # Set Hyperlink di Excel
                 cell.hyperlink = full_link
-                cell.font = link_font
+                cell.font = link_font  
                 cell.value = f"P-{i+1}" 
-            except:
-                pass 
+                
+            except Exception as e:
+                cell.value = f"P-{i+1}"
+
 
         # --- ISI DATA ---
         for idx, item in enumerate(data):
@@ -339,7 +338,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             apply_links(item['grades_individu'], start_ind)
             apply_links(item['grades_group'], start_grp)
 
-        # Auto Adjust Width
         for col in ws.columns:
             if "Link" in str(col[0].value):
                 ws.column_dimensions[col[0].column_letter].width = 12

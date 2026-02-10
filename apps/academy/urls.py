@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AcademyView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, InstructorCoursePreviewView, AppPasswordChangeView
+from .views import AcademyView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
@@ -32,19 +32,18 @@ urlpatterns = [
     path('course/<uuid:course_uuid>/assignment/<int:assignment_id>/grading/', views.AssignmentGradingView.as_view(), name='assignment-grading'),
     path('course/<uuid:course_uuid>/announcement/', CourseAnnouncementView.as_view(), name='add-course-announcement'),
     path('course/<uuid:course_uuid>/announcement/<int:announcement_id>/delete/', views.DeleteCourseAnnouncementView.as_view(), name='delete-course-announcement'),
-
     path('course/program-studi', AddProgramStudiCourse.as_view(), name='program-studi-course'),
     path('course/edit/progam-studi/<uuid:pk>/', EditProgramStudiCourse.as_view(), name='edit-program-studi-course'),
     path('course/delete/<uuid:pk>/', DeleteProgramStudiCourse.as_view(), name='delete-program-studi-course'),
     path('list-course-period', AddCoursePeriod.as_view(), name='list-course-period'),
     path('course/period/edit/<uuid:pk>/', EditCoursePeriod.as_view(), name='edit-course-period'),
     path('course/period/delete/<uuid:pk>/', DeleteCoursePeriod.as_view(), name='delete-course-period'),
-
     path('course/<uuid:course_uuid>/rekapitulasi/', CourseRecapitulationView.as_view(), name='course-rekapitulasi'),
 
-    path('course/<uuid:course_uuid>/preview/', InstructorCoursePreviewView.as_view(), name='course-preview'),
-    path('course/<uuid:course_uuid>/preview/material/<int:material_id>/', InstructorCoursePreviewView.as_view(), name='course-preview-material'),
-    path('course/<uuid:course_uuid>/preview/assignment/<int:assignment_id>/', InstructorCoursePreviewView.as_view(), name='course-preview-assignment'),
+    # === PUBLIC COURSE PREVIEW URLS ===
+    path('course/<uuid:course_uuid>/preview/public/', CoursePreviewPublicView.as_view(), name='course-preview-public'),   
+    path('course/<uuid:course_uuid>/preview/public/material/<int:material_id>/', CoursePreviewPublicView.as_view(), name='course-preview-public-material'),
+    path('course/<uuid:course_uuid>/preview/public/assignment/<int:assignment_id>/', CoursePreviewPublicView.as_view(), name='course-preview-public-assignment'), 
 
     # path('course/submission/<int:submission_id>/update-grade/', views.update_grade_submission, name='update-grade-submission'),
     # # user
@@ -55,12 +54,9 @@ urlpatterns = [
     path("app/user/listss/", UserListView.as_view(), name="app-user-lists"),
     path("users/json/", UserListJsonView.as_view(), name="user-list-json"),
     path("", views.loginView, name="login"),
-
+    
     # === PUBLIC URLS ===
-    path('public/share/<uuid:course_uuid>/agenda/<int:agenda_id>/', views.PublicAgendaMaterialView.as_view(), name='public-agenda-material'),
-
     path('account/password/change/', AppPasswordChangeView.as_view(), name='password_change'),
-
 
     # QUIZ URLS
     path('course/<uuid:course_uuid>/quizzes/', views.CourseQuizListView.as_view(), name='course-quiz-list'),

@@ -27,7 +27,7 @@ class UsersView(PermissionRequiredMixin, TemplateView):
         return context
 
 # --- View Edit Profile Mahasiswa (BARU) ---
-class UserProfileView(UsersView):
+class UserProfileView(StudentsRequiredMixin, UsersView):
     template_name = "students/profile.html"
     permission_required = [] 
 
@@ -65,6 +65,18 @@ class UserProfileView(UsersView):
 class StudentCourseListView(StudentsRequiredMixin, UsersView):
     template_name = "students/app_academy_course.html"
     permission_required = [] 
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+
+            if not request.user.usermhs.photo:
+                messages.warning(request, "Maaf, Anda harus melengkapi data profile terlebih dahulu untuk mengakses kursus.")
+                return redirect('profile')
+        except UserMhs.DoesNotExist:
+            return redirect('profile')
+
+        return super().dispatch(request, *args, **kwargs)
+    
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

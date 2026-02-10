@@ -57,7 +57,6 @@ def loginView(request):
         else:
             messages.warning(request, 'Periksa Kembali Username dan Password Anda!')
             return redirect('login')
-    
     if request.method == "GET":
         if request.user.is_authenticated:
             return redirect('/app/academy/dashboard/')
@@ -828,23 +827,6 @@ class AssignmentGradingView(DosenRequiredMixin, AcademyView):
             if sub.score is not None: status = 'graded'
             if sub.submitted_at > assignment.due_date: is_late = True
         return status, is_late
-
-class PublicAgendaMaterialView(TemplateView):
-    template_name = "public_agenda_materials.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        course_uuid = self.kwargs.get('course_uuid')
-        agenda_id = self.kwargs.get('agenda_id')
-
-        agenda = get_object_or_404(CourseAgenda, id=agenda_id, course__uuid=course_uuid)
-        
-        materials = CourseMaterial.objects.filter(agenda=agenda).order_by('order')
-
-        context['agenda'] = agenda
-        context['course'] = agenda.course
-        context['materials'] = materials
-        return context
     
 
 class CourseQuizListView(DosenRequiredMixin, AcademyView):
@@ -1358,23 +1340,25 @@ class CourseGroupDetailView(DosenRequiredMixin, AcademyView):
 
         return redirect('group-detail', group_id=group.id)
     
+        
+class CoursePreviewPublicView(AcademyView):
+    template_name = "public_course_player.html" 
 
-class InstructorCoursePreviewView(DosenRequiredMixin, AcademyView):
-    template_name = "dosen_course_player.html" # Menggunakan template yang SAMA
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
-    # Security: Hanya Dosen Pembuat atau Admin yang bisa akses
-    def test_func(self):
-        course = get_object_or_404(Course, uuid=self.kwargs['course_uuid'])
-        return self.request.user == course.instructor or self.request.user.is_superuser
-
-    def get(self, request, course_uuid, material_id=None, assignment_id=None, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
+        course_uuid = kwargs.get('course_uuid')
+        material_id = kwargs.get('material_id')
+        assignment_id = kwargs.get('assignment_id')
         course = get_object_or_404(Course, uuid=course_uuid)
         
-        # Ambil semua section/materi (Sama seperti view mahasiswa)
+        if not course.is_active:
+            from django.http import Http404
+            raise Http404("Course ini tidak aktif.")
+
         sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials', 'assignments')
 
-        # === 1. LOGIK ACTIVE ITEM (COPY PASTE DARI VIEW MAHASISWA) ===
-        # Dosen tetap perlu logic ini agar saat buka link, langsung muncul materi pertama
         active_item = None
         active_type = None
 
@@ -1385,7 +1369,6 @@ class InstructorCoursePreviewView(DosenRequiredMixin, AcademyView):
             active_item = get_object_or_404(CourseAssignment, id=assignment_id)
             active_type = 'assignment'
         else:
-            # Default: Ambil item pertama
             first_material = CourseMaterial.objects.filter(
                 agenda__course=course
             ).order_by('agenda__agenda_date', 'order').first()
@@ -1408,19 +1391,11 @@ class InstructorCoursePreviewView(DosenRequiredMixin, AcademyView):
                 active_item = first_assignment
                 active_type = 'assignment'
 
-        # === 2. AMBIL DATA UMUM SAJA ===
-        # Kita tampilkan pengumuman agar dosen bisa me-review tampilannya
         announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
-        
-        # Tampilkan list kuis (tapi tanpa status 'user_is_done')
         quizzes = CourseQuiz.objects.filter(course=course, is_published=True).order_by('start_time')
 
-        # === 3. CONTEXT ===
-        # Perhatikan: Kita kirim list kosong [] atau None untuk data-data mahasiswa
-        # agar tidak error di template, tapi 'is_instructor' kita set True.
-        
+
         context = self.get_context_data(
-            is_instructor=True,          # <--- KUNCI UTAMA
             course=course,
             sections=sections,
             active_item=active_item,
@@ -1428,7 +1403,7 @@ class InstructorCoursePreviewView(DosenRequiredMixin, AcademyView):
             announcements=announcements,
             quizzes=quizzes,
             
-            # Data Mahasiswa dikosongkan/None
+
             submission=None,
             completed_material_ids=[], 
             completed_assignment_ids=[],
@@ -1436,8 +1411,8 @@ class InstructorCoursePreviewView(DosenRequiredMixin, AcademyView):
             total_hadir=0,
             my_group=None,
             group_members=[],
-            is_overdue=False
+            is_overdue=False,
+            is_public_preview=True
         )
+
         return self.render_to_response(context)
-        
-    # View Dosen TIDAK PERLU method POST karena dosen tidak submit tugas/absen di sini.

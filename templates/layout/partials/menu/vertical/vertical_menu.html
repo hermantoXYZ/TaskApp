@@ -17,9 +17,7 @@
     </a>
   </div>
   {% endif %}
-
   <div class="menu-inner-shadow"></div>
-
   <ul class="menu-inner py-1">
     
     <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-dashboard' %}active{% endif %}">
@@ -29,10 +27,10 @@
       </a>
     </li>
 
+    {% if user.is_superuser or user.userdosen or user.usermhs %}
     <li class="menu-header mt-5">
       <span class="menu-header-text">Apps & Pages</span>
     </li>
-    {% if user.is_superuser or user.userdosen or user.usermhs %}
     <li class="menu-item {% if request.resolver_match.url_name == 'chat-index' %}active{% endif %}">
       <a href="{% url 'chat-index' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-wechat-line"></i>
