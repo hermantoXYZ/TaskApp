@@ -637,7 +637,7 @@ class StudentLibraryListView(StudentsRequiredMixin, AcademyView):
         })
         return context
 
-class StudentBookDetailView(StudentsRequiredMixin, AcademyView):
+class StudentBookDetailView(LoginRequiredMixin, AcademyView):
     template_name = "perpustakaan/student_book_detail.html"
 
     def get_context_data(self, pk, **kwargs):

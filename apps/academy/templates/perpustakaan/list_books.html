@@ -80,7 +80,7 @@
               <td>
                 <div class="d-flex gap-2">
                     {% if book.embed_url %}
-                    <a href="#" class="btn btn-sm btn-icon btn-label-primary rounded-pill" data-bs-toggle="tooltip" title="Lihat Preview">
+                    <a href="{% url 'student-book-read' book.id %}" target="_blank" class="btn btn-sm btn-icon btn-label-primary rounded-pill" data-bs-toggle="tooltip" title="Lihat Preview">
                         <i class="ri-eye-line"></i>
                     </a>
                     {% endif %}

@@ -47,7 +47,18 @@
         <div class="card-body mt-1">
           <h4 class="mb-1">Welcome to {% get_theme_variables 'template_name' %}! 👋</h4>
           <p class="mb-5">Please sign-in to your account and start the adventure</p>
-
+  {% if messages %}
+  {% for message in messages %}
+       <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
+          <span class="alert-icon rounded">
+            <i class="ri-error-warning-line ri-22px"></i>
+          </span>
+          <div>
+            {{ message }}
+        </div>
+      </div>
+  {% endfor %}
+  {% endif %}
           <form id="formAuthentication" method="POST" class="mb-5" action="{% url 'login' %}">
             {% csrf_token %}
             <div class="form-floating form-floating-outline mb-5">
