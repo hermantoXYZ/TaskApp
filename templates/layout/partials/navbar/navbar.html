@@ -350,13 +350,18 @@
           <!-- User -->
           <li class="nav-item navbar-dropdown dropdown-user dropdown">
             <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
-              <div class="avatar avatar-online">
-                <!-- Moke condition for displaying user avatar -->
-                {% if request.user|has_group:"admin" %}
-                <img src="{% static 'img/avatars/1.png' %}" alt class="w-px-40 h-auto rounded-circle">
+             <div class="avatar avatar-online">
+                {% if user.usermhs and user.usermhs.photo %}
+                    <img src="{{ user.usermhs.photo.url }}" alt class="w-px-40 h-px-40 rounded-circle" style="object-fit: cover;">
+                
+                {% elif user.userdosen and user.userdosen.photo %}
+                    <img src="{{ user.userdosen.photo.url }}" alt class="w-px-40 h-px-40 rounded-circle" style="object-fit: cover;">
+                
                 {% else %}
-                <img src="{% static 'img/avatars/3.png' %}" alt class="w-px-40 h-auto rounded-circle">
+                    {# Default Avatar jika tidak ada foto #}
+                    <img src="{% static 'img/avatars/1.png' %}" alt class="w-px-40 h-px-40 rounded-circle">
                 {% endif %}
+
               </div>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
@@ -364,13 +369,17 @@
                 <a class="dropdown-item" href="/">
                   <div class="d-flex">
                     <div class="flex-shrink-0 me-2">
-                      <div class="avatar avatar-online">
-                        <!-- Moke condition for displaying user avatar -->
-                        {% if request.user|has_group:"admin" %}
-                        <img src="{% static 'img/avatars/1.png' %}" alt class="w-px-40 h-auto rounded-circle">
+                    <div class="avatar avatar-online">
+                        {% if user.usermhs and user.usermhs.photo %}
+                            <img src="{{ user.usermhs.photo.url }}" alt class="w-px-40 h-px-40 rounded-circle" style="object-fit: cover;">
+                        
+                        {% elif user.userdosen and user.userdosen.photo %}
+                            <img src="{{ user.userdosen.photo.url }}" alt class="w-px-40 h-px-40 rounded-circle" style="object-fit: cover;">
+                        
                         {% else %}
-                        <img src="{% static 'img/avatars/3.png' %}" alt class="w-px-40 h-auto rounded-circle">
+                            <img src="{% static 'img/avatars/1.png' %}" alt class="w-px-40 h-px-40 rounded-circle">
                         {% endif %}
+
                       </div>
                     </div>
                     <div class="flex-grow-1">
