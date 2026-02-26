@@ -289,8 +289,8 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         # --- ISI DATA ---
         for idx, item in enumerate(data):
             mhs = item['participant'].mahasiswa
-            nim_str = str(mhs.nim) if mhs else "-"
-            nama_str = f"{mhs.nim.first_name} {mhs.nim.last_name}".strip() if mhs else "Tanpa Nama"
+            nim_str = mhs.nim.username if mhs else "NIM Tidak Ditemukan"
+            nama_str = f"{mhs.nim.first_name}".strip() if mhs else "Tanpa Nama"
             prodi_str = mhs.prodi.nama_prodi if mhs and mhs.prodi else "-"
             
             group_name = "-"
