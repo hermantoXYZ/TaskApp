@@ -22,6 +22,8 @@ from django.contrib.auth.views import PasswordChangeView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 
+from django.db.models import Case, When, Value, IntegerField
+
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -271,7 +273,7 @@ class ListCourse(DosenRequiredMixin, AcademyView):
     template_name = "list_academy_course.html"
     def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            courses = Course.objects.all()
+            courses = Course.objects.annotate( umum_first=Case( When(group='MASTER', then=Value(0)), default=Value(1), output_field=IntegerField(), ) ).order_by('umum_first', '-created_at')
             context['courses'] = courses
             return context
     
