@@ -38,14 +38,14 @@
       </a>
     </li>
     {% endif %}
-    {% if user.is_superuser or user.userdosen %}
+  
     <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">
       <a href="{% url 'app-kanban' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-drag-drop-line"></i>
         <div>Kanban</div>
       </a>
     </li>
-    {% endif %}
+ 
 
     {% if user.is_superuser or user.userdosen %}
     <li class="menu-item {% if 'program-studi' in request.path or 'list-academy' in request.path or 'list-course' in request.path %}active open{% endif %}">
