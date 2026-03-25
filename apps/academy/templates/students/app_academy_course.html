@@ -100,7 +100,7 @@
                   </div>
                   
                   <a href="{% url 'course-player' course.uuid %}" class="h5">{{ course.name }}</a>
-                  <p class="text-muted small mb-1">{{ course.code }}</p>
+                  <p class="text-muted small mb-1">{{ course.code }} | Class: {{ course.group }}</p>
                   
                   <p class="mt-1">{{ course.description|truncatewords:8 }}</p>
                   
