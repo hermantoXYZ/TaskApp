@@ -102,7 +102,7 @@
                   <a href="{% url 'course-player' course.uuid %}" class="h5">{{ course.name }}</a>
                   <p class="text-muted small mb-1">{{ course.code }} | Class: {{ course.group }}</p>
                   
-                  <p class="mt-1">{{ course.description|truncatewords:8 }}</p>
+                  <p class="mt-1">{{ course.description|truncatewords:5 }}</p>
                   
                   <div class="d-flex flex-column gap-1 mb-3">
                       <p class="d-flex align-items-center mb-0 text-muted small">
@@ -119,14 +119,29 @@
                       </p>
                   </div>
 
-                  <div class="d-flex align-items-center justify-content-between mb-1">
-                    <span class="small">Progress</span>
-                    <span class="small">0%</span>
-                  </div>
-                  <div class="progress rounded-pill mb-4" style="height: 8px">
-                    <div class="progress-bar w-0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
-
+             <div class="d-flex align-items-center justify-content-between mb-1">
+    <span class="small">Progress Selesaikan Materi..</span>
+    <span class="small fw-semibold
+        {% if course.progress == 100 %}text-success
+        {% elif course.progress >= 50 %}text-primary
+        {% elif course.progress > 0 %}text-warning
+        {% else %}text-secondary{% endif %}">
+        {{ course.progress }}%
+    </span>
+</div>
+<div class="progress rounded-pill mb-4" style="height: 8px">
+    <div class="progress-bar
+        {% if course.progress == 100 %}bg-success
+        {% elif course.progress >= 50 %}bg-primary
+        {% elif course.progress > 0 %}bg-warning
+        {% else %}bg-secondary{% endif %}" 
+         role="progressbar" 
+         style="width: {{ course.progress }}%"
+         aria-valuenow="{{ course.progress }}" 
+         aria-valuemin="0" 
+         aria-valuemax="100">
+    </div>
+</div>
                   <div class="d-flex flex-column flex-md-row gap-4 text-nowrap flex-wrap flex-md-nowrap flex-lg-wrap flex-xxl-nowrap">
                     <a class="w-100 btn btn-outline-primary d-flex align-items-center justify-content-center" href="{% url 'course-player' course.uuid %}">
                       <span class="me-2">Masuk Kelas</span><i class="ri-arrow-right-line ri-16px lh-1 scaleX-n1-rtl"></i>

@@ -220,7 +220,7 @@
             </li>
             <li class="nav-item">
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-quizzes">
-                <i class="tf-icons ri-survey-line me-2"></i> <span class="d-none d-sm-block">Quiz</span>
+                <i class="tf-icons ri-survey-line me-2"></i> <span class="d-none d-sm-block">Quiz/Task</span>
                 {% if quizzes %}<span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2">{{ quizzes.count }}</span>{% endif %}
               </button>
             </li>
@@ -524,21 +524,25 @@
                                     <th>Pertemuan</th>
                                     <th>Tanggal</th>
                                     <th>Status</th>
+                                    <th>Keterangan</th>
                                     <th>Jam</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in attendance_report %}
                                 <tr>
-                                    <td><strong>{{ item.agenda_title }}</strong></td>
+                                    <td><strong>{{ item.agenda_title|truncatechars:30 }}</strong></td>
                                     <td>{{ item.agenda_date|date:"d M Y" }}</td>
                                     <td>
                                         {% if item.status == 'present' %}<span class="badge bg-success">Hadir</span>
                                         {% elif item.status == 'sick' %}<span class="badge bg-warning">Sakit</span>
                                         {% elif item.status == 'absent' %}<span class="badge bg-danger">Alpa</span>
+                                        {% elif item.status == 'late' %}<span class="badge bg-warning">Terlambat</span>
+                                        {% elif item.status == 'excused' %}<span class="badge bg-info">Izin</span>
                                         {% else %}<span class="badge bg-secondary">Belum Absen</span>{% endif %}
                                     </td>
-                                    <td>{{ item.check_in_time|date:"H:i"|default:"-" }}</td>
+                                    <td>{{ item.notes|default:"-" }}</td>
+                                    <td>{{ item.created_at }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -689,6 +693,107 @@
                         <p class="text-muted mb-0">Daftar kuis atau ujian akan muncul di sini.</p>
                     </div>
                 {% endif %}
+
+                <!-- ===== DAFTAR TUGAS ===== -->
+                <div class="mt-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="mb-1">Daftar Tugas</h5>
+                            <p class="text-muted small mb-0">Kumpulkan tugas sebelum batas waktu yang ditentukan.</p>
+                        </div>
+                        <span class="badge bg-label-warning rounded-pill">
+                            <i class="ri-file-list-3-line me-1"></i> Per Pertemuan
+                        </span>
+                    </div>
+
+                    {% for section in sections %}
+                        {% if section.assignments.all %}
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="badge bg-label-secondary rounded-pill">{{ section.agenda_date|date:"d M Y" }}</span>
+                                <h6 class="mb-0 text-muted fw-normal">{{ section.title }}</h6>
+                            </div>
+                            <div class="row g-2">
+                                {% for task in section.assignments.all %}
+                                    {% if task.is_published or request.user == course.instructor %}
+                                    <div class="col-12">
+                                        <div class="card border shadow-none">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                                                    <div class="d-flex align-items-start gap-3 w-100">
+                                                        <div class="avatar avatar-sm flex-shrink-0">
+                                                            <div class="avatar-initial rounded {% if task.id in completed_assignment_ids %}bg-label-success text-success{% else %}bg-label-warning text-warning{% endif %}">
+                                                                {% if task.id in completed_assignment_ids %}
+                                                                    <i class="ri-checkbox-circle-fill ri-18px"></i>
+                                                                {% else %}
+                                                                    <i class="ri-file-list-3-line ri-18px"></i>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="w-100">
+                                                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
+                                                                <h6 class="mb-1 fw-bold">
+                                                                    <a href="{% url 'course-player-assignment' course.uuid task.id %}" class="text-heading text-decoration-none stretched-link">
+                                                                        {{ task.title }}
+                                                                    </a>
+                                                                </h6>
+                                                                <div class="d-flex gap-1 flex-shrink-0" style="position: relative; z-index: 2;">
+                                                                    {% if task.assignment_type == 'group' %}
+                                                                        <span class="badge bg-label-info">Kelompok</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-label-primary">Individu</span>
+                                                                    {% endif %}
+                                                                    {% if not task.is_published %}
+                                                                        <span class="badge bg-label-secondary">DRAFT</span>
+                                                                    {% endif %}
+                                                                    {% if task.id in completed_assignment_ids %}
+                                                                        <span class="badge bg-label-success">Terkumpul</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                            <div class="d-flex flex-wrap gap-3 mt-1 align-items-center">
+                                                                <small class="text-danger">
+                                                                    <i class="ri-time-line me-1"></i> Deadline: <strong>{{ task.due_date|date:"d M Y, H:i" }}</strong>
+                                                                </small>
+                                                                <small class="text-muted">
+                                                                    <i class="ri-trophy-line me-1"></i> Max: {{ task.max_score }}
+                                                                </small>
+                                                                {% for sub in task.submissions.all %}
+                                                                    {% if sub.student.nim == request.user %}
+                                                                        {% if sub.score is not None %}
+                                                                            <span class="badge bg-label-success fw-bold" style="font-size: 0.85rem; position: relative; z-index: 2;">
+                                                                                <i class="ri-award-line me-1"></i> Nilai: {{ sub.score|floatformat:0 }}
+                                                                            </span>
+                                                                        {% else %}
+                                                                            <span class="badge bg-label-secondary" style="position: relative; z-index: 2;">
+                                                                                <i class="ri-hourglass-line me-1"></i> Menunggu Penilaian
+                                                                            </span>
+                                                                        {% endif %}
+                                                                        {% if sub.feedback %}
+                                                                            <small class="text-muted fst-italic" style="position: relative; z-index: 2;">
+                                                                                <i class="ri-chat-1-line me-1"></i> {{ sub.feedback|truncatechars:40 }}
+                                                                            </small>
+                                                                        {% endif %}
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% with has_tasks=False %}
+                    {% for section in sections %}{% if section.assignments.all %}{% with has_tasks=True %}{% endwith %}{% endif %}{% endfor %}
+                    {% endwith %}
+                </div>
+
             </div>
         </div>
         </div>

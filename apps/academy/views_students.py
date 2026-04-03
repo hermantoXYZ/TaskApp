@@ -69,7 +69,6 @@ class StudentCourseListView(StudentsRequiredMixin, UsersView):
 
     def dispatch(self, request, *args, **kwargs):
         try:
-
             if not request.user.usermhs.photo:
                 messages.warning(request, "Maaf, Anda harus melengkapi data profile terlebih dahulu untuk mengakses kursus.")
                 return redirect('profile')
@@ -90,17 +89,38 @@ class StudentCourseListView(StudentsRequiredMixin, UsersView):
             is_student = False
 
         if is_student:
-            enrolled_course_ids = CourseParticipant.objects.filter(
+            enrolled_participants = CourseParticipant.objects.filter(
                 mahasiswa=mhs
-            ).values_list('course_id', flat=True)
+            ).select_related('course')
+
+            enrolled_course_ids = enrolled_participants.values_list('course_id', flat=True)
+
             my_courses = Course.objects.filter(id__in=enrolled_course_ids)\
                 .select_related('prodi', 'period')\
-                .prefetch_related('coaches')\
+                .prefetch_related('coaches', 'agendas__materials')\
                 .order_by('-created_at')
-            
+
+            participant_map = {p.course_id: p for p in enrolled_participants}
+
+            for course in my_courses:
+                participant = participant_map.get(course.id)
+                # Hitung total material via agendas (Course → CourseAgenda → CourseMaterial)
+                total = CourseMaterial.objects.filter(
+                    agenda__course=course
+                ).count()
+                if participant and total > 0:
+                    completed = StudentMaterialProgress.objects.filter(
+                        participant=participant,
+                        is_completed=True
+                    ).count()
+                    course.progress = round((completed / total) * 100)
+                else:
+                    course.progress = 0
+
             context['my_courses'] = my_courses
         else:
             context['my_courses'] = []
+
         context.update({
             "title": "Academy - Kursus Saya",
             "heading": "Daftar Mata Kuliah",
@@ -237,7 +257,9 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
                 'agenda_type': agenda.agenda_type,
                 'agenda_date': agenda.agenda_date,
                 'status': att_record.status if att_record else 'none',
-                'check_in_time': att_record.check_in_time if att_record else None
+                'check_in_time': att_record.check_in_time if att_record else None,
+                'notes': att_record.notes if att_record else None,
+                'created_at': att_record.created_at if att_record else None,
             })
 
         is_overdue = False
