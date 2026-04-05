@@ -8,8 +8,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib import messages
 from .models import (
-    ChatRoom, ChatMessage
+    ChatRoom, ChatMessage, CalendarEvent
 )
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from django.db import transaction
 
 # Database functions (Tambahkan Q dan Max untuk Chat)
@@ -244,3 +248,79 @@ class StartChatView(LoginRequiredMixin, View):
             new_room.participants.add(current_user, target_user)
         
         return redirect('chat-detail', room_uuid=new_room.id)
+
+
+# ============================================================
+# CALENDAR EVENT API VIEWS
+# ============================================================
+
+class CalendarEventListCreateView(LoginRequiredMixin, View):
+    """GET: ambil semua event milik user | POST: buat event baru"""
+
+    def get(self, request, *args, **kwargs):
+        events = CalendarEvent.objects.filter(user=request.user)
+        data = []
+        for e in events:
+            data.append({
+                'id': e.pk,
+                'title': e.title,
+                'start': e.start_date.isoformat(),
+                'end': e.end_date.isoformat(),
+                'allDay': e.all_day,
+                'url': e.url or '',
+                'extendedProps': {
+                    'calendar': e.label,
+                    'location': e.location or '',
+                    'description': e.description or '',
+                }
+            })
+        return JsonResponse(data, safe=False)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            body = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        event = CalendarEvent.objects.create(
+            user=request.user,
+            title=body.get('title', 'Untitled'),
+            label=body.get('label', 'Business'),
+            start_date=body.get('start'),
+            end_date=body.get('end') or body.get('start'),
+            all_day=body.get('allDay', False),
+            url=body.get('url', '') or '',
+            location=body.get('location', '') or '',
+            description=body.get('description', '') or '',
+        )
+        return JsonResponse({'id': event.pk, 'message': 'Event created'}, status=201)
+
+
+class CalendarEventDetailView(LoginRequiredMixin, View):
+    """PUT: update | DELETE: hapus event berdasarkan pk"""
+
+    def _get_event(self, request, pk):
+        return get_object_or_404(CalendarEvent, pk=pk, user=request.user)
+
+    def put(self, request, pk, *args, **kwargs):
+        event = self._get_event(request, pk)
+        try:
+            body = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        event.title       = body.get('title', event.title)
+        event.label       = body.get('label', event.label)
+        event.start_date  = body.get('start', event.start_date)
+        event.end_date    = body.get('end') or body.get('start') or event.end_date
+        event.all_day     = body.get('allDay', event.all_day)
+        event.url         = body.get('url', '') or ''
+        event.location    = body.get('location', '') or ''
+        event.description = body.get('description', '') or ''
+        event.save()
+        return JsonResponse({'id': event.pk, 'message': 'Event updated'})
+
+    def delete(self, request, pk, *args, **kwargs):
+        event = self._get_event(request, pk)
+        event.delete()
+        return JsonResponse({'message': 'Event deleted'})

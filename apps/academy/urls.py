@@ -6,7 +6,7 @@ from . import views
 from .views_prodi_set import UserListView, UserListJsonView
 from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView, CourseLeaderboardView
 from .views_export_data import CourseRecapitulationView
-from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView
+from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView, CalendarEventListCreateView, CalendarEventDetailView
 from .views_dosen import DosenProfileView, AddBookView, ManageCategoryView, DeleteBookView, DeleteCategoryView, ListBookView, EditBookView
 from django.contrib.auth.views import LogoutView
 
@@ -103,4 +103,9 @@ urlpatterns = [
     path('chat/<uuid:room_uuid>/', ChatAcademyViews.as_view(), name='chat-detail'),
     path('chat/start/<int:target_user_id>/', StartChatView.as_view(), name='chat-start'),
     path("app/academy/dashboard/",login_required(AcademyView.as_view(template_name="app_academy_dashboard.html")),name="app-academy-dashboard",),
+    path("app/academy/calender",login_required(AcademyView.as_view(template_name="app_academy_calender.html")),name="app-academy-calender",),
+
+    # === CALENDAR API URLS ===
+    path('api/calendar/events/', login_required(CalendarEventListCreateView.as_view()), name='api-calendar-events'),
+    path('api/calendar/events/<int:pk>/', login_required(CalendarEventDetailView.as_view()), name='api-calendar-event-detail'),
 ]

@@ -27,6 +27,27 @@
       </a>
     </li>
 
+     <li class="menu-header mt-5">
+      <span class="menu-header-text">Kaizen</span>
+    </li>
+
+    
+        {% if user.usermhs %}
+    <li class="menu-item {% if 'library' in request.path %}active{% endif %}">
+      <a href="{% url 'student-library-list' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-book-read-line"></i>
+        <div>Perpustakaan Digital</div>
+      </a>
+    </li>
+    {% endif %}
+
+    <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-calender' %}active{% endif %}">
+      <a href="{% url 'app-academy-calender' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-calendar-schedule-line"></i>
+        <div>My Calendar</div>
+      </a>
+    </li>
+
     {% if user.is_superuser or user.userdosen or user.usermhs %}
     <li class="menu-header mt-5">
       <span class="menu-header-text">Apps & Pages</span>
@@ -39,12 +60,12 @@
     </li>
     {% endif %}
     
-    <li class="menu-item">
+    <!-- <li class="menu-item">
   <a href="https://data.findstock.id/?tipe=Kota" class="menu-link" target="_blank">
     <i class="menu-icon tf-icons ri-database-2-line"></i>
     <div>Data</div>
   </a>
-</li>
+</li> -->
   
     <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">
       <a href="{% url 'app-kanban' %}" class="menu-link">
@@ -107,14 +128,7 @@
     </li>
     {% endif %}
 
-    {% if user.usermhs %}
-    <li class="menu-item {% if 'library' in request.path %}active{% endif %}">
-      <a href="{% url 'student-library-list' %}" class="menu-link">
-        <i class="menu-icon tf-icons ri-book-read-line"></i>
-        <div>Perpustakaan Digital</div>
-      </a>
-    </li>
-    {% endif %}
+
 
     {% if user.usermhs %}
     <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-course' %}active{% endif %}">

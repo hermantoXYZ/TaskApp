@@ -532,3 +532,36 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
+
+########################### CALENDAR EVENT #####################################
+
+CALENDAR_LABEL_CHOICES = [
+    ('Campus', 'Campus'),
+    ('Business', 'Business'),
+    ('Personal', 'Personal'),
+    ('Family', 'Family'),
+    ('Holiday', 'Holiday'),
+    ('Finance', 'Finance'),
+    ('Self-Dev', 'Self-Dev'),
+    ('Health & Fitness', 'Health & Fitness'),
+    ('Lainnya', 'Lainnya'),
+]
+
+class CalendarEvent(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='calendar_events')
+    title = models.CharField(max_length=255)
+    label = models.CharField(max_length=20, choices=CALENDAR_LABEL_CHOICES, default='Campus')
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    all_day = models.BooleanField(default=False)
+    url = models.URLField(max_length=500, blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['start_date']
+
+    def __str__(self):
+        return f"{self.title} ({self.user.username})"
