@@ -3,28 +3,36 @@
 
 {% block title %}Ujian: {{ quiz.title }}{% endblock %}
 
-{% block vendor_css %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'vendor/libs/sweetalert2/sweetalert2.css' %}" />
-{% endblock vendor_css %}
-
-{% block vendor_js %}
-{{ block.super }}
-<script src="{% static 'vendor/libs/sweetalert2/sweetalert2.js' %}"></script>
-{% endblock vendor_js %}
-
 {% block page_js %}
-{{ block.super }}
 <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-{% endblock page_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
 
 {% block content %}
+<div id="security-overlay" class="d-flex flex-column justify-content-center align-items-center position-fixed w-100 h-100 top-0 start-0 bg-white" style="z-index: 9999;">
+    <div class="text-center p-5">
+        <div class="avatar avatar-xl bg-label-danger rounded-circle mx-auto mb-4">
+            <i class="ri-shield-keyhole-line ri-3x"></i>
+        </div>
+        <h3 class="text-danger mb-2">Mode Ujian Terkunci</h3>
+        <p class="text-muted mb-4" id="overlay-message">
+            Anda harus masuk ke mode Layar Penuh (Fullscreen) untuk mengerjakan ujian ini.<br>
+            Jangan mencoba membuka tab lain atau aplikasi lain.
+        </p>
+        <button id="btn-enter-fullscreen" class="btn btn-danger btn-lg">
+            <i class="ri-fullscreen-line me-2"></i> MASUK MODE UJIAN
+        </button>
+    </div>
+</div>
 
 <div class="card sticky-top shadow-sm mb-4 border-bottom border-primary border-3" style="z-index: 1020;">
     <div class="card-body py-2 d-flex justify-content-between align-items-center bg-white">
-        <h5 class="mb-0 text-truncate" style="max-width: 60%;">{{ quiz.title }}</h5>
+        <h5 class="mb-0 text-truncate" style="max-width: 40%;">{{ quiz.title }}</h5>
         <div class="d-flex align-items-center gap-3">
+            <div class="d-none d-md-block text-danger fw-bold small" id="warning-box" style="display: none;">
+                <i class="ri-alert-line"></i> Pelanggaran: <span id="violation-count">0</span>/5
+            </div>
             <div class="badge bg-label-danger fs-5 p-2 rounded d-flex align-items-center">
                 <i class="ri-alarm-line me-2"></i>
                 <span id="timer-display" style="min-width: 80px; text-align: center;">00:00:00</span>
@@ -58,12 +66,9 @@
                     <hr class="my-4 dashed">
 
                     {% if q.question_type == 'multiple_choice' %}
-                    <div class="d-flex flex-column gap-2 options-container" data-question-id="{{ q.id }}">
+                    <div class="d-flex flex-column gap-2">
                         {% for opt in q.options.all %}
-                        <label class="card border shadow-none hover-bg-light cursor-pointer mb-0 option-item"
-                               data-option-id="{{ opt.id }}"
-                               data-option-text="{{ opt.text }}"
-                               data-question-name="question_{{ q.id }}">
+                        <label class="card border shadow-none hover-bg-light cursor-pointer mb-0">
                             <div class="card-body p-3 d-flex align-items-center">
                                 <div class="form-check">
                                     <input class="form-check-input fs-5" type="radio"
@@ -126,41 +131,27 @@
     // ════════════════════════════════════════════════
     // STATE FLAGS
     // ════════════════════════════════════════════════
-    let timeRemaining = {{ remaining_seconds }};
+    let timeRemaining  = {{ remaining_seconds }};
+    let violationCount = 0;
+    const maxViolations = 5;
 
     let isSubmitting = false;   // form.submit() sudah dipanggil
     let isSwalOpen   = false;   // SweetAlert sedang tampil
+    let hasStarted   = false;   // user sudah klik "Masuk Mode Ujian"
     let submitLocked = false;   // kunci keras, submit hanya sekali
 
-    const timerDisplay = document.getElementById('timer-display');
-    const quizForm     = document.getElementById('quizForm');
-
-    // ════════════════════════════════════════════════
-    // RANDOMISASI PILIHAN JAWABAN (per soal)
-    // Dilakukan via DOM shuffle sebelum restore state
-    // ════════════════════════════════════════════════
-    function shuffleOptions() {
-        document.querySelectorAll('.options-container').forEach(function(container) {
-            const items = Array.from(container.querySelectorAll('.option-item'));
-            // Fisher-Yates shuffle
-            for (let i = items.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                container.appendChild(items[j]);
-                items.splice(j, 1);
-                items.splice(i, 0, items[j] || items[items.length-1]);
-            }
-            // Re-append semua dalam urutan acak yang sudah benar
-            const shuffled = Array.from(container.querySelectorAll('.option-item'));
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                container.insertBefore(shuffled[j], shuffled[i]);
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-        });
-    }
+    const timerDisplay            = document.getElementById('timer-display');
+    const quizForm                = document.getElementById('quizForm');
+    const securityOverlay         = document.getElementById('security-overlay');
+    const btnEnterFullscreen      = document.getElementById('btn-enter-fullscreen');
+    const overlayMessage          = document.getElementById('overlay-message');
+    const violationCounterDisplay = document.getElementById('violation-count');
+    const warningBox              = document.getElementById('warning-box');
 
     // ════════════════════════════════════════════════
     // SAVE STATE
+    // Dipanggil: tiap 3 detik, saat input berubah,
+    //            saat klik card radio
     // ════════════════════════════════════════════════
     function saveState() {
         if (isSubmitting) return;
@@ -171,18 +162,21 @@
             answers[r.name] = r.value;
         });
         document.querySelectorAll('textarea').forEach(function(t) {
-            answers[t.name] = t.value;
+            answers[t.name] = t.value; // simpan meski kosong
         });
 
         storagSet(STORAGE_KEY, JSON.stringify({
-            answers:       answers,
-            timeRemaining: timeRemaining,
-            savedAt:       Date.now()
+            answers:        answers,
+            timeRemaining:  timeRemaining,
+            violationCount: violationCount,  // ★ simpan jumlah pelanggaran
+            savedAt:        Date.now()
         }));
     }
 
     // ════════════════════════════════════════════════
     // RESTORE STATE
+    // ★ WAJIB dipanggil SEBELUM timerInterval dibuat
+    //   agar timeRemaining sudah terkoreksi
     // ════════════════════════════════════════════════
     function restoreState() {
         const raw = storagGet(STORAGE_KEY);
@@ -193,13 +187,27 @@
         if (!state) return;
 
         // ── 1. Koreksi waktu ─────────────────────────
+        // Hitung detik yang terlewat sejak terakhir disimpan
         const elapsed   = Math.floor((Date.now() - (state.savedAt || Date.now())) / 1000);
         const corrected = (state.timeRemaining || timeRemaining) - elapsed;
+        // Hanya pakai jika < nilai server (anti-cheat: tidak bisa diperbesar)
         if (corrected > 0 && corrected < timeRemaining) {
             timeRemaining = corrected;
         }
 
-        // ── 2. Restore jawaban ───────────────────────
+        // ── 2. Restore pelanggaran ───────────────────
+        if (state.violationCount && state.violationCount > 0) {
+            violationCount = state.violationCount;
+            violationCounterDisplay.innerText = violationCount;
+            warningBox.style.display = 'block';
+            // Update pesan overlay juga
+            overlayMessage.innerHTML =
+                "<span class='text-danger fw-bold'>Sesi dilanjutkan. Pelanggaran sebelumnya: " +
+                violationCount + "/" + maxViolations + "</span><br>" +
+                "Kembali ke ujian dan jangan ulangi pelanggaran.";
+        }
+
+        // ── 3. Restore jawaban ───────────────────────
         if (!state.answers) return;
         Object.keys(state.answers).forEach(function(name) {
             const val = state.answers[name];
@@ -221,12 +229,11 @@
         });
     }
 
-    // ★ Shuffle dulu, baru restore state
-    shuffleOptions();
+    // ★ JALANKAN RESTORE SEKARANG — sebelum timer dibuat
     restoreState();
 
     // ════════════════════════════════════════════════
-    // 1. TIMER
+    // 1. TIMER — dibuat SETELAH restoreState()
     // ════════════════════════════════════════════════
     function updateTimer() {
         if (isSubmitting) return;
@@ -258,7 +265,7 @@
     // Auto-save tiap 3 detik
     setInterval(saveState, 3000);
 
-    // Tiap detik: update timer
+    // Tiap detik: update timer + save waktu terkini
     let timerInterval = setInterval(updateTimer, 1000);
     updateTimer();
 
@@ -268,14 +275,72 @@
         el.addEventListener('input',  saveState);
     });
 
-    // Bersihkan storage setelah form disubmit
+    // Bersihkan storage setelah form benar-benar disubmit
     quizForm.addEventListener('submit', function() {
         storagDel(STORAGE_KEY);
     });
 
     // ════════════════════════════════════════════════
-    // 2. ANTI-CHEAT: Blokir Copy, Paste, Cut,
-    //    Klik Kanan, dan Shortcut Developer Tools
+    // 2. FULLSCREEN
+    // Safari iOS: API tidak ada → lanjut tanpa fullscreen
+    // ════════════════════════════════════════════════
+    function requestFullScreen() {
+        var elem = document.documentElement;
+        var req  = elem.requestFullscreen       ||
+                   elem.webkitRequestFullscreen ||
+                   elem.mozRequestFullScreen    ||
+                   elem.msRequestFullscreen;
+
+        if (!req) {
+            // iOS Safari — tidak ada API, izinkan lanjut
+            securityOverlay.classList.add('d-none');
+            return;
+        }
+
+        req.call(elem)
+            .then(function() {
+                securityOverlay.classList.add('d-none');
+            })
+            .catch(function(err) {
+                console.warn("Fullscreen gagal:", err);
+                securityOverlay.classList.add('d-none');
+            });
+    }
+
+    btnEnterFullscreen.addEventListener('click', function() {
+        hasStarted = true;
+        requestFullScreen();
+    });
+
+    document.addEventListener('fullscreenchange',       exitHandler);
+    document.addEventListener('webkitfullscreenchange', exitHandler);
+    document.addEventListener('mozfullscreenchange',    exitHandler);
+    document.addEventListener('MSFullscreenChange',     exitHandler);
+
+    function exitHandler() {
+        if (isSubmitting || !hasStarted) return;
+
+        var inFs = !!(document.fullscreenElement       ||
+                      document.webkitFullscreenElement ||
+                      document.mozFullScreenElement    ||
+                      document.msFullscreenElement);
+
+        if (!inFs) {
+            securityOverlay.classList.remove('d-none');
+            if (!isSwalOpen) recordViolation("Terdeteksi keluar dari mode layar penuh.");
+        }
+    }
+
+    // ════════════════════════════════════════════════
+    // 3. PINDAH TAB
+    // ════════════════════════════════════════════════
+    document.addEventListener("visibilitychange", function() {
+        if (isSubmitting || !hasStarted || isSwalOpen) return;
+        if (document.hidden) recordViolation("Terdeteksi membuka tab atau aplikasi lain.");
+    });
+
+    // ════════════════════════════════════════════════
+    // 4. ANTI CHEAT
     // ════════════════════════════════════════════════
     document.addEventListener('contextmenu', event => event.preventDefault());
     document.addEventListener('copy',        event => event.preventDefault());
@@ -283,51 +348,67 @@
     document.addEventListener('paste',       event => event.preventDefault());
 
     document.addEventListener('keydown', function(e) {
-        // F12
         if (e.keyCode == 123) { e.preventDefault(); return false; }
-        // Ctrl+Shift+I / J / C
         if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { e.preventDefault(); return false; }
         if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
         if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { e.preventDefault(); return false; }
-        // Ctrl+U (lihat source)
         if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { e.preventDefault(); return false; }
-        // Ctrl+C / Ctrl+X
-        if (e.ctrlKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
-        if (e.ctrlKey && e.keyCode == 'X'.charCodeAt(0)) { e.preventDefault(); return false; }
-        // Meta+C / Meta+X (Mac)
-        if (e.metaKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
-        if (e.metaKey && e.keyCode == 'X'.charCodeAt(0)) { e.preventDefault(); return false; }
     });
 
     // ════════════════════════════════════════════════
-    // 3. SUBMIT MANUAL
+    // 5. RECORD VIOLATION
     // ════════════════════════════════════════════════
-    const swalTheme = {
-        customClass: {
-            popup:          'shadow-lg rounded-3',
-            title:          'fw-semibold',
-            confirmButton:  'btn btn-primary btn-lg px-5 waves-effect waves-light',
-            cancelButton:   'btn btn-outline-secondary btn-lg px-5 ms-2 waves-effect',
-            actions:        'gap-2 pt-2',
-            icon:           'border-0',
-        },
-        buttonsStyling: false,
-    };
+    function recordViolation(reason) {
+        if (isSubmitting || isSwalOpen) return;
 
+        violationCount++;
+        violationCounterDisplay.innerText = violationCount;
+        warningBox.style.display = 'block';
+        saveState(); // ★ langsung simpan setelah pelanggaran bertambah
+
+        overlayMessage.innerHTML =
+            "<span class='text-danger fw-bold'>PELANGGARAN TERDETEKSI! (" +
+            violationCount + "/" + maxViolations + ")</span><br>" +
+            reason + "<br>Kembali ke ujian segera.";
+
+        if (violationCount >= maxViolations) {
+            submitExam("Batas pelanggaran keamanan terlampaui.");
+            return;
+        }
+
+        isSwalOpen = true;
+        Swal.fire({
+            icon:              'warning',
+            title:             'Pelanggaran ' + violationCount + '/' + maxViolations,
+            text:              reason,
+            confirmButtonText: 'Kembali Mengerjakan',
+            allowOutsideClick: false,
+            allowEscapeKey:    false,
+        }).then(function() {
+            isSwalOpen = false;
+            requestFullScreen();
+        });
+    }
+
+    // ════════════════════════════════════════════════
+    // 6. SUBMIT MANUAL
+    // ════════════════════════════════════════════════
     function handleManualSubmit() {
         if (isSubmitting || submitLocked) return;
 
         isSwalOpen = true;
-        Swal.fire(Object.assign({}, swalTheme, {
-            title:             '<i class="ri-question-line text-primary me-2"></i>Kumpulkan Jawaban?',
-            html:              '<p class="text-muted mb-0">Pastikan <strong>semua soal</strong> telah terisi.<br>Jawaban <span class="text-danger fw-semibold">tidak dapat diubah</span> setelah dikirim.</p>',
-            showCancelButton:  true,
-            confirmButtonText: '<i class="ri-send-plane-2-line me-1"></i> Ya, Kirim Sekarang!',
-            cancelButtonText:  'Periksa Lagi',
-            reverseButtons:    true,
-            allowOutsideClick: false,
-            allowEscapeKey:    false,
-        })).then(function(result) {
+        Swal.fire({
+            title:              'Kumpulkan Jawaban?',
+            text:               "Pastikan semua soal telah terisi. Anda tidak bisa mengubahnya setelah ini.",
+            icon:               'question',
+            showCancelButton:   true,
+            confirmButtonColor: '#666cff',
+            cancelButtonColor:  '#d33',
+            confirmButtonText:  'Ya, Kirim!',
+            cancelButtonText:   'Batal',
+            allowOutsideClick:  false,
+            allowEscapeKey:     false,
+        }).then(function(result) {
             isSwalOpen = false;
             if (result.isConfirmed) {
                 submitLocked = true;
@@ -335,14 +416,12 @@
                 clearInterval(timerInterval);
 
                 isSwalOpen = true;
-                Swal.fire(Object.assign({}, swalTheme, {
-                    title:             '<i class="ri-loader-4-line text-primary me-2"></i>Mengirim Jawaban...',
-                    html:              '<p class="text-muted mb-1">Mohon tunggu, jawaban Anda sedang dikirim.</p>',
+                Swal.fire({
+                    title:             'Mengirim Jawaban...',
                     allowOutsideClick: false,
                     allowEscapeKey:    false,
-                    showConfirmButton: false,
                     didOpen: function() { Swal.showLoading(); }
-                }));
+                });
 
                 setTimeout(function() { quizForm.submit(); }, 600);
             }
@@ -350,7 +429,7 @@
     }
 
     // ════════════════════════════════════════════════
-    // 4. SUBMIT OTOMATIS (waktu habis)
+    // 7. SUBMIT OTOMATIS
     // ════════════════════════════════════════════════
     function submitExam(reason) {
         if (submitLocked) return;
@@ -359,39 +438,33 @@
         clearInterval(timerInterval);
 
         isSwalOpen = true;
-        Swal.fire(Object.assign({}, swalTheme, {
-            title:             '<i class="ri-time-line text-danger me-2"></i>Ujian Berakhir',
-            html:              '<p class="text-muted mb-0">' + reason + '</p>',
+        Swal.fire({
+            icon:              'info',
+            title:             'Ujian Berakhir',
+            text:              reason,
             allowOutsideClick: false,
             allowEscapeKey:    false,
             showConfirmButton: false,
             timer:             3000,
-            timerProgressBar:  true,
-        })).then(function() {
+            timerProgressBar:  true
+        }).then(function() {
             isSwalOpen = false;
             quizForm.submit();
         });
 
-        // Fallback: 500ms lebih lama dari Swal
+        // Fallback: 500ms lebih lama dari Swal agar tidak bentrok
         setTimeout(function() { quizForm.submit(); }, 3500);
     }
 
     // ════════════════════════════════════════════════
-    // 5. UX: Klik Card pilih Radio + highlight
+    // 8. UX: Klik Card pilih Radio + langsung save
     // ════════════════════════════════════════════════
     document.querySelectorAll('.card.hover-bg-light').forEach(function(card) {
         card.addEventListener('click', function() {
-            // Hapus highlight dari semua opsi dalam pertanyaan yang sama
             const radio = this.querySelector('input[type="radio"]');
             if (radio) {
-                const name = radio.getAttribute('name');
-                document.querySelectorAll('input[type="radio"][name="' + name + '"]').forEach(function(r) {
-                    const parentCard = r.closest('label.card');
-                    if (parentCard) parentCard.classList.remove('border-primary');
-                });
                 radio.checked = true;
-                this.classList.add('border-primary');
-                saveState();
+                saveState(); // simpan langsung
             }
         });
     });
@@ -409,16 +482,6 @@
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
-    }
-    /* Pastikan teks tidak bisa di-drag/select */
-    .option-item {
-        -webkit-user-select: none;
-        user-select: none;
-    }
-    /* Transisi halus saat opsi terpilih */
-    label.card.border-primary {
-        background-color: #f0f1ff;
-        transition: background-color 0.2s ease;
     }
 </style>
 {% endblock %}
