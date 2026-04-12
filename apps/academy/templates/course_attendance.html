@@ -20,6 +20,109 @@
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 {% endblock vendor_js %}
 
+{% block page_css %}
+<style>
+  /* === Attendance Circle Radio Buttons === */
+  .attendance-options {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .attendance-option {
+    position: relative;
+  }
+
+  /* Hide the actual radio input */
+  .attendance-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* The circle label */
+  .attendance-option label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #d0d4de;
+    background-color: #fff;
+    color: #a0a8c0;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+    user-select: none;
+  }
+
+  .attendance-option label:hover {
+    border-color: #9fa8c0;
+    color: #5a6080;
+    box-shadow: 0 0 0 4px rgba(150, 160, 190, 0.12);
+  }
+
+  /* === Selected States per status === */
+
+  /* Hadir → Green */
+  .attendance-option input[value="present"]:checked + label {
+    border-color: #28a745;
+    background-color: #eafaf1;
+    color: #28a745;
+    box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.15);
+  }
+
+  /* Izin → Blue/Info */
+  .attendance-option input[value="excused"]:checked + label {
+    border-color: #17a2b8;
+    background-color: #e3f8fb;
+    color: #17a2b8;
+    box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.15);
+  }
+
+  /* Alpha/Alpa (Absent) → Red */
+  .attendance-option input[value="absent"]:checked + label {
+    border-color: #dc3545;
+    background-color: #fdf0f1;
+    color: #dc3545;
+    box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+  }
+
+  /* Sakit → Orange/Warning */
+  .attendance-option input[value="sick"]:checked + label {
+    border-color: #fd7e14;
+    background-color: #fff5ec;
+    color: #fd7e14;
+    box-shadow: 0 0 0 4px rgba(253, 126, 20, 0.15);
+  }
+
+  /* Terlambat → Yellow */
+  .attendance-option input[value="late"]:checked + label {
+    border-color: #ffc107;
+    background-color: #fffbec;
+    color: #d39e00;
+    box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.15);
+  }
+
+  /* Tooltip label below the circle */
+  .attendance-option .status-tooltip {
+    display: block;
+    text-align: center;
+    font-size: 9px;
+    color: #aab0c4;
+    margin-top: 3px;
+    letter-spacing: 0.3px;
+    line-height: 1;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
   <div class="col-12">
@@ -51,6 +154,18 @@
         </div> 
       </div>
     </div>
+                      {% if messages %}
+  {% for message in messages %}
+       <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
+          <span class="alert-icon rounded">
+            <i class="ri-error-warning-line ri-22px"></i>
+          </span>
+          <div>
+            {{ message }}
+        </div>
+      </div>
+  {% endfor %}
+  {% endif %}
 
     <hr class="my-5">
 
@@ -71,8 +186,8 @@
                 <thead>
                     <tr>
                         <th width="5%">No</th>
-                        <th width="25%">Mahasiswa</th>
-                        <th width="45%" class="text-center">Status Kehadiran</th>
+                        <th width="30%">Mahasiswa</th>
+                        <th width="40%" class="text-center">Status Kehadiran</th>
                         <th width="25%">Catatan</th>
                     </tr>
                 </thead>
@@ -89,19 +204,29 @@
                         </td>
                         
                         <td class="text-center">
-                            <div class="btn-group w-100" role="group">
+                            <div class="attendance-options">
                                 {% for radio in item.form.status %}
+                                <div class="attendance-option">
                                     {{ radio.tag }}
-                                    
-                                    <label class="btn btn-sm flex-grow-1
-                                        {% if radio.data.value == 'present' %}btn-outline-success{% endif %}
-                                        {% if radio.data.value == 'late' %}btn-outline-warning{% endif %}
-                                        {% if radio.data.value == 'excused' %}btn-outline-info{% endif %}
-                                        {% if radio.data.value == 'sick' %}btn-outline-secondary{% endif %}
-                                        {% if radio.data.value == 'absent' %}btn-outline-danger{% endif %}
-                                    " for="{{ radio.id_for_label }}">
-                                        {{ radio.choice_label }}
+                                    <label for="{{ radio.id_for_label }}">
+                                        {% if radio.data.value == 'present' %}H
+                                        {% elif radio.data.value == 'late' %}T
+                                        {% elif radio.data.value == 'excused' %}I
+                                        {% elif radio.data.value == 'sick' %}S
+                                        {% elif radio.data.value == 'absent' %}A
+                                        {% else %}{{ radio.choice_label|slice:":1" }}
+                                        {% endif %}
                                     </label>
+                                    <span class="status-tooltip">
+                                        {% if radio.data.value == 'present' %}Hadir
+                                        {% elif radio.data.value == 'late' %}Terlambat
+                                        {% elif radio.data.value == 'excused' %}Izin
+                                        {% elif radio.data.value == 'sick' %}Sakit
+                                        {% elif radio.data.value == 'absent' %}Alpha
+                                        {% else %}{{ radio.choice_label }}
+                                        {% endif %}
+                                    </span>
+                                </div>
                                 {% endfor %}
                             </div>
                         </td>
@@ -109,7 +234,7 @@
                         <td>
                             <div class="form-floating form-floating-outline">
                                 {{ item.form.notes }}
-                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -134,9 +259,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inisialisasi DataTables
     $('#tableAttendance').DataTable({
         responsive: true,
-        paging: false, // PENTING: Matikan paging agar form bisa mensubmit SEMUA data mahasiswa sekaligus
-        info: false,   // Sembunyikan info "Showing 1 of X" agar lebih bersih
-        searching: true, // Tetap boleh search
+        paging: false,
+        info: false,
+        searching: true,
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t',
         language: {
             search: "",
@@ -148,10 +273,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Fungsi Helper untuk Set Semua Hadir
 function setAllPresent() {
-    // Cari semua input radio dengan value="present" dan centang
     document.querySelectorAll('input[type="radio"][value="present"]').forEach(el => {
         el.checked = true;
-        // Trigger change event jika ada listener lain (opsional)
         el.dispatchEvent(new Event('change'));
     });
 }

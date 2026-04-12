@@ -51,31 +51,19 @@
   }
   .detail-info-row:last-child { border-bottom: none; }
   .detail-info-row .detail-icon {
-    width: 22px;
-    flex-shrink: 0;
-    text-align: center;
-    color: #7367f0;
-    margin-top: 1px;
+    width: 22px; flex-shrink: 0; text-align: center;
+    color: #7367f0; margin-top: 1px;
   }
   .detail-info-row .detail-value { color: #4a4a4a; word-break: break-word; }
 
   /* ---- Toast Notification ---- */
   #calendarToast {
-    position: fixed;
-    top: 72px;
-    right: 20px;
-    z-index: 99999;
-    min-width: 280px;
-    max-width: 360px;
-    display: none;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    border-radius: 10px;
-    border: none;
+    position: fixed; top: 72px; right: 20px; z-index: 99999;
+    min-width: 280px; max-width: 360px;
+    display: none; align-items: center; gap: 10px;
+    padding: 14px 16px; border-radius: 10px; border: none;
     box-shadow: 0 8px 24px rgba(0,0,0,.18);
-    font-size: .9rem;
-    font-weight: 500;
+    font-size: .9rem; font-weight: 500;
     animation: cToastIn .3s cubic-bezier(.34,1.56,.64,1) both;
   }
   #calendarToast.show  { display: flex; }
@@ -83,12 +71,103 @@
   #calendarToast.toast-danger  { background: #ea5455; color: #fff; }
   #calendarToast.toast-warning { background: #ff9f43; color: #fff; }
   #calendarToast .toast-icon { font-size: 1.4rem; flex-shrink:0; }
-  #calendarToast .btn-close {
-    filter: brightness(0) invert(1);
-    opacity: .8;
-    flex-shrink:0;
-  }
+  #calendarToast .btn-close { filter: brightness(0) invert(1); opacity:.8; flex-shrink:0; }
   #calendarToast.hiding { animation: cToastOut .35s ease forwards; }
+
+  /* ---- Course Cards ---- */
+  .course-card {
+    border-radius: 12px;
+    border: 1px solid rgba(var(--bs-body-color-rgb, 0,0,0),.07);
+    transition: transform .2s ease, box-shadow .2s ease;
+    overflow: hidden;
+    position: relative;
+    background: var(--bs-card-bg);
+  }
+  .course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(115,103,240,.14);
+  }
+  .course-card .course-card-stripe {
+    height: 5px;
+    background: linear-gradient(90deg, #7367f0, #9e95f5);
+  }
+  .course-card .course-badge {
+    font-size: .72rem; padding: 3px 10px;
+    border-radius: 20px; font-weight: 600; letter-spacing: .3px;
+  }
+  .course-card .course-meta-icon {
+    width: 18px; color: #a5a3ae; flex-shrink: 0;
+    text-align: center; font-size: .85rem;
+  }
+  .course-card .course-title {
+    font-size: .95rem; font-weight: 700;
+    line-height: 1.3; color: var(--bs-body-color);
+  }
+  .course-card .course-prodi {
+    font-size: .8rem; color: #8a8d93; font-weight: 500;
+  }
+  .course-stat-item {
+    text-align: center; padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(115,103,240,.07);
+  }
+  .course-stat-item .stat-num {
+    font-size: 1rem; font-weight: 700;
+    color: #7367f0; line-height: 1;
+  }
+  .course-stat-item .stat-lbl {
+    font-size: .68rem; color: #b0aec0;
+    margin-top: 2px; font-weight: 500;
+  }
+  /* ---- Section Header ---- */
+  .course-section-header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 1rem;
+  }
+  .course-section-header h5 { font-weight: 700; margin: 0; }
+  /* ---- Filter Bar ---- */
+  .course-filter-bar {
+    background: var(--bs-card-bg);
+    border: 1px solid rgba(var(--bs-body-color-rgb, 0,0,0),.07);
+    border-radius: 12px; padding: 12px 16px;
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .course-filter-bar .search-wrap { flex: 1 1 220px; position: relative; }
+  .course-filter-bar .search-wrap i {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%); color: #a5a3ae;
+    font-size: 1rem; pointer-events: none;
+  }
+  .course-filter-bar .search-input-academy {
+    padding-left: 36px; border-radius: 8px;
+    border: 1px solid rgba(115,103,240,.25);
+    font-size: .87rem; height: 38px; width: 100%;
+    outline: none; transition: border-color .2s;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+  }
+  .course-filter-bar .search-input-academy:focus { border-color: #7367f0; }
+  .course-filter-bar .period-select {
+    flex: 0 0 auto;
+    border: 1px solid rgba(115,103,240,.25);
+    border-radius: 8px; font-size: .87rem; height: 38px;
+    padding: 0 12px;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    cursor: pointer; outline: none; min-width: 170px;
+    transition: border-color .2s;
+  }
+  .course-filter-bar .period-select:focus { border-color: #7367f0; }
+  .course-filter-bar .filter-count {
+    font-size: .8rem; color: #a5a3ae; white-space: nowrap;
+  }
+  /* ---- Hidden cols stay in flow but invisible to prevent layout collapse ---- */
+  .course-col.course-hidden {
+    display: none;
+  }
+  .no-course-box { text-align: center; padding: 2.5rem 1rem; color: #b0aec0; }
+  .no-course-box i { font-size: 2.5rem; margin-bottom: .5rem; }
 
   @keyframes cToastIn {
     from { opacity:0; transform: translateY(-16px) scale(.95); }
@@ -113,7 +192,8 @@
   <span id="calendarToastMsg" class="flex-grow-1">Berhasil!</span>
   <button type="button" class="btn-close" onclick="hideCalendarToast()" aria-label="Close"></button>
 </div>
-<!-- ===== /TOAST NOTIFICATION ===== -->
+
+<!-- ===== WELCOME HEADER ===== -->
 <div class="card bg-transparent shadow-none border-0 mb-6">
   <div class="card-body row g-6 p-0 pb-5">
     <div class="col-12 col-md-8 card-separator">
@@ -125,9 +205,7 @@
         <div class="d-flex align-items-center gap-4 me-6 me-sm-0">
           <div class="avatar avatar-lg">
             <div class="avatar-initial bg-label-primary rounded-3">
-              <div>
-                <img src="{% static 'svg/icons/laptop.svg' %}" alt="paypal" class="img-fluid">
-              </div>
+              <div><img src="{% static 'svg/icons/laptop.svg' %}" alt="laptop" class="img-fluid"></div>
             </div>
           </div>
           <div class="content-right">
@@ -138,9 +216,7 @@
         <div class="d-flex align-items-center gap-4">
           <div class="avatar avatar-lg">
             <div class="avatar-initial bg-label-info rounded-3">
-              <div>
-                <img src="{% static 'svg/icons/lightbulb.svg' %}" alt="Lightbulb" class="img-fluid">
-              </div>
+              <div><img src="{% static 'svg/icons/lightbulb.svg' %}" alt="lightbulb" class="img-fluid"></div>
             </div>
           </div>
           <div class="content-right">
@@ -151,13 +227,11 @@
         <div class="d-flex align-items-center gap-4">
           <div class="avatar avatar-lg">
             <div class="avatar-initial bg-label-warning rounded-3">
-              <div>
-                <img src="{% static 'svg/icons/check.svg' %}" alt="Check" class="img-fluid">
-              </div>
+              <div><img src="{% static 'svg/icons/check.svg' %}" alt="check" class="img-fluid"></div>
             </div>
           </div>
           <div class="content-right">
-            <p class="mb-1 fw-medium">Course Completed </p>
+            <p class="mb-1 fw-medium">Course Completed</p>
             <span class="text-warning mb-0 h5">14</span>
           </div>
         </div>
@@ -180,211 +254,257 @@
     </div>
   </div>
 </div>
-<div class="card app-calendar-wrapper">
-  <div class="row g-0">
-    <!-- Calendar Sidebar -->
-    <div class="col app-calendar-sidebar border-end" id="app-calendar-sidebar">
-      <div class="p-5 my-sm-0 mb-4 border-bottom">
-        <button class="btn btn-primary btn-toggle-sidebar w-100" data-bs-toggle="offcanvas" data-bs-target="#addEventSidebar" aria-controls="addEventSidebar">
-          <i class="ri-add-line ri-16px me-1_5"></i>
-          <span class="align-middle">Add To Do List</span>
-        </button>
-      </div>
-      <div class="px-4">
-        <!-- inline calendar (flatpicker) -->
-        <div class="inline-calendar"></div>
 
-        <hr class="mb-5 mx-n4 mt-3">
-        <!-- Filter -->
-        <div class="mb-4 ms-1">
-          <h5>Event Filters</h5>
-        </div>
-
-        <div class="form-check form-check-secondary mb-5 ms-3">
-          <input class="form-check-input select-all" type="checkbox" id="selectAll" data-value="all" checked>
-          <label class="form-check-label" for="selectAll">View All</label>
-        </div>
-
-        <div class="app-calendar-events-filter text-heading">
-          <div class="form-check form-check-primary mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-campus" data-value="campus" checked>
-            <label class="form-check-label" for="select-campus">Campus</label>
-          </div>
-          <div class="form-check mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-business" data-value="business" checked>
-            <label class="form-check-label" for="select-business">Business</label>
-          </div>
-          <div class="form-check form-check-danger mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-personal" data-value="personal" checked>
-            <label class="form-check-label" for="select-personal">Personal</label>
-          </div>
-          <div class="form-check form-check-warning mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-family" data-value="family" checked>
-            <label class="form-check-label" for="select-family">Family</label>
-          </div>
-          <div class="form-check form-check-success mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-holiday" data-value="holiday" checked>
-            <label class="form-check-label" for="select-holiday">Holiday</label>
-          </div>
-          <div class="form-check form-check-info mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-finance" data-value="finance" checked>
-            <label class="form-check-label" for="select-finance">Finance</label>
-          </div>
-          <div class="form-check mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-selfdev" data-value="self-dev" checked>
-            <label class="form-check-label" for="select-selfdev">Self-Dev</label>
-          </div>
-          <div class="form-check form-check-success mb-4 ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-healthfitness" data-value="health & fitness" checked>
-            <label class="form-check-label" for="select-healthfitness">Health &amp; Fitness</label>
-          </div>
-          <div class="form-check ms-3">
-            <input class="form-check-input input-filter" type="checkbox" id="select-lainnya" data-value="lainnya" checked>
-            <label class="form-check-label" for="select-lainnya">Lainnya</label>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- /Calendar Sidebar -->
-
-    <!-- Calendar & Modal -->
-    <div class="col app-calendar-content">
-      <div class="card shadow-none border-0 ">
-        <div class="card-body pb-0">
-          <!-- FullCalendar -->
-          <div id="calendar"></div>
-        </div>
-      </div>
-      <div class="app-overlay"></div>
-      <!-- FullCalendar Offcanvas -->
-      <div class="offcanvas offcanvas-end event-sidebar" tabindex="-1" id="addEventSidebar" aria-labelledby="addEventSidebarLabel">
-        <div class="offcanvas-header border-bottom">
-          <h5 class="offcanvas-title" id="addEventSidebarLabel">Add To Do List</h5>
-          <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-
-          <!-- ===== EVENT DETAIL PANEL ===== -->
-          <div class="event-detail-panel" id="eventDetailPanel">
-            <div class="d-flex align-items-center mb-4">
-              <span class="event-detail-badge" id="detailBadge"></span>
-              <h5 class="mb-0" id="detailTitle">-</h5>
-            </div>
-
-            <div class="detail-info-row">
-              <span class="detail-icon"><i class="ri-calendar-line"></i></span>
-              <div>
-                <div class="fw-semibold text-muted" style="font-size:.75rem;">Tanggal Mulai</div>
-                <div class="detail-value" id="detailStart">-</div>
-              </div>
-            </div>
-            <div class="detail-info-row" id="detailEndRow">
-              <span class="detail-icon"><i class="ri-calendar-check-line"></i></span>
-              <div>
-                <div class="fw-semibold text-muted" style="font-size:.75rem;">Tanggal Selesai</div>
-                <div class="detail-value" id="detailEnd">-</div>
-              </div>
-            </div>
-            <div class="detail-info-row">
-              <span class="detail-icon"><i class="ri-price-tag-3-line"></i></span>
-              <div>
-                <div class="fw-semibold text-muted" style="font-size:.75rem;">Kategori</div>
-                <div class="detail-value" id="detailLabel">-</div>
-              </div>
-            </div>
-            <div class="detail-info-row" id="detailLocationRow">
-              <span class="detail-icon"><i class="ri-map-pin-line"></i></span>
-              <div>
-                <div class="fw-semibold text-muted" style="font-size:.75rem;">Lokasi</div>
-                <div class="detail-value" id="detailLocation">-</div>
-              </div>
-            </div>
-            <div class="detail-info-row" id="detailDescRow">
-              <span class="detail-icon"><i class="ri-file-text-line"></i></span>
-              <div>
-                <div class="fw-semibold text-muted" style="font-size:.75rem;">Deskripsi</div>
-                <div class="detail-value" id="detailDesc">-</div>
-              </div>
-            </div>
-            <div class="detail-info-row" id="detailUrlRow">
-              <span class="detail-icon"><i class="ri-links-line"></i></span>
-              <div>
-                <div class="fw-semibold text-muted" style="font-size:.75rem;">URL</div>
-                <div class="detail-value"><a id="detailUrl" href="#" target="_blank">-</a></div>
-              </div>
-            </div>
-
-            <div class="d-flex gap-2 mt-6">
-              <button class="btn btn-primary btn-edit-event flex-grow-1">
-                <i class="ri-edit-line me-1"></i> Edit
-              </button>
-              <button class="btn btn-danger btn-delete-event-detail">
-                <i class="ri-delete-bin-line"></i> Delete
-              </button>
-            </div>
-          </div>
-          <!-- ===== /EVENT DETAIL PANEL ===== -->
-
-          <!-- ===== EVENT FORM ===== -->
-          <form class="event-form pt-0 event-form-panel" id="eventForm" onsubmit="return false">
-            <div class="form-floating form-floating-outline mb-5">
-              <input type="text" class="form-control" id="eventTitle" name="eventTitle" placeholder="Event Title" />
-              <label for="eventTitle">Title</label>
-            </div>
-            <div class="form-floating form-floating-outline mb-5">
-              <select class="select2 select-event-label form-select" id="eventLabel" name="eventLabel">
-                <option data-label="primary" value="Campus" selected>Campus</option>
-                <option data-label="primary" value="Business">Business</option>
-                <option data-label="danger" value="Personal">Personal</option>
-                <option data-label="warning" value="Family">Family</option>
-                <option data-label="success" value="Holiday">Holiday</option>
-                <option data-label="info" value="Finance">Finance</option>
-                <option data-label="dark" value="Self-Dev">Self-Dev</option>
-                <option data-label="success" value="Health & Fitness">Health &amp; Fitness</option>
-                <option data-label="secondary" value="Lainnya">Lainnya</option>
-              </select>
-              <label for="eventLabel">Label</label>
-            </div>
-            <div class="form-floating form-floating-outline mb-5">
-              <input type="text" class="form-control" id="eventStartDate" name="eventStartDate" placeholder="Start Date" />
-              <label for="eventStartDate">Start Date</label>
-            </div>
-            <div class="form-floating form-floating-outline mb-5">
-              <input type="text" class="form-control" id="eventEndDate" name="eventEndDate" placeholder="End Date" />
-              <label for="eventEndDate">End Date</label>
-            </div>
-            <div class="mb-5">
-              <div class="form-check form-switch">
-                <input type="checkbox" class="form-check-input allDay-switch" id="allDaySwitch" />
-                <label class="form-check-label" for="allDaySwitch">All Day</label>
-              </div>
-            </div>
-            <div class="form-floating form-floating-outline mb-5">
-              <input type="url" class="form-control" id="eventURL" name="eventURL" placeholder="https://www.google.com" />
-              <label for="eventURL">Event URL</label>
-            </div>
-
-            <div class="form-floating form-floating-outline mb-5">
-              <input type="text" class="form-control" id="eventLocation" name="eventLocation" placeholder="Enter Location" />
-              <label for="eventLocation">Location</label>
-            </div>
-            <div class="form-floating form-floating-outline mb-5">
-              <textarea class="form-control" name="eventDescription" id="eventDescription"></textarea>
-              <label for="eventDescription">Description</label>
-            </div>
-            <div class="mb-5 d-flex justify-content-sm-between justify-content-start my-6 gap-2">
-              <div class="d-flex">
-                <button type="submit" id="addEventBtn" class="btn btn-primary btn-add-event me-4">Add</button>
-                <button type="button" class="btn btn-outline-secondary btn-cancel me-sm-0 me-1" data-bs-dismiss="offcanvas">Cancel</button>
-              </div>
-            </div>
-          </form>
-          <!-- ===== /EVENT FORM ===== -->
-
-        </div>
-      </div>
-    </div>
-    <!-- /Calendar & Modal -->
+<!-- ===== SECTION: DAFTAR MATA KULIAH ===== -->
+{% if is_dosen or is_student %}
+<div class="mb-6">
+  <div class="course-section-header">
+    <h5>
+      <i class="ri-book-open-line me-2 text-primary"></i>
+      {% if is_dosen %}Mata Kuliah yang Diajarkan{% else %}Mata Kuliah yang Diprogram{% endif %}
+    </h5>
   </div>
+
+  <!-- Filter Bar -->
+  <div class="course-filter-bar">
+    <div class="search-wrap">
+      <i class="ri-search-line"></i>
+      <input type="text" id="courseSearchInput" class="search-input-academy"
+             placeholder="Cari nama atau kode mata kuliah..." autocomplete="off">
+    </div>
+    <select id="coursePeriodFilter" class="period-select">
+      <option value="all">Semua Periode</option>
+      {% for period in all_periods %}
+      <option value="{{ period.id }}">
+        {{ period.name }}{% if period.is_active %} ✓{% endif %}
+      </option>
+      {% endfor %}
+    </select>
+    <span class="filter-count" id="courseFilterCount"></span>
+  </div>
+
+  {% if is_dosen %}
+  <!-- ===== DOSEN CARDS ===== -->
+  {% if coached_courses %}
+  <div class="row g-4" id="courseGridDosen">
+    {% for course in coached_courses %}
+    <div class="col-12 col-sm-6 col-xl-4 course-col"
+         data-period="{{ course.period.id|default:'' }}"
+         data-search="{{ course.name|lower }} {{ course.code|lower }}">
+      <div class="card course-card h-100 shadow-none">
+        <div class="course-card-stripe"></div>
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="flex-grow-1 me-2">
+              <div class="course-title mb-1">{{ course.name|truncatechars:22 }}</div>
+              <div class="course-prodi">{{ course.prodi.nama_prodi }}</div>
+            </div>
+            <span class="badge bg-label-primary course-badge">{{ course.code }}</span>
+          </div>
+          <div class="d-flex gap-2 mb-4">
+            <div class="course-stat-item flex-grow-1">
+              <div class="stat-num">{{ course.student_count }}</div>
+              <div class="stat-lbl">Mahasiswa</div>
+            </div>
+            <div class="course-stat-item flex-grow-1">
+              <div class="stat-num">{{ course.credit_t|add:course.credit_p }}</div>
+              <div class="stat-lbl">SKS Total</div>
+            </div>
+            <div class="course-stat-item flex-grow-1">
+              <div class="stat-num">{{ course.agenda_count }}</div>
+              <div class="stat-lbl">Pertemuan</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-1" style="font-size:.82rem;">
+            <span class="course-meta-icon"><i class="ri-archive-line"></i></span>
+            <span class="text-muted">Kelas: <strong class="text-body">{{ course.group }}</strong></span>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-1" style="font-size:.82rem;">
+            <span class="course-meta-icon"><i class="ri-time-line"></i></span>
+            <span class="text-muted">{{ course.duration_weeks }} minggu &middot; T:{{ course.credit_t }} P:{{ course.credit_p }} SKS</span>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-4" style="font-size:.82rem;">
+            <span class="course-meta-icon"><i class="ri-user-3-line"></i></span>
+            <span class="text-muted">
+              {% for coach in course.coaches.all %}
+                <span class="text-muted">{{ coach.nip.first_name }}</span>{% if not forloop.last %}, {% endif %}
+              {% empty %}<span class="fst-italic">-</span>{% endfor %}
+            </span>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'add-course-agenda' course_uuid=course.uuid %}" class="btn btn-sm btn-primary flex-grow-1">
+              <i class="ri-calendar-check-line me-1"></i>Agenda
+            </a>
+            <a href="{% url 'edit-all-academy-course' course_uuid=course.uuid %}" class="btn btn-sm btn-outline-primary">
+              <i class="ri-file-list-3-line me-1"></i>View All
+            </a>
+            {% if course.link_rps %}
+            <a href="{{ course.link_rps }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="RPS">
+              <i class="ri-links-line"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    <!-- No-result state -->
+    <div class="col-12" id="dosenNoResult" style="display:none;">
+      <div class="card shadow-none">
+        <div class="card-body no-course-box">
+          <i class="ri-search-line d-block"></i>
+          <p class="mb-0 fw-medium">Tidak ada mata kuliah yang sesuai filter.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card shadow-none">
+    <div class="card-body no-course-box">
+      <div><i class="ri-book-dead-line d-block"></i></div>
+      <p class="mb-0 fw-medium">Belum ada mata kuliah aktif yang ditugaskan kepada Anda.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% elif is_student %}
+  <!-- ===== MAHASISWA CARDS ===== -->
+  {% if my_courses %}
+  <div class="row g-4" id="courseGridStudent">
+    {% for course in my_courses %}
+    <div class="col-12 col-sm-6 col-xl-4 course-col"
+         data-period="{{ course.period.id|default:'' }}"
+         data-search="{{ course.name|lower }} {{ course.code|lower }}">
+      <div class="card course-card h-100 shadow-none">
+        <div class="course-card-stripe" style="background: linear-gradient(90deg, #666cff, #7367f0);"></div>
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="flex-grow-1 me-2">
+              <div class="course-title mb-1">{{ course.name|truncatechars:22 }}</div>
+              <div class="course-prodi">{{ course.prodi.nama_prodi }}</div>
+            </div>
+            <span class="badge bg-label-primary course-badge">{{ course.code }}</span>
+          </div>
+          <!-- Progress -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1" style="font-size:.78rem;">
+              <span class="text-muted fw-medium">Progress Materi</span>
+              <span class="fw-bold text-primary">{{ course.progress }}%</span>
+            </div>
+            <div class="progress" style="height:7px; border-radius:10px;">
+              <div class="progress-bar bg-primary" role="progressbar"
+                style="width: {{ course.progress }}%; border-radius:10px;"
+                aria-valuenow="{{ course.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+          </div>
+          <!-- Stats -->
+          <div class="d-flex gap-2 mb-4">
+            <div class="course-stat-item flex-grow-1">
+              <div class="stat-num">{{ course.credit_t|add:course.credit_p }}</div>
+              <div class="stat-lbl">SKS</div>
+            </div>
+            <div class="course-stat-item flex-grow-1">
+              <div class="stat-num">{{ course.agenda_count }}</div>
+              <div class="stat-lbl">Pertemuan</div>
+            </div>
+            <div class="course-stat-item flex-grow-1">
+              <div class="stat-num">{{ course.duration_weeks }}</div>
+              <div class="stat-lbl">Minggu</div>
+            </div>
+          </div>
+          <!-- Dosen -->
+          <div class="d-flex align-items-center gap-2 mb-4" style="font-size:.82rem;">
+            <span class="course-meta-icon"><i class="ri-user-3-line"></i></span>
+            <span class="text-muted">
+              {% for coach in course.coaches.all %}
+                <span class="text-body fw-medium">{{ coach.nip.get_full_name }}</span>{% if not forloop.last %}, {% endif %}
+              {% empty %}<span class="fst-italic">-</span>{% endfor %}
+            </span>
+          </div>
+          <!-- Actions -->
+          <div class="d-flex gap-2">
+            <a href="{% url 'course-player' course_uuid=course.uuid %}" class="btn btn-sm btn-primary flex-grow-1">
+              <i class="ri-play-circle-line me-1"></i>Lanjutkan Belajar
+            </a>
+            {% if course.link_rps %}
+            <a href="{{ course.link_rps }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="RPS">
+              <i class="ri-links-line"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    <!-- No-result state -->
+    <div class="col-12" id="studentNoResult" style="display:none;">
+      <div class="card shadow-none">
+        <div class="card-body no-course-box">
+          <i class="ri-search-line d-block"></i>
+          <p class="mb-0 fw-medium">Tidak ada mata kuliah yang sesuai filter.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card shadow-none">
+    <div class="card-body no-course-box">
+      <div><i class="ri-book-dead-line d-block"></i></div>
+      <p class="mb-0 fw-medium">Belum ada mata kuliah yang Anda programkan di semester ini.</p>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
 </div>
+{% endif %}
+<!-- ===== /SECTION: DAFTAR MATA KULIAH ===== -->
+
+<!-- ===== FILTER JAVASCRIPT ===== -->
+{% if is_dosen or is_student %}
+<script>
+(function() {
+  var searchInput  = document.getElementById('courseSearchInput');
+  var periodSelect = document.getElementById('coursePeriodFilter');
+  var countEl      = document.getElementById('courseFilterCount');
+  var noResultDosen   = document.getElementById('dosenNoResult');
+  var noResultStudent = document.getElementById('studentNoResult');
+
+  function applyFilter() {
+    var q      = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    var period = periodSelect ? periodSelect.value : 'all';
+    var cols   = document.querySelectorAll('.course-col');
+    var visible = 0;
+
+    if (noResultDosen)   noResultDosen.style.display   = 'none';
+    if (noResultStudent) noResultStudent.style.display = 'none';
+
+    cols.forEach(function(col) {
+      var matchSearch = !q || (col.dataset.search || '').indexOf(q) !== -1;
+      var matchPeriod = period === 'all' || (col.dataset.period || '') === period;
+      if (matchSearch && matchPeriod) {
+        col.classList.remove('course-hidden');
+        visible++;
+      } else {
+        col.classList.add('course-hidden');
+      }
+    });
+
+    if (visible === 0 && cols.length > 0) {
+      if (noResultDosen)   noResultDosen.style.display   = '';
+      if (noResultStudent) noResultStudent.style.display = '';
+    }
+
+    if (countEl) {
+      var total = cols.length;
+      countEl.textContent = (q || period !== 'all') ? visible + ' dari ' + total + ' mata kuliah' : '';
+    }
+  }
+
+  if (searchInput)  searchInput.addEventListener('input', applyFilter);
+  if (periodSelect) periodSelect.addEventListener('change', applyFilter);
+})();
+</script>
+{% endif %}
+
 {% endblock %}

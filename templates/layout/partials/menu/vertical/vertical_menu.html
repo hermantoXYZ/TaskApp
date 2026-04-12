@@ -27,10 +27,18 @@
       </a>
     </li>
 
+    {% if user.userprodi %}
+    <li class="menu-header mt-5">
+      <span class="menu-header-text">{{ user.userprodi.prodi.nama_prodi }}</span>
+    </li>
+    
+    {% endif %}
+
+    {% if user.is_superuser or user.userdosen or user.usermhs %}
      <li class="menu-header mt-5">
       <span class="menu-header-text">Kaizen</span>
     </li>
-
+    {% endif %}
     
         {% if user.usermhs %}
     <li class="menu-item {% if 'library' in request.path %}active{% endif %}">
@@ -41,14 +49,15 @@
     </li>
     {% endif %}
 
-    <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-calender' %}active{% endif %}">
+  
+
+    {% if user.is_superuser or user.userdosen or user.usermhs %}
+      <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-calender' %}active{% endif %}">
       <a href="{% url 'app-academy-calender' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-calendar-schedule-line"></i>
         <div>My Calendar</div>
       </a>
     </li>
-
-    {% if user.is_superuser or user.userdosen or user.usermhs %}
     <li class="menu-header mt-5">
       <span class="menu-header-text">Apps & Pages</span>
     </li>
@@ -56,6 +65,12 @@
       <a href="{% url 'chat-index' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-wechat-line"></i>
         <div>Chat</div>
+      </a>
+    </li>
+    <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">
+      <a href="{% url 'app-kanban' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-drag-drop-line"></i>
+        <div>Kanban</div>
       </a>
     </li>
     {% endif %}
@@ -67,12 +82,7 @@
   </a>
 </li> -->
   
-    <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">
-      <a href="{% url 'app-kanban' %}" class="menu-link">
-        <i class="menu-icon tf-icons ri-drag-drop-line"></i>
-        <div>Kanban</div>
-      </a>
-    </li>
+
  
 
     {% if user.is_superuser or user.userdosen %}

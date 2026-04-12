@@ -1,6 +1,6 @@
 
 # Register your models here.
-from .models import ChatMessage, ChatRoom, UserDosen, UserMhs, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, CourseAssignment, StudentAssignmentSubmission, StudentQuizAnswer, StudentQuizAttempt, QuizOption, BookCategory, Book, CalendarEvent
+from .models import ChatMessage, ChatRoom, UserDosen, UserMhs, UserProdi, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, CourseAssignment, StudentAssignmentSubmission, StudentQuizAnswer, StudentQuizAttempt, QuizOption, BookCategory, Book, CalendarEvent
 from django.contrib import admin
 
 
@@ -18,6 +18,7 @@ class UserDsnImport(ImportExportModelAdmin):
 
 admin.site.register(UserMhs, UserMhsImport)
 admin.site.register(UserDosen, UserDsnImport)
+admin.site.register(UserProdi)
 
 
 

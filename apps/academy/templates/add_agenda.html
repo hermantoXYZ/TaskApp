@@ -15,399 +15,601 @@
 {% endblock vendor_js %}
 
 {% block content %}
-<div class="row">
-  <div class="col-12">
-                  {% if messages %}
-  {% for message in messages %}
-       <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
-          <span class="alert-icon rounded">
-            <i class="ri-error-warning-line ri-22px"></i>
-          </span>
-          <div>
-            {{ message }}
-        </div>
-      </div>
-  {% endfor %}
-  {% endif %}
-    <div class="card mb-6">
+
+<style>
+/* ===== AGENDA CARD STYLES ===== */
+.agenda-card {
+  border: 1px solid rgba(var(--bs-border-color-rgb), 0.6);
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
+}
+.agenda-card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.agenda-card.is-editing {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.12);
+}
+.agenda-card-header {
+  background: transparent;
+  cursor: pointer;
+  padding: 1rem 1.25rem;
+  user-select: none;
+}
+.agenda-card-header:hover {
+  background: rgba(var(--bs-primary-rgb), 0.03);
+}
+.agenda-session-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.agenda-quick-actions {
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+  margin-top: 0.75rem;
+  padding-top: 0.875rem;
+}
+.action-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.775rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.action-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+.materials-mini-list {
+  background: rgba(var(--bs-body-bg-rgb), 0.6);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+}
+.material-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(var(--bs-border-color-rgb), 0.3);
+}
+.material-item:last-child { border-bottom: none; }
+.progress-thin {
+  height: 5px;
+  border-radius: 4px;
+}
+.chevron-icon {
+  transition: transform 0.25s ease;
+}
+.collapsed .chevron-icon {
+  transform: rotate(-90deg);
+}
+</style>
+
+<div class="row g-4">
+
+  {# ====== LEFT: FORM PANEL ====== #}
+  <div class="col-xl-4 col-lg-5">
+    <div class="card sticky-top" style="top: 80px;">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-            {% if is_edit %} Edit Agenda Kegiatan {% else %} Tambah Agenda Kegiatan {% endif %}
+        <h5 class="mb-0 d-flex align-items-center gap-2">
+          <i class="ri-calendar-add-line text-primary"></i>
+          {% if is_edit %}Edit Agenda{% else %}Tambah Sesi Baru{% endif %}
         </h5>
-        
         {% if is_edit %}
-            <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-sm btn-outline-secondary">
-                <i class="ri-close-line me-1"></i> Batal Edit
-            </a>
+          <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-sm btn-outline-secondary">
+            <i class="ri-close-line"></i> Batal
+          </a>
         {% else %}
-         <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary btn-sm">
-            <i class="ri-arrow-go-back-line me-1"></i> Kembali
-         </a>
+          <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+            <i class="ri-arrow-go-back-line"></i>
+          </a>
         {% endif %}
       </div>
 
-      <div class="card-body">
+      {% if messages %}
+        <div class="px-3 pt-3">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} d-flex align-items-center py-2 mb-2" role="alert">
+              <i class="ri-information-line me-2"></i>
+              <div>{{ message }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="card-body pt-2">
         <form method="post" novalidate>
           {% csrf_token %}
-          <div class="row">
-            
-            <div class="col-md-6 p-4 border-end">
-                <h6 class="mb-4 text-primary"><i class="ri-book-open-line me-2"></i>Informasi Materi</h6>
 
-                <div class="form-floating form-floating-outline mb-4">
-                    <input type="text" class="form-control" value="{{ course.name }} ({{ course.code }})" disabled>
-                    <label>Mata Kuliah</label>
-                </div>
+          {# --- Mata Kuliah (readonly) --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <input type="text" class="form-control" value="{{ course.name }} ({{ course.code }})" disabled>
+            <label>Mata Kuliah</label>
+          </div>
 
-                <div class="form-floating form-floating-outline mb-4">
-                    <input type="text"
-                        name="{{ form.title.html_name }}"
-                        id="{{ form.title.id_for_label }}"
-                        value="{{ form.title.value|default_if_none:'' }}"
-                        class="form-control {% if form.title.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
-                        placeholder="Contoh: Prilaku Konsumen / UAS"
-                        required>
-                    <label for="{{ form.title.id_for_label }}">Judul Agenda</label>
-                    {% if form.title.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.title.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
+          {# --- Judul --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <input type="text"
+              name="{{ form.title.html_name }}"
+              id="{{ form.title.id_for_label }}"
+              value="{{ form.title.value|default_if_none:'' }}"
+              class="form-control {% if form.title.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+              placeholder="Contoh: Perilaku Konsumen / UAS" required>
+            <label for="{{ form.title.id_for_label }}">Judul Sesi / Agenda</label>
+            {% if form.title.errors %}
+              <div class="invalid-feedback">{% for e in form.title.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+          </div>
 
+          {# --- Tipe / Section --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <input type="text"
+              name="{{ form.agenda_type.html_name }}"
+              id="{{ form.agenda_type.id_for_label }}"
+              value="{{ form.agenda_type.value|default_if_none:'' }}"
+              class="form-control {% if form.agenda_type.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+              placeholder="Contoh: Pertemuan 1 / Bab 1">
+            <label for="{{ form.agenda_type.id_for_label }}">Tipe / Section</label>
+            {% if form.agenda_type.errors %}
+              <div class="invalid-feedback">{% for e in form.agenda_type.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+          </div>
 
-                 <div class="form-floating form-floating-outline mb-4">
-                    <input type="text"
-                        name="{{ form.agenda_type.html_name }}"
-                        id="{{ form.agenda_type.id_for_label }}"
-                        value="{{ form.agenda_type.value|default_if_none:'' }}"
-                        class="form-control {% if form.agenda_type.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
-                        placeholder="Contoh: Bab 1/ Pertemuan 1/ Bagian 1"
-                        required>
-                    <label for="{{ form.agenda_type.id_for_label }}">Type Agenda</label>
-                    {% if form.agenda_type.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.agenda_type.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
+          {# --- Tanggal & Jam --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <input type="text"
+              name="{{ form.agenda_date.html_name }}"
+              id="{{ form.agenda_date.id_for_label }}"
+              value="{% if form.agenda_date.value %}{{ form.agenda_date.value|date:'Y-m-d H:i' }}{% endif %}"
+              class="form-control flatpickr-datetime {% if form.agenda_date.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+              autocomplete="off" placeholder="Pilih Tanggal & Jam" required>
+            <label for="{{ form.agenda_date.id_for_label }}">Tanggal & Jam Pelaksanaan</label>
+            {% if form.agenda_date.errors %}
+              <div class="invalid-feedback d-block">{% for e in form.agenda_date.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+          </div>
 
-                
-                <div class="form-floating form-floating-outline mb-4">
-                    <textarea 
-                        name="{{ form.description.html_name }}"
-                        id="{{ form.description.id_for_label }}"
-                        class="form-control {% if form.description.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
-                        placeholder="Deskripsi singkat kegiatan"
-                        style="height: 100px;">{{ form.description.value|default_if_none:'' }}</textarea>
-                    <label for="{{ form.description.id_for_label }}">Deskripsi Kegiatan</label>
-                    {% if form.description.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.description.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
+          {# --- Deskripsi --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <textarea
+              name="{{ form.description.html_name }}"
+              id="{{ form.description.id_for_label }}"
+              class="form-control {% if form.description.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
+              placeholder="Deskripsi singkat" style="height:80px;">{{ form.description.value|default_if_none:'' }}</textarea>
+            <label for="{{ form.description.id_for_label }}">Deskripsi Kegiatan</label>
+          </div>
 
-                <div class="form-floating form-floating-outline mb-4">
-                    <textarea 
-                        name="{{ form.learning_outcome.html_name }}"
-                        id="{{ form.learning_outcome.id_for_label }}"
-                        class="form-control {% if form.learning_outcome.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}"
-                        placeholder="Capaian pembelajaran"
-                        style="height: 100px;">{{ form.learning_outcome.value|default_if_none:'' }}</textarea>
-                    <label for="{{ form.learning_outcome.id_for_label }}">Capaian Pembelajaran (Learning Outcome)</label>
-                    {% if form.learning_outcome.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.learning_outcome.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
+          {# --- Metode Pengajaran --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <input type="text"
+              name="{{ form.teaching_method.html_name }}"
+              id="{{ form.teaching_method.id_for_label }}"
+              value="{{ form.teaching_method.value|default_if_none:'' }}"
+              class="form-control" placeholder="Contoh: Diskusi Kelompok">
+            <label for="{{ form.teaching_method.id_for_label }}">Metode Pengajaran</label>
+          </div>
 
-            <div class="col-md-6 p-4">
-                <h6 class="mb-4 text-primary"><i class="ri-time-line me-2"></i>Waktu & Pelaksanaan</h6>
+          {# --- Lokasi --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <input type="text"
+              name="{{ form.location.html_name }}"
+              id="{{ form.location.id_for_label }}"
+              value="{{ form.location.value|default_if_none:'' }}"
+              class="form-control" placeholder="Gedung A Ruang 101">
+            <label for="{{ form.location.id_for_label }}">Lokasi (Ruangan)</label>
+          </div>
 
-                <div class="form-floating form-floating-outline mb-4">
-                    <input type="text" 
-                        name="{{ form.agenda_date.html_name }}" 
-                        id="{{ form.agenda_date.id_for_label }}" 
-                        
-                        {# Value format khusus untuk edit #}
-                        value="{% if form.agenda_date.value %}{{ form.agenda_date.value|date:'Y-m-d H:i' }}{% endif %}"
-                        
-                        class="form-control flatpickr-datetime {% if form.agenda_date.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
-                        
-                        autocomplete="off" 
-                        placeholder="Pilih Tanggal & Jam"
-                        required>
-                    <label for="{{ form.agenda_date.id_for_label }}">Tanggal & Jam Pelaksanaan</label>
-                    
-                    {% if form.agenda_date.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.agenda_date.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
+          {# --- Learning Outcome --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <textarea
+              name="{{ form.learning_outcome.html_name }}"
+              id="{{ form.learning_outcome.id_for_label }}"
+              class="form-control" placeholder="Capaian pembelajaran"
+              style="height:70px;">{{ form.learning_outcome.value|default_if_none:'' }}</textarea>
+            <label for="{{ form.learning_outcome.id_for_label }}">Capaian Pembelajaran</label>
+          </div>
 
-                <div class="form-floating form-floating-outline mb-4">
-                    <input type="text" 
-                        name="{{ form.teaching_method.html_name }}" 
-                        id="{{ form.teaching_method.id_for_label }}" 
-                        value="{{ form.teaching_method.value|default_if_none:'' }}"
-                        class="form-control {% if form.teaching_method.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
-                        placeholder="Contoh: Diskusi Kelompok">
-                    <label for="{{ form.teaching_method.id_for_label }}">Metode Pengajaran</label>
-                    {% if form.teaching_method.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.teaching_method.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
+          {# --- Online Toggle --- #}
+          <div class="form-check form-switch mb-3">
+            {% if form.is_online.value %}
+              <input type="checkbox" name="{{ form.is_online.html_name }}" class="form-check-input" id="{{ form.is_online.id_for_label }}" checked onchange="toggleMeetingUrl()">
+            {% else %}
+              <input type="checkbox" name="{{ form.is_online.html_name }}" class="form-check-input" id="{{ form.is_online.id_for_label }}" onchange="toggleMeetingUrl()">
+            {% endif %}
+            <label class="form-check-label" for="{{ form.is_online.id_for_label }}">Kegiatan Online</label>
+          </div>
 
-                <div class="form-floating form-floating-outline mb-4">
-                    <input type="text" 
-                        name="{{ form.location.html_name }}" 
-                        id="{{ form.location.id_for_label }}" 
-                        value="{{ form.location.value|default_if_none:'' }}"
-                        class="form-control {% if form.location.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
-                        placeholder="Contoh: Gedung A Ruang 101">
-                    <label for="{{ form.location.id_for_label }}">Lokasi (Ruangan/Gedung)</label>
-                    {% if form.location.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.location.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                
-                 <div class="form-check form-switch mb-4">
-                    {% if form.is_online.value %}
-                        <input type="checkbox" name="{{ form.is_online.html_name }}" class="form-check-input" id="{{ form.is_online.id_for_label }}" checked onchange="toggleMeetingUrl()">
-                     {% else %}
-                        <input type="checkbox" name="{{ form.is_online.html_name }}" class="form-check-input" id="{{ form.is_online.id_for_label }}" onchange="toggleMeetingUrl()">
-                     {% endif %}
-                    <label class="form-check-label" for="{{ form.is_online.id_for_label }}">Set sebagai Kegiatan Online</label>
-                </div>
+          {# --- Link Meeting --- #}
+          <div id="meetingUrlContainer" class="form-floating form-floating-outline mb-3" style="display:none;">
+            <input type="url"
+              name="{{ form.meeting_url.html_name }}"
+              id="{{ form.meeting_url.id_for_label }}"
+              value="{{ form.meeting_url.value|default_if_none:'' }}"
+              class="form-control {% if form.meeting_url.errors %}is-invalid{% endif %}"
+              placeholder="https://zoom.us/...">
+            <label for="{{ form.meeting_url.id_for_label }}">Link Meeting (Zoom/GMeet)</label>
+            {% if form.meeting_url.errors %}
+              <div class="invalid-feedback">{% for e in form.meeting_url.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+          </div>
 
-                <div id="meetingUrlContainer" class="form-floating form-floating-outline mb-4" style="display: none;">
-                    <input type="url" 
-                        name="{{ form.meeting_url.html_name }}" 
-                        id="{{ form.meeting_url.id_for_label }}" 
-                        value="{{ form.meeting_url.value|default_if_none:'' }}"
-                        class="form-control {% if form.meeting_url.errors %}is-invalid{% elif form.is_bound %}is-valid{% endif %}" 
-                        placeholder="https://zoom.us/...">
-                    <label for="{{ form.meeting_url.id_for_label }}">Link Meeting (Zoom/GMeet)</label>
-                    <div class="form-text">Wajib diisi jika kegiatan online.</div>
-                    {% if form.meeting_url.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.meeting_url.errors %}{{ error }}{% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-            </div>
-          </div> 
-          
-          <div class="row mt-2">
-            <div class="col-12 d-flex justify-content-end border-top pt-3">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="ri-save-line me-1"></i> 
-                    {% if is_edit %} Update Agenda {% else %} Simpan Agenda {% endif %}
-                </button>
-            </div>
+          <div class="d-grid mt-1">
+            <button type="submit" class="btn btn-primary">
+              <i class="ri-save-line me-1"></i>
+              {% if is_edit %}Update Agenda{% else %}Simpan Agenda Baru{% endif %}
+            </button>
           </div>
         </form>
       </div>
     </div>
+  </div>
 
-    <div class="card">
-      <h5 class="card-header">Daftar Agenda & Absensi</h5>
-      <div class="table-responsive text-nowrap">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th width="15%">Waktu</th>
-            <th width="15%">Section</th>
-              <th width="25%">Nama Agenda</th>
-              <th width="25%">Presensi Kehadiran</th> 
-              <th width="15%">Mode</th>
-              <th width="20%">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="table-border-bottom-0">
-            {% for agenda in agendas %}
-            <tr class="{% if is_edit and edit_id == agenda.id %}table-primary{% endif %}"> 
-              
-              <td>
-                <span class="fw-bold">{{ agenda.agenda_date|date:"d M Y" }}</span>
-                <br><small class="text-muted">{{ agenda.agenda_date|time:"H:i" }}</small>
-              </td>
+  {# ====== RIGHT: AGENDA LIST PANEL ====== #}
+  <div class="col-xl-8 col-lg-7">
 
-              <td>
-                <span class="fw-bold text-heading">{{ agenda.agenda_type }}</span>
-              </td>
-
-              <td>
-                <span class="fw-bold text-heading">{{ agenda.title }}</span>
-                <br><small class="text-muted">{{ agenda.description|truncatewords:10 }}</small>
-              </td>
-
-              <td>
-                 <div class="d-flex flex-column w-100">
-                    <div class="d-flex justify-content-between mb-1">
-                        <small class="fw-medium">{{ agenda.percent }}% Hadir</small>
-                        <small class="text-muted">{{ agenda.hadir_count }} / {{ agenda.total_students }} Mhs</small>
-                    </div>
-                    <div class="progress" style="height: 6px;">
-                        <div class="progress-bar 
-                            {% if agenda.percent >= 80 %}bg-success
-                            {% elif agenda.percent >= 50 %}bg-warning
-                            {% else %}bg-danger{% endif %}" 
-                            role="progressbar" 
-                            style="width: {{ agenda.percent }}%" 
-                            aria-valuenow="{{ agenda.percent }}" 
-                            aria-valuemin="0" 
-                            aria-valuemax="100">
-                        </div>
-                    </div>
-                </div>
-              </td>
-              
-               <td>
-                {% if agenda.is_online %}
-                    <span class="badge rounded-pill bg-label-primary mb-1">Online</span>
-                    {% if agenda.meeting_url %}
-                        <br><a href="{{ agenda.meeting_url }}" target="_blank" class="small"><i class="ri-link-m"></i> Join Link</a>
-                    {% endif %}
-                {% else %}
-                    <span class="badge rounded-pill bg-label-secondary">Offline</span>
-                {% endif %}
-              </td>
-
-              <td>
-                <a href="{% url 'course-attendance' course.uuid agenda.id %}" class="btn btn-sm btn-primary me-2">
-                    <i class="ri-file-list-3-line me-1"></i> Absensi
-                </a>
-
-                <div class="dropdown d-inline-block">
-                  <button type="button" class="btn btn-sm btn-icon btn-text-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
-                  <div class="dropdown-menu">
-                    
-                    <a class="dropdown-item" href="{% url 'edit-course-agenda' course.uuid agenda.id %}">
-                        <i class="ri-pencil-line me-1"></i> Edit Agenda
-                    </a>
-                    <a class="dropdown-item text-danger" 
-                    href="javascript:void(0);"
-                    data-bs-toggle="modal" 
-                    data-bs-target="#deleteModal"
-                    data-href="{% url 'delete-agenda' course.uuid agenda.id %}">
-                        <i class="ri-delete-bin-7-line me-1"></i> Hapus
-                    </a>
-
-                  </div>
-                </div>
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <span class="avatar-initial rounded-circle bg-label-secondary mb-3 p-3">
-                            <i class="ri-calendar-event-line ri-2x"></i>
-                        </span>
-                        <h6 class="mb-1 text-muted">Belum ada agenda</h6>
-                        <small class="text-muted">Buat agenda baru untuk mulai mencatat presensi.</small>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    {# --- Header Quick-Nav Bar --- #}
+    <div class="card mb-3">
+      <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ri-list-check-3 text-primary ri-20px"></i>
+            <span class="fw-semibold">{{ agendas|length }} Sesi Terdaftar</span>
+            <span class="badge bg-label-secondary">{{ course.code }}</span>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'add-course-announcement' course.uuid %}" class="btn btn-sm btn-outline-warning">
+              <i class="ri-megaphone-line me-1"></i>Pengumuman
+            </a>
+            <a href="{% url 'course-quiz-list' course.uuid %}" class="btn btn-sm btn-outline-info">
+              <i class="ri-question-line me-1"></i>Kelola Quiz
+            </a>
+            <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-sm btn-outline-secondary">
+              <i class="ri-book-2-line me-1"></i>View All
+            </a>
+          </div>
+        </div>
       </div>
     </div>
-    </div>
-</div>
+
+    {# --- Accordion Agenda Cards --- #}
+    {% if agendas %}
+      <div class="d-flex flex-column gap-3" id="agendaAccordion">
+        {% for agenda in agendas %}
+        <div class="agenda-card {% if is_edit and edit_id == agenda.id %}is-editing{% endif %}" id="agendaCard-{{ agenda.id }}">
+
+          {# === CARD HEADER (clickable collapse toggle) === #}
+          <div class="agenda-card-header d-flex align-items-start gap-3"
+               data-bs-toggle="collapse"
+               data-bs-target="#agendaBody-{{ agenda.id }}"
+               aria-expanded="{% if is_edit and edit_id == agenda.id %}true{% else %}true{% endif %}">
+
+            {# Nomor sesi / tanggal kolom kiri #}
+            <div class="text-center flex-shrink-0" style="min-width:48px;">
+              <div class="badge bg-label-{% if agenda.is_done %}success{% else %}primary{% endif %} rounded-3 px-2 py-1 mb-1" style="font-size:0.65rem;">
+                {{ agenda.agenda_type }}
+              </div>
+              <div class="fw-bold" style="font-size:1.05rem; line-height:1;">{{ agenda.agenda_date|date:"d" }}</div>
+              <div class="text-muted" style="font-size:0.68rem; text-transform:uppercase;">{{ agenda.agenda_date|date:"M Y" }}</div>
+            </div>
+
+            {# Info utama #}
+            <div class="flex-grow-1 min-w-0">
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <span class="fw-semibold text-heading" style="font-size:0.95rem;">{{ agenda.title }}</span>
+                {% if agenda.is_done %}
+                  <span class="badge rounded-pill bg-label-success" style="font-size:0.68rem;"><i class="ri-checkbox-circle-line me-1"></i>Selesai</span>
+                {% else %}
+                  <span class="badge rounded-pill bg-label-warning" style="font-size:0.68rem;"><i class="ri-time-line me-1"></i>Akan Datang</span>
+                {% endif %}
+                {% if agenda.is_online %}
+                  <span class="badge rounded-pill bg-label-info" style="font-size:0.68rem;"><i class="ri-wifi-line me-1"></i>Online</span>
+                {% else %}
+                  <span class="badge rounded-pill bg-label-secondary" style="font-size:0.68rem;"><i class="ri-map-pin-line me-1"></i>Offline</span>
+                {% endif %}
+              </div>
+
+              <div class="d-flex flex-wrap gap-3 text-muted" style="font-size:0.78rem;">
+                {# Waktu #}
+                <span><i class="ri-time-line me-1"></i>{{ agenda.agenda_date|time:"H:i" }} WIB</span>
+
+                {# Lokasi #}
+                {% if agenda.location %}
+                  <span><i class="ri-map-pin-2-line me-1"></i>{{ agenda.location }}</span>
+                {% endif %}
+
+                {# Dosen — created_by atau fallback ke course.coaches #}
+                {% if agenda.created_by %}
+                  <span class="d-inline-flex align-items-center gap-1">
+                    <span class="avatar avatar-xs" style="width:18px;height:18px;">
+                      <span class="avatar-initial rounded-circle bg-label-primary" style="font-size:8px;">
+                        {{ agenda.created_by.nip.first_name|slice:":1" }}{{ agenda.created_by.nip.last_name|slice:":1" }}
+                      </span>
+                    </span>
+                    <span class="text-body fw-medium">{{ agenda.created_by.nip.first_name|default:agenda.created_by.nip.username }}</span>
+                  </span>
+                {% else %}
+                  {# Fallback: tampilkan semua dosen pengampu course #}
+                  {% for coach in course.coaches.all %}
+                    <span class="d-inline-flex align-items-center gap-1">
+                      <span class="avatar avatar-xs" style="width:18px;height:18px;">
+                        <span class="avatar-initial rounded-circle bg-label-info" style="font-size:8px;">
+                          {{ coach.nip.first_name|slice:":1" }}{{ coach.nip.last_name|slice:":1" }}
+                        </span>
+                      </span>
+                      <span class="text-body fw-medium">{{ coach.nip.first_name|default:coach.nip.username }}</span>
+                    </span>
+                  {% endfor %}
+                {% endif %}
+
+                {# Hitungan materi & tugas #}
+                <span><i class="ri-file-list-2-line me-1"></i>{{ agenda.materials.count }} Materi</span>
+                {% if agenda.assignments.count > 0 %}
+                  <span><i class="ri-task-line me-1"></i>{{ agenda.assignments.count }} Tugas</span>
+                {% endif %}
+              </div>
+
+              {# Presensi mini progress --- #}
+              <div class="mt-2 d-flex align-items-center gap-2" style="max-width:280px;">
+                <div class="progress flex-grow-1 progress-thin">
+                  <div class="progress-bar {% if agenda.percent >= 80 %}bg-success{% elif agenda.percent >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                       style="width:{{ agenda.percent }}%" role="progressbar"></div>
+                </div>
+                <span style="font-size:0.72rem; white-space:nowrap;" class="text-muted">
+                  <strong class="text-body">{{ agenda.percent }}%</strong> ({{ agenda.hadir_count }}/{{ agenda.total_students }})
+                </span>
+              </div>
+            </div>
+
+            {# Chevron #}
+            <i class="ri-arrow-down-s-line ri-20px text-muted chevron-icon flex-shrink-0 mt-1"></i>
+          </div>
+
+          {# === COLLAPSIBLE BODY === #}
+          <div id="agendaBody-{{ agenda.id }}" class="collapse show">
+
+            {# --- QUICK ACTIONS ROW --- #}
+            <div class="agenda-quick-actions">
+              <p class="text-muted mb-2" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Aksi Cepat</p>
+              <div class="action-btn-group">
+
+                {# Absensi #}
+                <a href="{% url 'course-attendance' course.uuid agenda.id %}"
+                   class="action-btn text-white"
+                   style="background:var(--bs-primary); border-color:var(--bs-primary);">
+                  <i class="ri-user-follow-line"></i>Absensi
+                </a>
+
+                <a href="{% url 'add-course-material' course.uuid %}?agenda={{ agenda.id }}"
+                   class="action-btn"
+                   style="color:var(--bs-success); border-color:var(--bs-success); background:rgba(var(--bs-success-rgb),0.08);">
+                  <i class="ri-file-add-line"></i>Materi
+                </a>
+
+                {# Tambah Tugas #}
+                <a href="{% url 'add-course-assignment' course.uuid %}?agenda={{ agenda.id }}"
+                   class="action-btn"
+                   style="color:var(--bs-warning); border-color:var(--bs-warning); background:rgba(var(--bs-warning-rgb),0.08);">
+                  <i class="ri-questionnaire-line"></i>Tugas
+                </a>
+
+                {# Quiz #}
+                <a href="{% url 'course-quiz-list' course.uuid %}"
+                   class="action-btn"
+                   style="color:var(--bs-info); border-color:var(--bs-info); background:rgba(var(--bs-info-rgb),0.08);">
+                  <i class="ri-questionnaire-line"></i>Quiz
+                </a>
+
+                {# Edit Agenda #}
+                <a href="{% url 'edit-course-agenda' course.uuid agenda.id %}"
+                   class="action-btn"
+                   style="color:var(--bs-secondary); border-color:var(--bs-secondary); background:rgba(var(--bs-secondary-rgb),0.08);">
+                  <i class="ri-pencil-line"></i>Edit Sesi
+                </a>
+
+                {# Join Link jika online #}
+                {% if agenda.is_online and agenda.meeting_url %}
+                  <a href="{{ agenda.meeting_url }}" target="_blank"
+                     class="action-btn"
+                     style="color:var(--bs-teal, #20c997); border-color:var(--bs-teal, #20c997); background:rgba(32,201,151,0.08);">
+                    <i class="ri-video-chat-line"></i>Join Meeting
+                  </a>
+                {% endif %}
+
+                {# Hapus Agenda #}
+                <a href="javascript:void(0);"
+                   class="action-btn text-danger"
+                   style="border-color:var(--bs-danger); background:rgba(var(--bs-danger-rgb),0.06);"
+                   data-bs-toggle="modal"
+                   data-bs-target="#deleteModal"
+                   data-href="{% url 'delete-agenda' course.uuid agenda.id %}">
+                  <i class="ri-delete-bin-7-line"></i>Hapus
+                </a>
+              </div>
+            </div>
+
+            {# --- MATERI SECTION (jika ada) --- #}
+            {% if agenda.materials.all %}
+            <div class="px-3 pb-3">
+              <p class="text-muted mb-2" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
+                <i class="ri-stack-line me-1"></i>Materi Sesi ({{ agenda.materials.count }})
+              </p>
+              <div class="materials-mini-list">
+                {% for mat in agenda.materials.all %}
+                <div class="material-item">
+                  {% if mat.material_type == 'video' %}
+                    <i class="ri-video-line text-danger" style="font-size:14px; flex-shrink:0;"></i>
+                  {% else %}
+                    <i class="ri-article-line text-info" style="font-size:14px; flex-shrink:0;"></i>
+                  {% endif %}
+                  <span class="flex-grow-1 text-truncate fw-medium">{{ mat.title }}</span>
+                  {% if mat.is_published %}
+                     <a href="{% url 'course-preview-public-material' course.uuid mat.id %}"
+                     class="btn btn-xs btn-icon btn-text-secondary rounded-circle"
+                     title="View Materi" style="padding:2px 5px;">
+                    <i class="ri-eye-line" style="font-size:12px;"></i>
+                  </a>
+                  {% else %}
+                    <span class="badge bg-label-secondary" style="font-size:0.62rem;">Draft</span>
+                  {% endif %}
+                  <a href="{% url 'edit-course-material' course.uuid mat.id %}"
+                     class="btn btn-xs btn-icon btn-text-secondary rounded-circle"
+                     title="Edit Materi" style="padding:2px 5px;">
+                    <i class="ri-pencil-line" style="font-size:12px;"></i>
+                  </a>
+                  <a href="{% url 'delete-course-material' course.uuid mat.id %}"
+                     class="btn btn-xs btn-icon btn-text-danger rounded-circle"
+                     title="Hapus Materi" style="padding:2px 5px;"
+                     onclick="return confirm('Yakin hapus materi ini?')">
+                    <i class="ri-delete-bin-7-line" style="font-size:12px;"></i>
+                  </a>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+            {# --- TUGAS SECTION (jika ada) --- #}
+            {% if agenda.assignments.all %}
+            <div class="px-3 pb-3">
+              <p class="text-muted mb-2" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
+                <i class="ri-task-line me-1"></i>Tugas ({{ agenda.assignments.count }})
+              </p>
+              <div class="materials-mini-list">
+                {% for asgn in agenda.assignments.all %}
+                <div class="material-item">
+                  <i class="ri-file-paper-2-line text-warning" style="font-size:14px; flex-shrink:0;"></i>
+                  <span class="flex-grow-1 text-truncate fw-medium">{{ asgn.title }}</span>
+                  <small class="text-muted">Due: {{ asgn.due_date|date:"d M" }}</small>
+                  {% if asgn.is_published %}
+                    <span class="badge bg-label-success" style="font-size:0.62rem;">Published</span>
+                  {% else %}
+                    <span class="badge bg-label-secondary" style="font-size:0.62rem;">Draft</span>
+                  {% endif %}
+                  <a href="{% url 'edit-course-assignment' course.uuid asgn.id %}"
+                     class="btn btn-xs btn-icon btn-text-secondary rounded-circle"
+                     title="Edit Tugas" style="padding:2px 5px;">
+                    <i class="ri-pencil-line" style="font-size:12px;"></i>
+                  </a>
+                  <a href="{% url 'assignment-grading' course.uuid asgn.id %}"
+                     class="btn btn-xs btn-icon btn-text-primary rounded-circle"
+                     title="Penilaian" style="padding:2px 5px;">
+                    <i class="ri-medal-line" style="font-size:12px;"></i>
+                  </a>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+          </div>{# /agendaBody #}
+        </div>{# /agenda-card #}
+        {% endfor %}
+      </div>
+
+    {% else %}
+      {# Empty state #}
+      <div class="card">
+        <div class="card-body text-center py-6">
+          <div class="avatar avatar-xl mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-primary">
+              <i class="ri-calendar-event-line ri-32px"></i>
+            </span>
+          </div>
+          <h5 class="mb-1">Belum Ada Sesi</h5>
+          <p class="text-muted mb-0">Gunakan form di sebelah kiri untuk menambahkan sesi agenda pertama.</p>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>{# /right panel #}
+
+</div>{# /row #}
 
 
+{# ====== DELETE MODAL ====== #}
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
     <div class="modal-content">
-      
       <div class="modal-body text-center p-4">
-        
-        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-        
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
         <div class="avatar avatar-xl mx-auto mb-3">
-            <span class="avatar-initial rounded-circle bg-label-danger">
-                <i class="ri-delete-bin-2-line ri-32px"></i>
-            </span>
+          <span class="avatar-initial rounded-circle bg-label-danger">
+            <i class="ri-delete-bin-2-line ri-32px"></i>
+          </span>
         </div>
-
         <h5 class="mb-2 fw-bold">Hapus Agenda Ini?</h5>
-        <p class="text-muted mb-4 small">
-            Data agenda beserta <strong>seluruh data presensi mahasiswa</strong> di dalamnya akan dihapus permanen.
-        </p>
-        
+        <p class="text-muted mb-4 small">Data agenda beserta <strong>seluruh data presensi mahasiswa</strong> di dalamnya akan dihapus permanen.</p>
         <div class="d-flex gap-2 w-100">
-            <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">
-              Batal
-            </button>
-            <a href="#" id="confirmDeleteBtn" class="btn btn-danger w-100">
-                Ya, Hapus
-            </a>
+          <button type="button" class="btn btn-label-secondary w-100" data-bs-dismiss="modal">Batal</button>
+          <a href="#" id="confirmDeleteBtn" class="btn btn-danger w-100">Ya, Hapus</a>
         </div>
-
       </div>
     </div>
   </div>
 </div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Init Flatpickr
-    flatpickr(".flatpickr-datetime", {
-        enableTime: true,
-        dateFormat: "Y-m-d H:i", // Format data yang dikirim ke server (Value asli)
-        time_24hr: true,
-        altInput: true,          // Mengaktifkan tampilan "cantik" untuk user
-        altFormat: "j F Y, H:i", // User melihat: 9 January 2026, 14:00
-        placeholder: "Pilih Tanggal & Jam"
-    });
 
-    // 2. Init Toggle Link Meeting (Panggil saat load page untuk cover mode Edit)
-    toggleMeetingUrl();
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // 1. Init Flatpickr
+  flatpickr(".flatpickr-datetime", {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i",
+    time_24hr: true,
+    altInput: true,
+    altFormat: "j F Y, H:i",
+    placeholder: "Pilih Tanggal & Jam"
+  });
+
+  // 2. Meeting URL toggle
+  toggleMeetingUrl();
+
+  // 3. Delete modal — set href
+  var deleteModal = document.getElementById('deleteModal');
+  if (deleteModal) {
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+      var btn = event.relatedTarget;
+      var url = btn.getAttribute('data-href');
+      document.getElementById('confirmDeleteBtn').href = url;
+    });
+  }
+
+  // 4. Chevron rotation for collapsed state
+  document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function(toggler) {
+    var target = document.querySelector(toggler.getAttribute('data-bs-target'));
+    if (target) {
+      target.addEventListener('show.bs.collapse', function () {
+        toggler.classList.remove('collapsed');
+      });
+      target.addEventListener('hide.bs.collapse', function () {
+        toggler.classList.add('collapsed');
+      });
+    }
+  });
 });
 
-// Fungsi untuk show/hide input link meeting
 function toggleMeetingUrl() {
-    var isOnlineCheckbox = document.getElementById('{{ form.is_online.id_for_label }}');
-    var meetingDiv = document.getElementById('meetingUrlContainer');
-    
-    if (isOnlineCheckbox && isOnlineCheckbox.checked) {
-        meetingDiv.style.display = 'block';
-    } else {
-        meetingDiv.style.display = 'none';
-    }
+  var cb = document.getElementById('{{ form.is_online.id_for_label }}');
+  var div = document.getElementById('meetingUrlContainer');
+  if (cb && div) {
+    div.style.display = cb.checked ? 'block' : 'none';
+  }
 }
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var deleteModal = document.getElementById('deleteModal');
-        if (deleteModal) {
-            deleteModal.addEventListener('show.bs.modal', function (event) {
-                // Tombol yang diklik (trigger)
-                var button = event.relatedTarget;
-                
-                // Ambil URL dari data-href
-                var deleteUrl = button.getAttribute('data-href');
-                
-                // Cari tombol konfirmasi di dalam modal
-                var confirmBtn = deleteModal.querySelector('#confirmDeleteBtn');
-                
-                // Set href tombol konfirmasi
-                if (confirmBtn) {
-                    confirmBtn.href = deleteUrl;
-                }
-            });
-        }
-    });
 </script>
 {% endblock %}

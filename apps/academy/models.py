@@ -227,6 +227,7 @@ class CourseAgenda(models.Model):
     meeting_url = models.URLField(blank=True, help_text='Link Zoom/GMeet')
     learning_outcome = models.TextField(blank=True, null=True, help_text="Capaian Pembelajaran")
     teaching_method = models.CharField(max_length=100, blank=True, null=True, help_text="Metode Pengajaran")
+    created_by = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_agendas', help_text="Dosen yang membuat agenda")
     
     created_at = models.DateTimeField(auto_now_add=True)
 

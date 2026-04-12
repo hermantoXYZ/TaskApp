@@ -4,7 +4,7 @@ from web_project import TemplateLayout
 from .forms import CourseForm, AddParticipantForm, AddAgendaForm, AddAnnouncementForm, AttendanceForm, CourseMaterialForm, AddProgramStudiCourseForm, CoursePeriodForm, CourseAssignmentForm, CourseQuizForm, QuizQuestionForm
 from django.contrib import messages
 from .models import ChatRoom, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, Prodi, CoursePeriod, StudentAssignmentSubmission, CourseAssignment, CourseQuiz, QuizQuestion, QuizOption, StudentQuizAttempt, StudentQuizAnswer
-from .models import UserMhs, CourseGroup, CourseGroupMember
+from .models import UserMhs, CourseGroup, CourseGroupMember, UserDosen
 from django.utils import timezone
 from web_project.template_helpers.theme import TemplateHelper
 from django.contrib.auth import authenticate, login, logout
@@ -32,7 +32,80 @@ class AcademyView(TemplateView):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
 
         return context
-    
+
+
+class AcademyDashboardView(AcademyView):
+    """Dashboard – menampilkan kalender + daftar mata kuliah (dosen maupun mahasiswa)."""
+    template_name = "app_academy_dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        coached_courses = []
+        my_courses = []
+        active_period = None
+        is_dosen = False
+        is_student = False
+
+        # ---- Dosen ----
+        try:
+            dosen = UserDosen.objects.get(nip=user)
+            is_dosen = True
+            active_period = CoursePeriod.objects.filter(is_active=True).first()
+            qs = Course.objects.filter(
+                coaches=dosen,
+                is_active=True
+            ).select_related('period', 'prodi').prefetch_related('participants').order_by('period__name', 'code')
+            for course in qs:
+                course.student_count = course.participants.filter(is_active=True).count()
+                course.agenda_count = CourseAgenda.objects.filter(course=course).count()
+            coached_courses = qs
+        except UserDosen.DoesNotExist:
+            pass
+
+        # ---- Mahasiswa ----
+        if not is_dosen:
+            try:
+                from .models import UserMhs, StudentMaterialProgress as SMP
+                mhs = UserMhs.objects.get(nim=user)
+                is_student = True
+                active_period = CoursePeriod.objects.filter(is_active=True).first()
+                # Ikuti logika StudentCourseListView - tidak filter is_active pada participant
+                enrolled_participants = CourseParticipant.objects.filter(
+                    mahasiswa=mhs
+                ).select_related('course')
+                enrolled_course_ids = enrolled_participants.values_list('course_id', flat=True)
+                qs_mhs = Course.objects.filter(id__in=enrolled_course_ids)\
+                    .select_related('prodi', 'period')\
+                    .prefetch_related('coaches')\
+                    .order_by('-created_at')
+                participant_map = {p.course_id: p for p in enrolled_participants}
+                for course in qs_mhs:
+                    participant = participant_map.get(course.id)
+                    total = CourseMaterial.objects.filter(agenda__course=course).count()
+                    if participant and total > 0:
+                        completed = SMP.objects.filter(
+                            participant=participant, is_completed=True
+                        ).count()
+                        course.progress = round((completed / total) * 100)
+                    else:
+                        course.progress = 0
+                    course.agenda_count = CourseAgenda.objects.filter(course=course).count()
+                my_courses = qs_mhs
+            except UserMhs.DoesNotExist:
+                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Dashboard mahasiswa error: {e}")
+
+        context['coached_courses'] = coached_courses
+        context['my_courses'] = my_courses
+        context['active_period'] = active_period
+        context['all_periods'] = CoursePeriod.objects.all().order_by('-start_date')
+        context['is_dosen'] = is_dosen
+        context['is_student'] = is_student
+        return context
+
 
 
 def loginView(request):
@@ -337,12 +410,22 @@ class DeleteCourseParticipant(DosenRequiredMixin, AcademyView):
 class AddCourseAgenda(DosenRequiredMixin, AcademyView):
     template_name = "add_agenda.html"
 
+    def _get_agendas(self, course):
+        return (
+            CourseAgenda.objects
+            .filter(course=course)
+            .select_related('created_by__nip')
+            .prefetch_related('materials', 'assignments')
+            .order_by('agenda_date')
+        )
+
     def get(self, request, course_uuid, *args, **kwargs):
-        course = get_object_or_404(Course, uuid=course_uuid)
-        agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
-
+        course = get_object_or_404(
+            Course.objects.prefetch_related('coaches'),
+            uuid=course_uuid
+        )
+        agendas = self._get_agendas(course)
         self._calculate_attendance(course, agendas)
-
         return render(request, self.template_name, self.get_context_data(
             form=AddAgendaForm(),
             course=course,
@@ -353,51 +436,67 @@ class AddCourseAgenda(DosenRequiredMixin, AcademyView):
     def post(self, request, course_uuid, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
         form = AddAgendaForm(request.POST)
-
         if form.is_valid():
             agenda = form.save(commit=False)
             agenda.course = course
+            try:
+                from .models import UserDosen
+                agenda.created_by = UserDosen.objects.get(nip=request.user)
+            except Exception:
+                agenda.created_by = None
             agenda.save()
             messages.success(request, f'Agenda "{agenda.title}" berhasil ditambahkan.')
             return redirect('add-course-agenda', course_uuid=course.uuid)
-        
-        agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
+        agendas = self._get_agendas(course)
         self._calculate_attendance(course, agendas)
-        
         return render(request, self.template_name, self.get_context_data(
             form=form,
             course=course,
             agendas=agendas,
             is_edit=False
         ))
-    
+
     def _calculate_attendance(self, course, agendas):
+        from django.utils import timezone as tz
+        now = tz.now()
         total_participants = CourseParticipant.objects.filter(course=course).count()
         for ag in agendas:
             hadir_count = CourseAttendance.objects.filter(agenda=ag, status__in=['present', 'late']).count()
             ag.hadir_count = hadir_count
             ag.total_students = total_participants
             ag.percent = int((hadir_count / total_participants) * 100) if total_participants > 0 else 0
+            ag.is_done = ag.agenda_date < now
 
 
 class EditCourseAgenda(DosenRequiredMixin, AcademyView):
     template_name = "add_agenda.html"
 
+    def _get_agendas(self, course):
+        return (
+            CourseAgenda.objects
+            .filter(course=course)
+            .select_related('created_by__nip')
+            .prefetch_related('materials', 'assignments')
+            .order_by('agenda_date')
+        )
+
     def get(self, request, course_uuid, agenda_id, *args, **kwargs):
-        course = get_object_or_404(Course, uuid=course_uuid)
+        course = get_object_or_404(
+            Course.objects.prefetch_related('coaches'),
+            uuid=course_uuid
+        )
         agenda_instance = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
-        
-        agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
-    
+        agendas = self._get_agendas(course)
+        from django.utils import timezone as tz
+        now = tz.now()
         total_participants = CourseParticipant.objects.filter(course=course).count()
         for ag in agendas:
             hadir_count = CourseAttendance.objects.filter(agenda=ag, status__in=['present', 'late']).count()
             ag.hadir_count = hadir_count
             ag.total_students = total_participants
             ag.percent = int((hadir_count / total_participants) * 100) if total_participants > 0 else 0
-
+            ag.is_done = ag.agenda_date < now
         form = AddAgendaForm(instance=agenda_instance)
-
         return render(request, self.template_name, self.get_context_data(
             form=form,
             course=course,
@@ -407,7 +506,10 @@ class EditCourseAgenda(DosenRequiredMixin, AcademyView):
         ))
 
     def post(self, request, course_uuid, agenda_id, *args, **kwargs):
-        course = get_object_or_404(Course, uuid=course_uuid)
+        course = get_object_or_404(
+            Course.objects.prefetch_related('coaches'),
+            uuid=course_uuid
+        )
         agenda_instance = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
         
         form = AddAgendaForm(request.POST, instance=agenda_instance)
@@ -568,10 +670,19 @@ class AddCourseMaterialView(DosenRequiredMixin, AcademyView):
     def get(self, request, course_uuid, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
         form = CourseMaterialForm(course_uuid=course.uuid)
-        
+
+        # Pre-select agenda jika ada query string ?agenda=ID
+        agenda_id = request.GET.get('agenda')
+        if agenda_id:
+            try:
+                form.fields['agenda'].initial = int(agenda_id)
+            except (ValueError, TypeError):
+                pass
+
         return self.render_to_response(self.get_context_data(
-            form=form, 
-            course=course
+            form=form,
+            course=course,
+            preselected_agenda_id=agenda_id
         ))
 
     def post(self, request, course_uuid, *args, **kwargs):
@@ -636,15 +747,24 @@ class DeleteCourseMaterialView(DosenRequiredMixin, AcademyView):
         return redirect('manage-curriculum', course_uuid=course_uuid)
     
 class AddCourseAssignmentView(DosenRequiredMixin, AcademyView):
-    template_name = "add_assignment.html" 
+    template_name = "add_assignment.html"
 
     def get(self, request, course_uuid, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
         form = CourseAssignmentForm(course_uuid=course.uuid)
-        
+
+        # Pre-select agenda jika ada query string ?agenda=ID
+        agenda_id = request.GET.get('agenda')
+        if agenda_id:
+            try:
+                form.fields['agenda'].initial = int(agenda_id)
+            except (ValueError, TypeError):
+                pass
+
         return self.render_to_response(self.get_context_data(
-            form=form, 
-            course=course
+            form=form,
+            course=course,
+            preselected_agenda_id=agenda_id
         ))
 
     def post(self, request, course_uuid, *args, **kwargs):

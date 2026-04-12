@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AcademyView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView
+from .views import AcademyView, AcademyDashboardView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
@@ -102,7 +102,7 @@ urlpatterns = [
     path('chat/', ChatAcademyViews.as_view(), name='chat-index'),
     path('chat/<uuid:room_uuid>/', ChatAcademyViews.as_view(), name='chat-detail'),
     path('chat/start/<int:target_user_id>/', StartChatView.as_view(), name='chat-start'),
-    path("app/academy/dashboard/",login_required(AcademyView.as_view(template_name="app_academy_dashboard.html")),name="app-academy-dashboard",),
+    path("app/academy/dashboard/",login_required(AcademyDashboardView.as_view()),name="app-academy-dashboard",),
     path("app/academy/calender",login_required(AcademyView.as_view(template_name="app_academy_calender.html")),name="app-academy-calender",),
 
     # === CALENDAR API URLS ===
