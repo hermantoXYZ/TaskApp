@@ -249,6 +249,20 @@
             {% endif %}
           </div>
 
+          <div class="form-check mb-3">
+            {% if form.allow_discussion.value %}
+              <input type="checkbox" name="{{ form.allow_discussion.html_name }}" class="form-check-input" id="{{ form.allow_discussion.id_for_label }}" checked>
+            {% else %}
+              <input type="checkbox" name="{{ form.allow_discussion.html_name }}" class="form-check-input" id="{{ form.allow_discussion.id_for_label }}">
+            {% endif %}
+            <label class="form-check-label" for="{{ form.allow_discussion.id_for_label }}">
+              <strong>Tampilkan di beranda diskusi</strong> — buat thread komentar &amp; suka untuk sesi ini (opsional)
+            </label>
+            {% if form.allow_discussion.errors %}
+              <div class="text-danger small">{% for e in form.allow_discussion.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+          </div>
+
           <div class="d-grid mt-1">
             <button type="submit" class="btn btn-primary">
               <i class="ri-save-line me-1"></i>
@@ -294,7 +308,7 @@
         <div class="agenda-card {% if is_edit and edit_id == agenda.id %}is-editing{% endif %}" id="agendaCard-{{ agenda.id }}">
 
           {# === CARD HEADER (clickable collapse toggle) === #}
-          <div class="agenda-card-header d-flex align-items-start gap-3"
+          <div class="bg-white agenda-card-header d-flex align-items-start gap-3"
                data-bs-toggle="collapse"
                data-bs-target="#agendaBody-{{ agenda.id }}"
                aria-expanded="{% if is_edit and edit_id == agenda.id %}true{% else %}true{% endif %}">
@@ -381,7 +395,7 @@
           </div>
 
           {# === COLLAPSIBLE BODY === #}
-          <div id="agendaBody-{{ agenda.id }}" class="collapse show">
+          <div id="agendaBody-{{ agenda.id }}" class="collapse show bg-white">
 
             {# --- QUICK ACTIONS ROW --- #}
             <div class="agenda-quick-actions">
@@ -415,11 +429,22 @@
                   <i class="ri-questionnaire-line"></i>Quiz
                 </a>
 
+
+                {# Lihat Diskusi sesi ini #}
+            
+                <a href="{% url 'course-discussion-list' course.uuid %}"
+                   class="action-btn"
+                   style="color:#696cff; border-color:#696cff; background:rgba(105,108,255,0.05);"
+                   title="{{ agenda.discussions.count }} diskusi di sesi ini">
+                  <i class="ri-discuss-line"></i>{{ agenda.discussions.count }} Diskusi
+                </a>
+          
+
                 {# Edit Agenda #}
                 <a href="{% url 'edit-course-agenda' course.uuid agenda.id %}"
                    class="action-btn"
                    style="color:var(--bs-secondary); border-color:var(--bs-secondary); background:rgba(var(--bs-secondary-rgb),0.08);">
-                  <i class="ri-pencil-line"></i>Edit Sesi
+                  <i class="ri-pencil-line"></i>
                 </a>
 
                 {# Join Link jika online #}
@@ -438,7 +463,7 @@
                    data-bs-toggle="modal"
                    data-bs-target="#deleteModal"
                    data-href="{% url 'delete-agenda' course.uuid agenda.id %}">
-                  <i class="ri-delete-bin-7-line"></i>Hapus
+                  <i class="ri-delete-bin-7-line"></i>
                 </a>
               </div>
             </div>

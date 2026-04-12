@@ -161,7 +161,8 @@ class AddAgendaForm(forms.ModelForm):
             'agenda_date', 
             'location', 
             'is_online', 
-            'meeting_url'      
+            'meeting_url',
+            'allow_discussion',
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contoh: Prilaku Konsumen / UAS'}),
@@ -173,6 +174,7 @@ class AddAgendaForm(forms.ModelForm):
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Gedung/Ruangan'}),
             'meeting_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://zoom.us/...'}),
             'is_online': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'allow_discussion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -207,7 +209,7 @@ class CourseMaterialForm(forms.ModelForm):
 
     class Meta:
         model = CourseMaterial
-        fields = ['agenda', 'title', 'material_type', 'video_url', 'file_attachment', 'text_content', 'duration_seconds', 'order', 'is_published']
+        fields = ['agenda', 'title', 'material_type', 'video_url', 'file_attachment', 'text_content', 'duration_seconds', 'order', 'is_published', 'allow_discussion']
         widgets = {
             'agenda': forms.Select(attrs={'class': 'select2 form-select'}),
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Judul Materi'}),
@@ -217,6 +219,7 @@ class CourseMaterialForm(forms.ModelForm):
             'text_content': SummernoteWidget(attrs={'summernote': {'width': '100%', 'height': '400px'}}),
             'duration_seconds': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Detik'}),
             'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'allow_discussion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Urutan'}),
         }
 
@@ -234,7 +237,7 @@ class CourseMaterialForm(forms.ModelForm):
 class CourseAssignmentForm(forms.ModelForm):
     class Meta:
         model = CourseAssignment
-        fields = ['agenda', 'title', 'description', 'file_instruction', 'due_date', 'max_score', 'allow_late_submission', 'assignment_type', 'is_published']
+        fields = ['agenda', 'title', 'description', 'file_instruction', 'due_date', 'max_score', 'allow_late_submission', 'assignment_type', 'is_published', 'allow_discussion']
         widgets = {
             'assignment_type': forms.Select(attrs={'class': 'form-select'}),
             'agenda': forms.Select(attrs={'class': 'select2 form-select'}),
@@ -248,6 +251,7 @@ class CourseAssignmentForm(forms.ModelForm):
             'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'max_score': forms.NumberInput(attrs={'class': 'form-control', 'value': 100}),
             'allow_late_submission': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'allow_discussion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):

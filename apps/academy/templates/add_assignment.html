@@ -119,10 +119,16 @@
                         {{ form.is_published }}
                     </div>
                 </div>
-                
 
-   
-                
+                <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                    <div>
+                        <span class="fw-medium d-block">Tampilkan di beranda diskusi</span>
+                        <small class="text-muted">Thread komentar untuk tugas ini (opsional)</small>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        {{ form.allow_discussion }}
+                    </div>
+                </div>
 
             </div>
         </div>

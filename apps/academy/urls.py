@@ -8,6 +8,10 @@ from .views_students import StudentCourseListView, CoursePlayerView, StudentQuiz
 from .views_export_data import CourseRecapitulationView
 from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView, CalendarEventListCreateView, CalendarEventDetailView
 from .views_dosen import DosenProfileView, AddBookView, ManageCategoryView, DeleteBookView, DeleteCategoryView, ListBookView, EditBookView
+from .views_discussion import (
+    CourseDiscussionListView, CourseDiscussionDetailView, CourseDiscussionTogglePinView, CourseDiscussionToggleCloseView,
+    DiscussionLikeToggleView, ReplyLikeToggleView, DiscussionReplyDeleteView,
+)
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
@@ -108,4 +112,13 @@ urlpatterns = [
     # === CALENDAR API URLS ===
     path('api/calendar/events/', login_required(CalendarEventListCreateView.as_view()), name='api-calendar-events'),
     path('api/calendar/events/<int:pk>/', login_required(CalendarEventDetailView.as_view()), name='api-calendar-event-detail'),
+
+    # === DISCUSSION / FORUM URLS ===
+    path('course/<uuid:course_uuid>/discussions/', CourseDiscussionListView.as_view(), name='course-discussion-list'),
+    path('course/<uuid:course_uuid>/discussions/<int:disc_id>/', CourseDiscussionDetailView.as_view(), name='course-discussion-detail'),
+    path('course/<uuid:course_uuid>/discussions/<int:disc_id>/pin/', CourseDiscussionTogglePinView.as_view(), name='course-discussion-pin'),
+    path('course/<uuid:course_uuid>/discussions/<int:disc_id>/close/', CourseDiscussionToggleCloseView.as_view(), name='course-discussion-close'),
+    path('course/<uuid:course_uuid>/discussions/<int:disc_id>/like/', DiscussionLikeToggleView.as_view(), name='discussion-like'),
+    path('course/<uuid:course_uuid>/discussions/reply/<int:reply_id>/like/', ReplyLikeToggleView.as_view(), name='discussion-reply-like'),
+    path('course/<uuid:course_uuid>/discussions/reply/<int:reply_id>/delete/', DiscussionReplyDeleteView.as_view(), name='discussion-reply-delete'),
 ]

@@ -228,7 +228,8 @@ class CourseAgenda(models.Model):
     learning_outcome = models.TextField(blank=True, null=True, help_text="Capaian Pembelajaran")
     teaching_method = models.CharField(max_length=100, blank=True, null=True, help_text="Metode Pengajaran")
     created_by = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_agendas', help_text="Dosen yang membuat agenda")
-    
+    allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.",)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -303,6 +304,7 @@ class CourseMaterial(models.Model):
     duration_seconds = models.PositiveIntegerField(default=0)
     order = models.PositiveIntegerField(default=0) 
     is_published = models.BooleanField(default=False)
+    allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.",)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -336,6 +338,7 @@ class CourseAssignment(models.Model):
     max_score = models.IntegerField(default=100) # Nilai maksimal (biasanya 100)
     allow_late_submission = models.BooleanField(default=False, help_text="Izinkan pengumpulan telat?")
     is_published = models.BooleanField(default=False)
+    allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.",)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -566,3 +569,82 @@ class CalendarEvent(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.user.username})"
+
+
+########################### DISCUSSION / FORUM MODELS #####################################
+
+class CourseDiscussion(models.Model):
+    DISCUSSION_TYPES = [
+        ('general',    'Diskusi Umum'),
+        ('material',   'Terkait Materi'),
+        ('assignment', 'Terkait Tugas'),
+        ('question',   'Pertanyaan'),
+    ]
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='discussions')
+    agenda = models.ForeignKey(CourseAgenda, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussions')
+    material = models.ForeignKey(CourseMaterial, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussions')
+    assignment = models.ForeignKey(CourseAssignment, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussions')
+    discussion_type = models.CharField(max_length=20, choices=DISCUSSION_TYPES, default='general')
+    title = models.CharField(max_length=255)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_discussions')
+    is_pinned = models.BooleanField(default=False, help_text="Hanya dosen yang bisa pin")
+    is_closed = models.BooleanField(default=False, help_text="Tidak bisa dibalas jika ditutup")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+
+    def __str__(self):
+        return f"[{self.course.code}] {self.title}"
+
+    def reply_count(self):
+        return self.replies.filter(parent__isnull=True).count()
+
+    def like_count(self):
+        return self.likes.count()
+
+
+class CourseDiscussionReply(models.Model):
+    discussion = models.ForeignKey(CourseDiscussion, on_delete=models.CASCADE, related_name='replies')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    body = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discussion_replies')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Reply by {self.created_by.username} on '{self.discussion.title}'"
+
+    def like_count(self):
+        return self.likes.count()
+
+
+class CourseDiscussionLike(models.Model):
+    discussion = models.ForeignKey(CourseDiscussion, on_delete=models.CASCADE, null=True, blank=True, related_name='likes')
+    reply = models.ForeignKey(CourseDiscussionReply, on_delete=models.CASCADE, null=True, blank=True, related_name='likes')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discussion_likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['discussion', 'user'],
+                condition=models.Q(discussion__isnull=False),
+                name='unique_discussion_like'
+            ),
+            models.UniqueConstraint(
+                fields=['reply', 'user'],
+                condition=models.Q(reply__isnull=False),
+                name='unique_reply_like'
+            ),
+        ]
+
+    def __str__(self):
+        if self.discussion:
+            return f"{self.user.username} ♥ diskusi: {self.discussion.title}"
+        return f"{self.user.username} ♥ reply #{self.reply_id}"

@@ -1,0 +1,493 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ disc.title }} – Diskusi{{ course.code }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<style>
+  /* ── Thread layout ── */
+  .reply-thread {
+    border-left: 3px solid #e7e7ff;
+    padding-left: 1.25rem;
+    margin-top: 1rem;
+  }
+  .reply-nested {
+    border-left: 2px solid #e9ecef;
+    padding-left: 1rem;
+    margin-top: .75rem;
+  }
+  .avatar-sm-disc {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .reply-card {
+    background: #f8f9fa;
+    border-radius: .65rem;
+    padding: .85rem 1rem;
+    border: 1px solid #e9ecef;
+    transition: border-color .2s;
+  }
+  .reply-card:hover { border-color: #c8c9fa; }
+  .like-btn { cursor: pointer; transition: color .15s, transform .15s; border: none; background: transparent; }
+  .like-btn:hover { transform: scale(1.12); }
+  .like-btn.liked i { color: #ea5455; }
+  .reply-form-box {
+    background: #fff;
+    border: 2px solid #e7e7ff;
+    border-radius: .75rem;
+    padding: 1.25rem;
+    transition: border-color .25s;
+  }
+  .reply-form-box:focus-within { border-color: #696cff; }
+
+</style>
+{% endblock page_css %}
+
+{% block content %}
+<div class="row g-5">
+
+  {# ── Kolom Utama ── #}
+  <div class="col-12 col-xl-8">
+
+    {# ── Messages ── #}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} d-flex align-items-center mb-4" role="alert">
+          <span class="alert-icon rounded"><i class="ri-information-line ri-22px"></i></span>
+          <div>{{ message }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {# ═══════════════════════ CARD DISKUSI UTAMA ═══════════════════════ #}
+    <div class="card border mb-5">
+      <div class="card-body p-5">
+
+        {# Header #}
+        <div class="d-flex align-items-start gap-3 mb-4">
+          <div class="avatar-sm-disc bg-label-{{ disc.type_color }} text-{{ disc.type_color }}">
+            <i class="{{ disc.type_icon }}"></i>
+          </div>
+          <div class="flex-fill min-w-0">
+            <div class="d-flex flex-wrap gap-2 mb-1">
+              {% if disc.is_pinned %}
+                <span class="badge bg-label-primary rounded-pill">
+                  <i class="ri-pushpin-fill me-1"></i>Disematkan
+                </span>
+              {% endif %}
+              {% if disc.is_closed %}
+                <span class="badge bg-label-danger rounded-pill">
+                  <i class="ri-lock-line me-1"></i>Ditutup
+                </span>
+              {% endif %}
+              <span class="badge bg-label-{{ disc.type_color }} rounded-pill">
+                {{ disc.get_discussion_type_display }}
+              </span>
+            </div>
+            <h4 class="mb-1 text-heading">{{ disc.title }}</h4>
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+              <small class="text-muted">
+                <i class="ri-user-line me-1"></i>
+                <strong>{{ disc.created_by.get_full_name|default:disc.created_by.username }}</strong>
+              </small>
+              <small class="text-muted">
+                <i class="ri-time-line me-1"></i>{{ disc.created_at|date:"d M Y, H:i" }}
+              </small>
+              {% if disc.agenda %}
+                <span class="badge bg-label-secondary">
+                  <i class="ri-calendar-event-line me-1"></i>{{ disc.agenda.title }}
+                </span>
+              {% endif %}
+              {% if disc.material %}
+                <span class="badge bg-label-info">
+                  <i class="ri-book-open-line me-1"></i>{{ disc.material.title }}
+                </span>
+              {% endif %}
+              {% if disc.assignment %}
+                <span class="badge bg-label-warning">
+                  <i class="ri-task-line me-1"></i>{{ disc.assignment.title }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          {# Dosen action menu #}
+          {% if is_dosen or request.user.is_superuser %}
+            <div class="flex-shrink-0">
+              <div class="dropdown">
+                <button class="btn btn-icon btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                  <i class="ri-more-2-fill"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <button class="dropdown-item" id="btn-pin"
+                            data-url="{% url 'course-discussion-pin' course.uuid disc.id %}">
+                      <i class="ri-pushpin-{% if disc.is_pinned %}fill text-primary{% else %}line{% endif %} me-2"></i>
+                      {% if disc.is_pinned %}Lepas Pin{% else %}Pin{% endif %}
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item" id="btn-close-disc"
+                            data-url="{% url 'course-discussion-close' course.uuid disc.id %}">
+                      <i class="ri-lock-{% if disc.is_closed %}unlock-line{% else %}line{% endif %} me-2"></i>
+                      {% if disc.is_closed %}Buka Diskusi{% else %}Tutup Diskusi{% endif %}
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+
+
+
+        {# Aksi: Like + Balasan count #}
+        <div class="d-flex align-items-center gap-4 pt-3 border-top">
+          <button class="like-btn {% if disc.user_liked %}liked{% endif %}"
+                  id="btn-like-disc"
+                  data-url="{% url 'discussion-like' course.uuid disc.id %}"
+                  data-count="{{ disc.like_count }}"
+                  title="{% if disc.user_liked %}Batalkan suka{% else %}Suka{% endif %}">
+            <i class="ri-heart-{% if disc.user_liked %}fill{% else %}line{% endif %} me-1 ri-lg"></i>
+            <span id="like-count-disc">{{ disc.like_count }}</span> Suka
+          </button>
+          <span class="text-muted small">
+            <i class="ri-chat-3-line me-1"></i>{{ top_replies.count }} Balasan
+          </span>
+        </div>
+
+      </div>
+    </div>
+
+    {# ═══════════════════════ REPLY THREAD ═══════════════════════ #}
+    <h6 class="text-muted fw-semibold mb-3">
+      <i class="ri-chat-3-line me-2"></i>{{ top_replies.count }} Balasan
+    </h6>
+
+    {% for reply in top_replies %}
+    <div class="d-flex gap-3 mb-4" id="reply-{{ reply.id }}">
+      {# Avatar #}
+      <div class="avatar-sm-disc bg-label-secondary text-secondary flex-shrink-0">
+        {{ reply.created_by.first_name|first|upper|default:"?" }}
+      </div>
+
+      <div class="flex-fill min-w-0">
+        <div class="reply-card">
+          {# Author + time #}
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <span class="fw-semibold small">{{ reply.created_by.get_full_name|default:reply.created_by.username }}</span>
+              <small class="text-muted ms-2">{{ reply.created_at|timesince }} lalu</small>
+            </div>
+            {# Delete reply (owner or dosen) #}
+            {% if reply.created_by == request.user or is_dosen or request.user.is_superuser %}
+              <form method="post" action="{% url 'discussion-reply-delete' course.uuid reply.id %}"
+                    onsubmit="return confirm('Hapus balasan ini?');" class="mb-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-icon btn-outline-danger p-1" title="Hapus">
+                  <i class="ri-delete-bin-line" style="font-size:.8rem;"></i>
+                </button>
+              </form>
+            {% endif %}
+          </div>
+
+          {# Body #}
+          <p class="mb-2 text-body" style="white-space:pre-wrap;">{{ reply.body }}</p>
+
+          {# Like + Balas #}
+          <div class="d-flex gap-3 align-items-center">
+            <button class="like-btn reply-like {% if reply.user_liked %}liked{% endif %}"
+                    data-url="{% url 'discussion-reply-like' course.uuid reply.id %}"
+                    data-reply-id="{{ reply.id }}">
+              <i class="ri-heart-{% if reply.user_liked %}fill{% else %}line{% endif %}"></i>
+              <span class="reply-like-count-{{ reply.id }}">{{ reply.like_count }}</span>
+            </button>
+            {% if not disc.is_closed or is_dosen %}
+              <button class="btn btn-sm btn-link p-0 text-muted btn-show-reply-form"
+                      data-target="nested-form-{{ reply.id }}">
+                <i class="ri-reply-line me-1"></i>Balas
+              </button>
+            {% endif %}
+          </div>
+        </div>
+
+        {# ── Nested Children ── #}
+        {% if reply.children.all %}
+          <div class="reply-nested mt-3">
+            {% for child in reply.children.all %}
+              <div class="d-flex gap-2 mb-3" id="reply-{{ child.id }}">
+                <div class="avatar-sm-disc bg-label-primary text-primary flex-shrink-0" style="width:28px;height:28px;font-size:.75rem;">
+                  {{ child.created_by.first_name|first|upper|default:"?" }}
+                </div>
+                <div class="flex-fill min-w-0">
+                  <div class="reply-card p-3">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                      <div>
+                        <span class="fw-semibold small">{{ child.created_by.get_full_name|default:child.created_by.username }}</span>
+                        <small class="text-muted ms-2">{{ child.created_at|timesince }} lalu</small>
+                      </div>
+                      {% if child.created_by == request.user or is_dosen or request.user.is_superuser %}
+                        <form method="post" action="{% url 'discussion-reply-delete' course.uuid child.id %}"
+                              onsubmit="return confirm('Hapus balasan ini?');" class="mb-0">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-sm btn-icon btn-outline-danger p-1" title="Hapus">
+                            <i class="ri-delete-bin-line" style="font-size:.75rem;"></i>
+                          </button>
+                        </form>
+                      {% endif %}
+                    </div>
+                    <p class="mb-2 small text-body" style="white-space:pre-wrap;">{{ child.body }}</p>
+                    <button class="like-btn reply-like {% if child.user_liked %}liked{% endif %}"
+                            data-url="{% url 'discussion-reply-like' course.uuid child.id %}"
+                            data-reply-id="{{ child.id }}">
+                      <i class="ri-heart-{% if child.user_liked %}fill{% else %}line{% endif %}"></i>
+                      <span class="reply-like-count-{{ child.id }}">{{ child.like_count }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {# Nested reply form (hidden) #}
+        {% if not disc.is_closed or is_dosen %}
+          <div class="reply-form-box mt-3 d-none" id="nested-form-{{ reply.id }}">
+            <form method="post" action="">
+              {% csrf_token %}
+              <input type="hidden" name="parent_id" value="{{ reply.id }}">
+              <label class="form-label small fw-semibold mb-2">
+                Balas <strong>{{ reply.created_by.first_name|default:reply.created_by.username }}</strong>
+              </label>
+              <textarea name="body" class="form-control form-control-sm mb-3" rows="3"
+                        placeholder="Tulis balasan..." required></textarea>
+              <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-sm btn-label-secondary btn-cancel-reply" data-target="nested-form-{{ reply.id }}">Batal</button>
+                <button type="submit" class="btn btn-sm btn-primary">
+                  <i class="ri-send-plane-line me-1"></i>Kirim
+                </button>
+              </div>
+            </form>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+    {% empty %}
+      <div class="card border shadow-none mb-4">
+        <div class="card-body text-center py-5">
+          <div class="avatar avatar-lg mx-auto mb-3">
+            <span class="avatar-initial rounded-circle bg-label-secondary">
+              <i class="ri-chat-voice-line ri-2x"></i>
+            </span>
+          </div>
+          <p class="text-muted mb-0 small">Belum ada balasan. Jadilah yang pertama!</p>
+        </div>
+      </div>
+    {% endfor %}
+
+    {# ═══════════════════════ FORM REPLY UTAMA ═══════════════════════ #}
+    {% if not disc.is_closed or is_dosen %}
+      <div class="reply-form-box mt-2" id="main-reply-form">
+        <h6 class="mb-3 fw-semibold"><i class="ri-reply-line me-2"></i>Tulis Balasan</h6>
+        <form method="post" action="">
+          {% csrf_token %}
+          <textarea name="body" class="form-control mb-3" rows="4"
+                    placeholder="Bagikan pendapat atau jawaban Anda..." required></textarea>
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">
+              <i class="ri-send-plane-line me-2"></i>Kirim Balasan
+            </button>
+          </div>
+        </form>
+      </div>
+    {% else %}
+      <div class="alert alert-warning d-flex align-items-center">
+        <i class="ri-lock-line ri-lg me-2"></i>
+        <div>Diskusi ini telah ditutup. Tidak ada balasan baru yang dapat ditambahkan.</div>
+      </div>
+    {% endif %}
+
+  </div>{# /col-xl-8 #}
+
+  {# ── Sidebar Kanan ── #}
+  <div class="col-12 col-xl-4">
+
+    {# Info Course #}
+    <div class="card border mb-4">
+      <div class="card-body p-4">
+        <p class="form-label fw-semibold text-uppercase small mb-3" style="letter-spacing:.08em;color:#8592a3;">Info Kelas</p>
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="avatar avatar-md">
+            <span class="avatar-initial rounded bg-label-primary">
+              <i class="ri-graduation-cap-line ri-lg"></i>
+            </span>
+          </div>
+          <div>
+            <p class="mb-0 fw-semibold small text-heading">{{ course.name }}</p>
+            <small class="text-muted">{{ course.code }}</small>
+          </div>
+        </div>
+        <a href="{% url 'course-discussion-list' course.uuid %}" class="btn btn-outline-primary w-100 btn-sm">
+          <i class="ri-list-unordered me-1"></i> Lihat Semua Diskusi
+        </a>
+      </div>
+    </div>
+
+    {# Referensi terkait #}
+    {% if disc.agenda or disc.material or disc.assignment %}
+      <div class="card border mb-4">
+        <div class="card-body p-4">
+          <p class="form-label fw-semibold text-uppercase small mb-3" style="letter-spacing:.08em;color:#8592a3;">Terkait</p>
+          {% if disc.agenda %}
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="ri-calendar-event-line text-secondary ri-lg"></i>
+              <span class="small">{{ disc.agenda.title }} – {{ disc.agenda.agenda_date|date:"d M Y" }}</span>
+            </div>
+          {% endif %}
+          {% if disc.material %}
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="ri-book-open-line text-info ri-lg"></i>
+              <span class="small">{{ disc.material.title }}</span>
+            </div>
+          {% endif %}
+          {% if disc.assignment %}
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="ri-task-line text-warning ri-lg"></i>
+              <a href="{% url 'course-player-assignment' course.uuid disc.assignment.id %}" class="small">
+                {{ disc.assignment.title }}
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {# Quick stats #}
+    <div class="card border">
+      <div class="card-body p-4">
+        <p class="form-label fw-semibold text-uppercase small mb-3" style="letter-spacing:.08em;color:#8592a3;">Statistik</p>
+        <div class="d-flex justify-content-between text-center">
+          <div class="col-4">
+            <h4 class="mb-0 text-primary">{{ top_replies.count }}</h4>
+            <small class="text-muted">Balasan</small>
+          </div>
+          <div class="col-4">
+            <h4 class="mb-0 text-danger" id="like-count-disc-sidebar">{{ disc.like_count }}</h4>
+            <small class="text-muted">Suka</small>
+          </div>
+ 
+        </div>
+      </div>
+    </div>
+
+  </div>{# /sidebar #}
+
+</div>{# /row #}
+{% endblock %}
+
+{% block page_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const csrf = '{{ csrf_token }}';
+
+  // ── Like diskusi ──
+  const likeDiscBtn = document.getElementById('btn-like-disc');
+  if (likeDiscBtn) {
+    likeDiscBtn.addEventListener('click', function () {
+      fetch(likeDiscBtn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf, Accept: 'application/json' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('like-count-disc').textContent = data.count;
+        const sidebar = document.getElementById('like-count-disc-sidebar');
+        if (sidebar) sidebar.textContent = data.count;
+        const icon = likeDiscBtn.querySelector('i');
+        if (data.liked) {
+          likeDiscBtn.classList.add('liked');
+          icon.className = 'ri-heart-fill me-1 ri-lg';
+        } else {
+          likeDiscBtn.classList.remove('liked');
+          icon.className = 'ri-heart-line me-1 ri-lg';
+        }
+      });
+    });
+  }
+
+  // ── Like reply ──
+  document.querySelectorAll('.reply-like').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const replyId = btn.dataset.replyId;
+      fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf, Accept: 'application/json' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.querySelectorAll('.reply-like-count-' + replyId)
+          .forEach(el => el.textContent = data.count);
+        const icon = btn.querySelector('i');
+        if (data.liked) {
+          btn.classList.add('liked');
+          icon.className = 'ri-heart-fill';
+        } else {
+          btn.classList.remove('liked');
+          icon.className = 'ri-heart-line';
+        }
+      });
+    });
+  });
+
+  // ── Show / hide nested reply form ──
+  document.querySelectorAll('.btn-show-reply-form').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const target = document.getElementById(btn.dataset.target);
+      if (target) {
+        target.classList.toggle('d-none');
+        if (!target.classList.contains('d-none')) {
+          target.querySelector('textarea').focus();
+        }
+      }
+    });
+  });
+  document.querySelectorAll('.btn-cancel-reply').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.classList.add('d-none');
+    });
+  });
+
+  // ── Pin Toggle ──
+  const pinBtn = document.getElementById('btn-pin');
+  if (pinBtn) {
+    pinBtn.addEventListener('click', function () {
+      fetch(pinBtn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf, Accept: 'application/json' }
+      }).then(() => location.reload());
+    });
+  }
+
+  // ── Close Toggle ──
+  const closeBtn = document.getElementById('btn-close-disc');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function () {
+      fetch(closeBtn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf, Accept: 'application/json' }
+      }).then(() => location.reload());
+    });
+  }
+});
+</script>
+{% endblock %}

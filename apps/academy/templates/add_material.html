@@ -197,6 +197,13 @@
             </div>
           </div>
 
+          <div class="col-12">
+            <div class="form-check form-switch mt-2">
+              {{ form.allow_discussion }}
+              <label class="form-check-label" for="{{ form.allow_discussion.id_for_label }}"><strong>Tampilkan di beranda diskusi</strong> — thread untuk materi ini (opsional)</label>
+            </div>
+          </div>
+
           <div class="col-12 mt-4 d-flex justify-content-end">
             <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary me-3">Batal</a>
             <button type="submit" class="btn btn-primary">Simpan Materi</button>

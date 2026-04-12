@@ -1,6 +1,6 @@
 
 # Register your models here.
-from .models import ChatMessage, ChatRoom, UserDosen, UserMhs, UserProdi, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, CourseAssignment, StudentAssignmentSubmission, StudentQuizAnswer, StudentQuizAttempt, QuizOption, BookCategory, Book, CalendarEvent
+from .models import ChatMessage, ChatRoom, UserDosen, UserMhs, UserProdi, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, CourseAssignment, StudentAssignmentSubmission, StudentQuizAnswer, StudentQuizAttempt, QuizOption, BookCategory, Book, CalendarEvent, CourseDiscussion, CourseDiscussionReply, CourseDiscussionLike
 from django.contrib import admin
 
 
@@ -41,3 +41,6 @@ admin.site.register(ChatRoom)
 admin.site.register(BookCategory)
 admin.site.register(Book)
 admin.site.register(CalendarEvent)
+admin.site.register(CourseDiscussion)
+admin.site.register(CourseDiscussionReply)
+admin.site.register(CourseDiscussionLike)

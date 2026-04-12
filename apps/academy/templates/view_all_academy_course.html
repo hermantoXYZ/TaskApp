@@ -246,7 +246,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <p class="mb-0 text-muted">Diskusi Kelas</p>
+          <p class="mb-0 text-muted">{{ course.discussions.count }} Diskusi</p>
           <div class="avatar">
             <div class="avatar-initial bg-label-info rounded">
                 <i class="ri-discuss-line ri-24px"></i>
@@ -257,7 +257,9 @@
           <div class="role-heading">
             <h5 class="mb-1">Forum Diskusi</h5>
             <small class="d-block mb-3">Tanya jawab asinkronus antar mahasiswa.</small>
-            <a href="{% url 'chat-index' %}" class="btn btn-sm btn-label-info text-nowrap">Go to Forum</a>
+            <a href="{% url 'course-discussion-list' course.uuid %}" class="btn btn-sm btn-label-info text-nowrap">
+              <i class="ri-discuss-line me-1"></i> Manage Forum
+            </a>
           </div>
         </div>
       </div>

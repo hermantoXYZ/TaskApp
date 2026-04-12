@@ -234,6 +234,15 @@
                 <i class="tf-icons ri-calendar-check-line me-2"></i> <span class="d-none d-sm-block">Kehadiran</span>
               </button>
             </li>
+            <li class="nav-item">
+              <a href="{% url 'course-discussion-list' course.uuid %}" class="nav-link">
+                <i class="tf-icons ri-discuss-line me-2"></i>
+                <span class="d-none d-sm-block">Diskusi</span>
+                {% if course.discussions.count > 0 %}
+                  <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-primary ms-2">{{ course.discussions.count }}</span>
+                {% endif %}
+              </a>
+            </li>
           </ul>
         </div>
       </div>

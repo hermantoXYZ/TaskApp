@@ -1,0 +1,764 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Aktivitas Kelas – {{ course.code }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<style>
+/* ══════════════════════════════════════════
+   FEED LAYOUT
+══════════════════════════════════════════ */
+.feed-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════════
+   POST CARD
+══════════════════════════════════════════ */
+.post-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid rgba(67,89,113,.10);
+  box-shadow: 0 2px 12px rgba(67,89,113,.06);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  transition: box-shadow .2s ease, transform .15s ease;
+}
+.post-card:hover {
+  box-shadow: 0 6px 24px rgba(67,89,113,.12);
+  transform: translateY(-1px);
+}
+
+/* dark-mode compat */
+[data-bs-theme="dark"] .post-card {
+  background: #2b2c40;
+  border-color: rgba(255,255,255,.08);
+}
+
+/* ── Card Body ── */
+.post-card-body   { padding: 1.1rem 1.25rem .35rem; }
+.post-card-footer { padding: .1rem 1.25rem .75rem; }
+.post-card-divider {
+  height: 1px;
+  background: rgba(67,89,113,.08);
+  margin: 0 1.25rem;
+}
+
+/* ── Header Row ── */
+.post-header          { display:flex; align-items:flex-start; gap:.75rem; }
+.post-avatar          { width:44px; height:44px; border-radius:50%; flex-shrink:0; overflow:hidden; }
+.post-avatar img      { width:100%; height:100%; object-fit:cover; }
+.post-avatar-initials {
+  width:44px; height:44px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.95rem; font-weight:700; color:#fff;
+}
+.post-meta            { flex:1; min-width:0; }
+.post-author-name     { font-weight:700; font-size:.9rem; color:#566a7f; }
+.post-action-text     { font-size:.82rem; color:#8592a3; }
+.post-breadcrumb      { font-size:.78rem; margin-top:.15rem; display:flex; align-items:center; gap:.3rem; flex-wrap:wrap; }
+.post-breadcrumb a    { color:#696cff; font-weight:600; text-decoration:none; }
+.post-breadcrumb a:hover { text-decoration:underline; }
+.post-breadcrumb .sep { color:#c3c8d0; font-size:.7rem; }
+.post-time            { font-size:.76rem; color:#a1acb8; margin-top:.2rem; }
+.post-menu            { flex-shrink:0; }
+
+/* ── Type Badge ── */
+.post-type-badge {
+  display:inline-flex; align-items:center; gap:.3rem;
+  font-size:.72rem; font-weight:600; border-radius:50px;
+  padding:.2rem .65rem; margin-bottom:.65rem;
+}
+
+/* ── Title ── */
+.post-title {
+  font-size:1.05rem; font-weight:700; color:#233048;
+  margin-bottom:.5rem; line-height:1.35;
+}
+[data-bs-theme="dark"] .post-title { color:#e7eaf3; }
+
+/* ── Description ── */
+.post-description {
+  font-size:.86rem; color:#8592a3; margin-bottom:.75rem;
+  display: -webkit-box; -webkit-line-clamp:3;
+  -webkit-box-orient:vertical; overflow:hidden;
+}
+
+/* ── Attachment Row ── */
+.post-attachment {
+  display:flex; align-items:center; gap:.75rem;
+  background: rgba(105,108,255,.06);
+  border: 1px solid rgba(105,108,255,.12);
+  border-radius:10px; padding:.65rem .9rem;
+  margin-bottom:.75rem;
+}
+.att-icon-wrap {
+  width:38px; height:38px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.1rem; flex-shrink:0; color:#fff;
+}
+.att-filename { font-size:.82rem; font-weight:600; color:#566a7f; word-break:break-all; }
+.att-download {
+  margin-left:auto; flex-shrink:0;
+  font-size:.78rem; font-weight:600; color:#696cff;
+  display:flex; align-items:center; gap:.3rem;
+  text-decoration:none;
+  padding:.3rem .7rem; border-radius:6px;
+  transition: background .15s ease, color .15s ease;
+}
+.att-download:hover {
+  background:rgba(105,108,255,.1); color:#565ae5;
+}
+
+/* ── Agenda Info Box ── */
+.agenda-info-box {
+  background:rgba(105,108,255,.06);
+  border:1px solid rgba(105,108,255,.12);
+  border-radius:10px; padding:.75rem 1rem;
+  margin-bottom:.75rem; font-size:.83rem;
+  display:flex; flex-wrap:wrap; gap:.6rem 1.5rem;
+}
+.agenda-info-box .info-chip {
+  display:flex; align-items:center; gap:.35rem; color:#566a7f;
+}
+.agenda-info-box .info-chip i { font-size:1rem; }
+.online-chip {
+  display:inline-flex; align-items:center; gap:.35rem;
+  background:#d1fae5; color:#065f46; border-radius:50px;
+  padding:.2rem .7rem; font-size:.75rem; font-weight:600;
+}
+
+/* ── Assignment deadline box ── */
+.deadline-box {
+  display:flex; align-items:center; gap:.6rem;
+  background:rgba(255,159,67,.08);
+  border:1px solid rgba(255,159,67,.2);
+  border-radius:10px; padding:.65rem .9rem;
+  margin-bottom:.75rem; font-size:.83rem;
+}
+.deadline-box .dl-label { font-weight:700; color:#ff9f43; }
+.deadline-box .dl-value { color:#566a7f; }
+
+/* ── Draft Banner ── */
+.draft-banner {
+  display:inline-flex; align-items:center; gap:.4rem;
+  background:rgba(234,84,85,.08); color:#ea5455;
+  border-radius:6px; padding:.25rem .7rem;
+  font-size:.75rem; font-weight:600; margin-bottom:.6rem;
+}
+
+/* ── Action Bar ── */
+.post-actions {
+  display:flex; align-items:center; gap:0;
+  padding:.2rem 0;
+}
+.action-btn {
+  display:flex; align-items:center; gap:.42rem;
+  background:none; border:none; cursor:pointer;
+  color:#8592a3; font-size:.82rem; font-weight:600;
+  padding:.5rem .85rem; border-radius:8px;
+  transition: background .15s ease, color .15s ease;
+  text-decoration:none;
+}
+.action-btn:hover {
+  background:rgba(67,89,113,.06); color:#566a7f;
+}
+.action-btn.liked { color:#ea5455; }
+.action-btn.liked:hover { background:rgba(234,84,85,.08); }
+.action-btn i { font-size:1.05rem; }
+.action-spacer { margin-left:auto; }
+
+/* ── Comment Row ── */
+.comment-row {
+  display:flex; align-items:center; gap:.75rem;
+  padding:.65rem 1.25rem .9rem;
+}
+.comment-avatar { width:34px; height:34px; border-radius:50%; flex-shrink:0; overflow:hidden; }
+.comment-avatar img { width:100%; height:100%; object-fit:cover; }
+.comment-avatar-init {
+  width:34px; height:34px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.75rem; font-weight:700; color:#fff;
+  background: linear-gradient(135deg,#696cff,#9c9eff);
+}
+.comment-input-wrap { flex:1; position:relative; }
+.comment-input {
+  width:100%; border-radius:50px;
+  border:1.5px solid rgba(67,89,113,.15);
+  background:rgba(67,89,113,.04);
+  padding:.5rem 3rem .5rem 1rem;
+  font-size:.83rem; color:#566a7f;
+  outline:none; transition: border-color .2s ease, background .2s ease;
+}
+.comment-input:focus {
+  border-color:#696cff; background:#fff;
+}
+[data-bs-theme="dark"] .comment-input {
+  background:rgba(255,255,255,.05); color:#e7eaf3;
+  border-color:rgba(255,255,255,.12);
+}
+[data-bs-theme="dark"] .comment-input:focus {
+  background:rgba(255,255,255,.08); border-color:#696cff;
+}
+.comment-send-btn {
+  position:absolute; right:.3rem; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:#696cff; cursor:pointer;
+  font-size:1.1rem; padding:.2rem .4rem; border-radius:6px;
+  transition: background .15s ease;
+}
+.comment-send-btn:hover { background:rgba(105,108,255,.1); }
+
+/* ── Filter Pills ── */
+.filter-strip {
+  display:flex; align-items:center; gap:.5rem;
+  flex-wrap:wrap; padding:.5rem 0 1rem;
+}
+.filter-pill {
+  display:inline-flex; align-items:center; gap:.4rem;
+  border-radius:50px; font-size:.8rem; font-weight:600;
+  padding:.38rem 1rem; text-decoration:none;
+  border:1.5px solid transparent;
+  transition: all .15s ease;
+}
+.filter-pill.active {
+  background:#696cff; color:#fff; border-color:#696cff;
+}
+.filter-pill:not(.active) {
+  background:rgba(67,89,113,.06); color:#697a8d;
+  border-color:rgba(67,89,113,.12);
+}
+.filter-pill:not(.active):hover {
+  background:rgba(105,108,255,.1); color:#696cff;
+  border-color:rgba(105,108,255,.3);
+}
+
+/* ── Empty State ── */
+.feed-empty {
+  text-align:center; padding:4rem 2rem;
+  background:#fff; border-radius:16px;
+  border:1px dashed rgba(67,89,113,.15);
+}
+[data-bs-theme="dark"] .feed-empty { background:#2b2c40; }
+
+/* ── Responsive ── */
+@media (max-width:576px) {
+  .post-card-body  { padding:.9rem 1rem .3rem; }
+  .post-card-footer{ padding:.1rem 1rem .7rem; }
+  .post-card-divider { margin:0 1rem; }
+  .comment-row     { padding:.5rem 1rem .8rem; }
+  .post-title      { font-size:.95rem; }
+  .action-btn      { padding:.42rem .6rem; font-size:.78rem; }
+}
+</style>
+{% endblock page_css %}
+
+{% block content %}
+<div class="row g-0 justify-content-center">
+<div class="col-12">
+
+  {# ── Header ── #}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h4 class="mb-1">
+        <i class="ri-home-smile-2-line me-2 text-primary"></i>Beranda Kelas
+      </h4>
+      <p class="mb-0 text-muted small">
+        <span class="badge bg-label-primary rounded-pill me-1">{{ course.code }}</span>
+        {{ course.name }}
+        <span class="text-muted mx-1">·</span>
+        <span class="text-muted">{{ feed_items|length }} aktivitas</span>
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if is_dosen %}
+        <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+          <i class="ri-arrow-go-back-line me-1"></i> Kelola Kelas
+        </a>
+      {% else %}
+        <a href="{% url 'course-player' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+          <i class="ri-arrow-go-back-line me-1"></i> Kembali ke Kelas
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Messages ── #}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} d-flex align-items-center mb-3" role="alert">
+        <span class="alert-icon rounded"><i class="ri-information-line ri-22px"></i></span>
+        <div>{{ message }}</div>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {# ── Filter Strip ── #}
+  <div class="filter-strip mb-2">
+    <a href="{% url 'course-discussion-list' course.uuid %}" class="filter-pill {% if not filter_type %}active{% endif %}">
+      <i class="ri-layout-grid-line"></i> Semua
+    </a>
+    <a href="?type=agenda" class="filter-pill {% if filter_type == 'agenda' %}active{% endif %}">
+      <i class="ri-calendar-event-line"></i> Agenda
+    </a>
+    <a href="?type=material" class="filter-pill {% if filter_type == 'material' %}active{% endif %}">
+      <i class="ri-book-open-line"></i> Materi
+    </a>
+    <a href="?type=assignment" class="filter-pill {% if filter_type == 'assignment' %}active{% endif %}">
+      <i class="ri-file-list-3-line"></i> Tugas
+    </a>
+    <a href="?type=discussion" class="filter-pill {% if filter_type == 'discussion' %}active{% endif %}">
+      <i class="ri-discuss-line"></i> Diskusi
+    </a>
+  </div>
+
+  {# ── Feed ── #}
+  <div class="feed-wrap">
+
+    {% for fi in feed_items %}
+    {% with disc=fi.disc %}
+
+    <div class="post-card" id="{% if disc %}post-{{ disc.id }}{% else %}feed-{{ fi.item_type }}-{{ fi.source.pk }}{% endif %}">
+
+      {# ── Card Body ── #}
+      <div class="post-card-body">
+
+        {# ── Post Header ── #}
+        <div class="post-header mb-2">
+
+          {# Avatar #}
+          {% if fi.photo_url %}
+            <div class="post-avatar">
+              <img src="{{ fi.photo_url }}" alt="">
+            </div>
+          {% else %}
+            {% with name=fi.created_by_user.get_full_name|default:fi.created_by_user.username %}
+            <div class="post-avatar-initials
+              {% if fi.item_type == 'agenda' %}
+                bg-primary
+              {% elif fi.item_type == 'material' %}
+                bg-success
+              {% elif fi.item_type == 'assignment' %}
+                bg-warning
+              {% else %}
+                bg-info
+              {% endif %}
+            " style="background:linear-gradient(135deg,
+              {% if fi.item_type == 'agenda' %}#696cff,#9c9eff
+              {% elif fi.item_type == 'material' %}#28c76f,#48da89
+              {% elif fi.item_type == 'assignment' %}#ff9f43,#ffb976
+              {% else %}#03c3ec,#5ce7ff{% endif %})">
+              {{ name|first|upper }}
+            </div>
+            {% endwith %}
+          {% endif %}
+
+          {# Meta #}
+          <div class="post-meta">
+            <div>
+              <span class="post-author-name">
+                {{ fi.created_by_user.get_full_name|default:fi.created_by_user.username }}
+              </span>
+              <span class="post-action-text ms-1">{{ fi.action_text }}</span>
+            </div>
+            <div class="post-breadcrumb">
+              <a href="{% url 'course-player' course.uuid %}">{{ fi.course_name|truncatechars:30 }}</a>
+              {% if fi.session_name %}
+                <span class="sep">›</span>
+                <span style="color:#566a7f;">{{ fi.session_name|truncatechars:30 }}</span>
+              {% endif %}
+            </div>
+            <div class="post-time">
+              <i class="ri-time-line me-1"></i>{{ fi.created_at|timesince }} yang lalu
+            </div>
+          </div>
+
+          {# Menu (dosen only) #}
+          {% if is_dosen or request.user.is_superuser %}
+            {% if fi.item_type == 'discussion' %}
+            <div class="post-menu">
+              <div class="dropdown">
+                <button class="btn btn-sm btn-icon btn-outline-secondary border-0"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="ri-more-2-fill"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                  <li>
+                    <button class="dropdown-item btn-pin-disc"
+                            data-url="{% url 'course-discussion-pin' course.uuid disc.id %}">
+                      <i class="ri-pushpin-{% if fi.extra.is_pinned %}fill text-primary{% else %}line{% endif %} me-2"></i>
+                      {% if fi.extra.is_pinned %}Lepas Pin{% else %}Pin{% endif %}
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item btn-close-disc"
+                            data-url="{% url 'course-discussion-close' course.uuid disc.id %}">
+                      <i class="ri-lock-{% if fi.extra.is_closed %}unlock-line{% else %}line{% endif %} me-2"></i>
+                      {% if fi.extra.is_closed %}Buka Diskusi{% else %}Tutup Diskusi{% endif %}
+                    </button>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item text-danger" href="javascript:void(0);"
+                       data-bs-toggle="modal" data-bs-target="#deleteDiscModal"
+                       data-href="{% url 'course-discussion-delete' course.uuid disc.id %}"
+                       data-title="{{ fi.title|truncatechars:40 }}">
+                      <i class="ri-delete-bin-line me-2"></i>Hapus
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            {% endif %}
+          {% endif %}
+
+        </div>{# /post-header #}
+
+        {# ── Draft Banner (dosen view) ── #}
+        {% if is_dosen and not fi.is_published and fi.item_type != 'agenda' and fi.item_type != 'discussion' %}
+          <div class="draft-banner">
+            <i class="ri-eye-off-line"></i> Draft – belum dipublikasikan ke mahasiswa
+          </div>
+        {% endif %}
+
+        {# ── Type badge for discussions ── #}
+        {% if fi.item_type == 'discussion' %}
+          {% if fi.extra.is_pinned %}
+            <span class="badge bg-label-primary rounded-pill me-1 mb-2" style="font-size:.72rem;">
+              <i class="ri-pushpin-fill me-1"></i>Disematkan
+            </span>
+          {% endif %}
+          {% if fi.extra.is_closed %}
+            <span class="badge bg-label-danger rounded-pill me-1 mb-2" style="font-size:.72rem;">
+              <i class="ri-lock-line me-1"></i>Ditutup
+            </span>
+          {% endif %}
+        {% endif %}
+
+        {# ── Title ── #}
+        <div class="post-title">{{ fi.title }}</div>
+
+        {# ── Agenda Info Box ── #}
+        {% if fi.item_type == 'agenda' %}
+          <div class="agenda-info-box">
+            <div class="info-chip">
+              <i class="ri-calendar-line" style="color:#696cff;"></i>
+              <span>{{ fi.extra.agenda_date|date:"l, d F Y – H:i" }}</span>
+            </div>
+            {% if fi.extra.location %}
+              <div class="info-chip">
+                <i class="ri-map-pin-line" style="color:#ea5455;"></i>
+                <span>{{ fi.extra.location }}</span>
+              </div>
+            {% endif %}
+            {% if fi.extra.agenda_type %}
+              <div class="info-chip">
+                <i class="ri-bookmark-line" style="color:#ff9f43;"></i>
+                <span>{{ fi.extra.agenda_type }}</span>
+              </div>
+            {% endif %}
+            {% if fi.extra.is_online and fi.extra.meeting_url %}
+              <a href="{{ fi.extra.meeting_url }}" target="_blank" class="online-chip">
+                <i class="ri-video-line"></i> Bergabung Online
+              </a>
+            {% elif fi.extra.is_online %}
+              <span class="online-chip"><i class="ri-video-line"></i> Online</span>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {# ── Assignment Deadline Box ── #}
+        {% if fi.item_type == 'assignment' %}
+          <div class="deadline-box">
+            <i class="ri-alarm-warning-line" style="font-size:1.2rem;color:#ff9f43;"></i>
+            <div>
+              <span class="dl-label">Deadline:</span>
+              <span class="dl-value ms-1">{{ fi.extra.due_date|date:"l, d F Y – H:i" }}</span>
+            </div>
+            <div class="ms-auto d-flex gap-2 flex-wrap">
+              <span class="badge bg-label-secondary" style="font-size:.72rem;">
+                <i class="ri-trophy-line me-1"></i>Max {{ fi.extra.max_score }}
+              </span>
+              {% if fi.extra.assignment_type == 'group' %}
+                <span class="badge bg-label-info" style="font-size:.72rem;">Kelompok</span>
+              {% else %}
+                <span class="badge bg-label-primary" style="font-size:.72rem;">Individu</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+        {# ── Description preview ── #}
+        {% if fi.description %}
+          <div class="post-description">{{ fi.description|striptags }}</div>
+        {% endif %}
+
+        {# ── Attachment ── #}
+        {% if fi.attachment_url and fi.attachment_name %}
+          <div class="post-attachment">
+            <div class="att-icon-wrap" style="background:{{ fi.attachment_color }};">
+              <i class="{{ fi.attachment_icon }}"></i>
+            </div>
+            <span class="att-filename">{{ fi.attachment_name }}</span>
+            <a href="{{ fi.attachment_url }}" class="att-download" target="_blank" download>
+              <i class="ri-download-2-line"></i> Unduh
+            </a>
+          </div>
+        {% endif %}
+
+        {# ── Material: Video Link ── #}
+        {% if fi.item_type == 'material' and fi.extra.material_type == 'video' and fi.extra.video_url %}
+          <div class="post-attachment">
+            <div class="att-icon-wrap" style="background:#ea5455;">
+              <i class="ri-youtube-line"></i>
+            </div>
+            <span class="att-filename">Video Pembelajaran</span>
+            <a href="{% url 'course-player-material' fi.extra.course_uuid fi.extra.mat_id %}"
+               class="att-download">
+              <i class="ri-play-circle-line"></i> Tonton
+            </a>
+          </div>
+        {% endif %}
+
+        {# ── Assignment: Submit Link ── #}
+        {% if fi.item_type == 'assignment' and not is_dosen %}
+          <a href="{% url 'course-player-assignment' fi.extra.course_uuid fi.extra.asgn_id %}"
+             class="btn btn-sm btn-warning text-white mb-2"
+             style="border-radius:8px; font-size:.8rem;">
+            <i class="ri-upload-2-line me-1"></i> Kumpulkan Tugas
+          </a>
+        {% endif %}
+
+        {% if not disc and fi.item_type != 'discussion' %}
+          <p class="text-muted small mb-0 mt-1">
+            <i class="ri-information-line me-1"></i>Thread beranda diskusi untuk konten ini belum diaktifkan.
+          </p>
+        {% endif %}
+
+      </div>{# /post-card-body #}
+
+      {% if disc %}
+      {# ── Divider ── #}
+      <div class="post-card-divider"></div>
+
+      {# ── Action Bar ── #}
+      <div class="post-card-footer">
+        <div class="post-actions">
+
+          {# Like #}
+          <button class="action-btn btn-like {% if disc.user_liked %}liked{% endif %}"
+                  data-disc-id="{{ disc.id }}"
+                  data-url="{% url 'discussion-like' course.uuid disc.id %}"
+                  id="like-btn-{{ disc.id }}">
+            <i class="ri-heart-{% if disc.user_liked %}fill{% else %}line{% endif %}" id="like-icon-{{ disc.id }}"></i>
+            <span id="like-count-{{ disc.id }}">{{ disc.like_count_ }}</span>
+            Suka
+          </button>
+
+          {# Comment #}
+          <a href="{% url 'course-discussion-detail' course.uuid disc.id %}"
+             class="action-btn">
+            <i class="ri-chat-3-line"></i>
+            {{ disc.reply_count_ }}
+            Komentar
+          </a>
+
+          {# Share / spacer #}
+          <span class="action-spacer"></span>
+
+          {# Detail link #}
+          <a href="{% url 'course-discussion-detail' course.uuid disc.id %}"
+             class="action-btn" style="color:#696cff;">
+            <i class="ri-external-link-line"></i>
+            <span class="d-none d-sm-inline">Detail</span>
+          </a>
+
+        </div>
+      </div>
+
+      {# ── Divider ── #}
+      <div class="post-card-divider"></div>
+
+      {# ── Quick Comment Row ── #}
+      {% if fi.item_type != 'discussion' or not fi.extra.is_closed %}
+      <div class="comment-row">
+        {# User avatar #}
+        <div class="comment-avatar-init">
+          {{ request.user.get_full_name|default:request.user.username|first|upper }}
+        </div>
+
+        {# Quick comment form #}
+        <form method="post"
+              action="{% url 'course-discussion-detail' course.uuid disc.id %}"
+              class="comment-input-wrap quick-comment-form"
+              data-disc="{{ disc.id }}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'course-discussion-list' course.uuid %}">
+          <input type="text" name="body" class="comment-input"
+                 placeholder="Tambahkan komentar..."
+                 autocomplete="off">
+          <button type="submit" class="comment-send-btn" title="Kirim">
+            <i class="ri-send-plane-2-fill"></i>
+          </button>
+        </form>
+      </div>
+      {% endif %}
+      {% endif %}
+
+    </div>{# /post-card #}
+
+    {% endwith %}
+    {% empty %}
+
+    {# ── Empty State ── #}
+    <div class="feed-empty">
+      <div class="avatar avatar-xl mx-auto mb-3">
+        <span class="avatar-initial rounded-circle bg-label-primary">
+          <i class="ri-home-smile-2-line ri-3x"></i>
+        </span>
+      </div>
+      {% if filter_type == 'discussion' %}
+        <h5 class="mb-1">Belum ada diskusi</h5>
+        <p class="text-muted mb-0 small">
+          Tidak ada thread diskusi (termasuk yang terikat agenda, materi, atau tugas).<br>
+          Aktifkan opsi diskusi saat mengelola konten, atau buka diskusi baru dari pembelajaran.
+        </p>
+      {% else %}
+        <h5 class="mb-1">Belum ada aktivitas</h5>
+        <p class="text-muted mb-0 small">
+          Aktivitas akan muncul otomatis ketika dosen membuat agenda,<br>
+          mengupload materi, atau memberikan tugas.
+        </p>
+      {% endif %}
+    </div>
+
+    {% endfor %}
+
+  </div>{# /feed-wrap #}
+
+</div>
+</div>{# /row #}
+
+
+{# ── Delete Modal ── #}
+<div class="modal fade" id="deleteDiscModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3"
+                data-bs-dismiss="modal"></button>
+        <div class="avatar avatar-xl mx-auto mb-3">
+          <span class="avatar-initial rounded-circle bg-label-danger">
+            <i class="ri-delete-bin-2-line ri-32px"></i>
+          </span>
+        </div>
+        <h5 class="mb-2 fw-bold">Hapus Diskusi?</h5>
+        <p class="text-muted mb-1 small" id="deleteDiscTitle"></p>
+        <p class="text-muted mb-4 small">Tindakan ini tidak dapat dibatalkan.</p>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-label-secondary w-100"
+                  data-bs-dismiss="modal">Batal</button>
+          <a href="#" id="btnConfirmDeleteDisc" class="btn btn-danger w-100">Ya, Hapus</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block page_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const csrfToken = '{{ csrf_token }}';
+
+  /* ── Delete Modal ── */
+  const deleteModal = document.getElementById('deleteDiscModal');
+  if (deleteModal) {
+    deleteModal.addEventListener('show.bs.modal', function (e) {
+      const btn = e.relatedTarget;
+      document.getElementById('deleteDiscTitle').textContent = btn.dataset.title;
+      document.getElementById('btnConfirmDeleteDisc').href   = btn.dataset.href;
+    });
+  }
+
+  /* ── Like Toggle (AJAX) ── */
+  document.querySelectorAll('.btn-like').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const discId   = btn.dataset.discId;
+      const url      = btn.dataset.url;
+      const iconEl   = document.getElementById('like-icon-'  + discId);
+      const countEl  = document.getElementById('like-count-' + discId);
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'Accept': 'application/json' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        countEl.textContent = data.count;
+        if (data.liked) {
+          btn.classList.add('liked');
+          iconEl.className = 'ri-heart-fill';
+        } else {
+          btn.classList.remove('liked');
+          iconEl.className = 'ri-heart-line';
+        }
+        /* micro-animation */
+        iconEl.style.transform = 'scale(1.4)';
+        setTimeout(() => { iconEl.style.transform = 'scale(1)'; }, 200);
+      })
+      .catch(console.error);
+    });
+  });
+
+  /* ── Like icon transition ── */
+  document.querySelectorAll('.btn-like i').forEach(function (el) {
+    el.style.transition = 'transform .2s cubic-bezier(.34,1.56,.64,1)';
+  });
+
+  /* ── Pin Toggle ── */
+  document.querySelectorAll('.btn-pin-disc').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'Accept': 'application/json' }
+      })
+      .then(r => r.json())
+      .then(() => location.reload())
+      .catch(console.error);
+    });
+  });
+
+  /* ── Close Toggle ── */
+  document.querySelectorAll('.btn-close-disc').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'Accept': 'application/json' }
+      })
+      .then(r => r.json())
+      .then(() => location.reload())
+      .catch(console.error);
+    });
+  });
+
+  /* ── Quick Comment: focus effect ── */
+  document.querySelectorAll('.quick-comment-form').forEach(function (form) {
+    const input = form.querySelector('.comment-input');
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (input.value.trim()) form.submit();
+      }
+    });
+  });
+
+});
+</script>
+{% endblock %}
