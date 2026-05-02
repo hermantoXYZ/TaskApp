@@ -244,12 +244,101 @@
 }
 [data-bs-theme="dark"] .feed-empty { background:#2b2c40; }
 
+/* ── Inline Comments Section ── */
+.inline-comments {
+  border-top: 1px solid rgba(67,89,113,.08);
+  padding: .5rem 0 0;
+}
+.inline-reply-item {
+  display:flex; align-items:flex-start; gap:.65rem;
+  padding: .55rem 1.25rem;
+}
+.inline-reply-avatar {
+  width:32px; height:32px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.75rem; font-weight:700; color:#fff;
+  background: linear-gradient(135deg,#8592a3,#a8b4c0);
+}
+.inline-reply-bubble {
+  background: rgba(67,89,113,.05);
+  border-radius: 12px;
+  padding: .45rem .75rem;
+  flex:1; min-width:0;
+}
+[data-bs-theme="dark"] .inline-reply-bubble { background:rgba(255,255,255,.06); }
+.inline-reply-name {
+  font-size:.8rem; font-weight:700; color:#566a7f; display:block;
+}
+.inline-reply-text {
+  font-size:.83rem; color:#697a8d; margin:0; word-break:break-word;
+}
+.inline-reply-time {
+  font-size:.72rem; color:#a1acb8; margin-top:.15rem; display:block;
+}
+.view-all-btn {
+  display:block; font-size:.78rem; color:#696cff; font-weight:600;
+  padding:.2rem 1.25rem .5rem; text-decoration:none;
+}
+.view-all-btn:hover { text-decoration:underline; }
+
+/* ── inline reply action bar ── */
+.inline-reply-content { flex:1; min-width:0; }
+.ir-action-bar {
+  display:flex; align-items:center; gap:.5rem;
+  margin-top:.22rem; flex-wrap:wrap;
+}
+.ir-time { font-size:.72rem; color:#a1acb8; }
+.ir-like-btn, .ir-reply-btn {
+  background:none; border:none; padding:0;
+  font-size:.75rem; font-weight:700; color:#8592a3;
+  cursor:pointer; transition: color .15s;
+  line-height:1;
+}
+.ir-like-btn:hover  { color:#ea5455; }
+.ir-reply-btn:hover { color:#696cff; }
+.ir-liked { color:#ea5455 !important; }
+.ir-like-count { font-size:.72rem; color:#8592a3; display:inline-flex; align-items:center; gap:.15rem; }
+
+/* ── nested children ── */
+.ir-nested {
+  margin-top:.5rem;
+  padding-left:.75rem;
+  border-left: 2px solid rgba(67,89,113,.10);
+}
+.ir-child-item {
+  display:flex; align-items:flex-start;
+  gap:.5rem; margin-bottom:.5rem;
+}
+.ir-child-avatar {
+  width:26px; height:26px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.68rem; font-weight:700; color:#fff;
+  background: linear-gradient(135deg,#696cff,#9c9eff);
+}
+
+/* ── per-comment reply form ── */
+.ir-reply-form {
+  display:flex; align-items:center; gap:.5rem;
+  margin-top:.4rem;
+}
+.ir-reply-form .comment-input-wrap { flex:1; }
+.ir-reply-input {
+  width:100%; border-radius:50px;
+  border:1.5px solid rgba(67,89,113,.15);
+  background:rgba(67,89,113,.04);
+  padding:.38rem 2.8rem .38rem .85rem;
+  font-size:.8rem; color:#566a7f;
+  outline:none; transition: border-color .2s ease;
+}
+.ir-reply-input:focus { border-color:#696cff; background:#fff; }
+
 /* ── Responsive ── */
 @media (max-width:576px) {
   .post-card-body  { padding:.9rem 1rem .3rem; }
   .post-card-footer{ padding:.1rem 1rem .7rem; }
   .post-card-divider { margin:0 1rem; }
   .comment-row     { padding:.5rem 1rem .8rem; }
+  .inline-reply-item { padding:.5rem 1rem; }
   .post-title      { font-size:.95rem; }
   .action-btn      { padding:.42rem .6rem; font-size:.78rem; }
 }
@@ -558,20 +647,23 @@
             Suka
           </button>
 
-          {# Comment #}
-          <a href="{% url 'course-discussion-detail' course.uuid disc.id %}"
-             class="action-btn">
+          {# Komentar – toggle inline #}
+          <button class="action-btn btn-toggle-comments {% if disc.reply_count_ > 0 %}fw-semibold{% endif %}"
+                  data-target="comments-{{ disc.id }}"
+                  type="button"
+                  id="cmt-btn-{{ disc.id }}">
             <i class="ri-chat-3-line"></i>
-            {{ disc.reply_count_ }}
+            <span id="cmt-count-{{ disc.id }}">{{ disc.reply_count_ }}</span>
             Komentar
-          </a>
+          </button>
 
-          {# Share / spacer #}
+          {# Spacer #}
           <span class="action-spacer"></span>
 
           {# Detail link #}
           <a href="{% url 'course-discussion-detail' course.uuid disc.id %}"
-             class="action-btn" style="color:#696cff;">
+             class="action-btn" style="color:#696cff;"
+             title="Buka halaman detail diskusi">
             <i class="ri-external-link-line"></i>
             <span class="d-none d-sm-inline">Detail</span>
           </a>
@@ -579,33 +671,142 @@
         </div>
       </div>
 
-      {# ── Divider ── #}
-      <div class="post-card-divider"></div>
+      {# ── Inline Comments Section (collapsible) ── #}
+      <div id="comments-{{ disc.id }}" class="inline-comments" style="display:none;">
 
-      {# ── Quick Comment Row ── #}
-      {% if fi.item_type != 'discussion' or not fi.extra.is_closed %}
-      <div class="comment-row">
-        {# User avatar #}
-        <div class="comment-avatar-init">
-          {{ request.user.get_full_name|default:request.user.username|first|upper }}
+        {# ── Daftar reply ── #}
+        <div id="replies-list-{{ disc.id }}">
+          {% for reply in disc.inline_replies_ %}
+          <div class="inline-reply-item" id="inline-reply-{{ reply.id }}">
+
+            {# Avatar #}
+            <div class="inline-reply-avatar">
+              {{ reply.created_by.get_full_name|default:reply.created_by.username|first|upper }}
+            </div>
+
+            {# Konten komentar #}
+            <div class="inline-reply-content">
+
+              {# Bubble #}
+              <div class="inline-reply-bubble">
+                <span class="inline-reply-name">
+                  {{ reply.created_by.get_full_name|default:reply.created_by.username }}
+                </span>
+                <p class="inline-reply-text">{{ reply.body }}</p>
+              </div>
+
+              {# Action bar: waktu · Suka · Balas #}
+              <div class="ir-action-bar">
+                <span class="ir-time">{{ reply.created_at|timesince }} lalu</span>
+
+                {# Like reply (AJAX) #}
+                <button class="ir-like-btn {% if reply.user_liked_ %}ir-liked{% endif %}"
+                        data-url="{% url 'discussion-reply-like' course.uuid reply.id %}"
+                        data-reply-id="{{ reply.id }}"
+                        type="button">
+                  {% if reply.user_liked_ %}Disukai{% else %}Suka{% endif %}
+                </button>
+                <span class="ir-like-count" id="reply-like-count-{{ reply.id }}">
+                  {% if reply.like_count_ > 0 %}
+                    <i class="ri-heart-fill" style="color:#ea5455;"></i> {{ reply.like_count_ }}
+                  {% endif %}
+                </span>
+
+                {# Tombol Balas #}
+                {% if fi.item_type != 'discussion' or not fi.extra.is_closed %}
+                <button class="ir-reply-btn"
+                        data-target="reply-form-{{ reply.id }}"
+                        type="button">· Balas</button>
+                {% endif %}
+              </div>
+
+              {# ── Nested children ── #}
+              {% if reply.children_ %}
+              <div class="ir-nested" id="nested-{{ reply.id }}">
+                {% for child in reply.children_ %}
+                <div class="ir-child-item" id="inline-reply-{{ child.id }}">
+                  <div class="ir-child-avatar">
+                    {{ child.created_by.get_full_name|default:child.created_by.username|first|upper }}
+                  </div>
+                  <div class="inline-reply-content">
+                    <div class="inline-reply-bubble">
+                      <span class="inline-reply-name">
+                        {{ child.created_by.get_full_name|default:child.created_by.username }}
+                      </span>
+                      <p class="inline-reply-text">{{ child.body }}</p>
+                    </div>
+                    <div class="ir-action-bar">
+                      <span class="ir-time">{{ child.created_at|timesince }} lalu</span>
+                      <button class="ir-like-btn {% if child.user_liked_ %}ir-liked{% endif %}"
+                              data-url="{% url 'discussion-reply-like' course.uuid child.id %}"
+                              data-reply-id="{{ child.id }}"
+                              type="button">
+                        {% if child.user_liked_ %}Disukai{% else %}Suka{% endif %}
+                      </button>
+                      <span class="ir-like-count" id="reply-like-count-{{ child.id }}">
+                        {% if child.like_count_ > 0 %}
+                          <i class="ri-heart-fill" style="color:#ea5455;"></i> {{ child.like_count_ }}
+                        {% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              {# ── Form Balas per komentar (hidden) ── #}
+              {% if fi.item_type != 'discussion' or not fi.extra.is_closed %}
+              <div class="ir-reply-form d-none" id="reply-form-{{ reply.id }}">
+                <div class="comment-avatar-init" style="width:26px;height:26px;font-size:.68rem;flex-shrink:0;">
+                  {{ request.user.get_full_name|default:request.user.username|first|upper }}
+                </div>
+                <form method="post"
+                      action="{% url 'course-discussion-detail' course.uuid disc.id %}"
+                      class="comment-input-wrap">
+                  {% csrf_token %}
+                  <input type="hidden" name="parent_id" value="{{ reply.id }}">
+                  <input type="hidden" name="next" value="{% url 'course-discussion-list' course.uuid %}#post-{{ disc.id }}">
+                  <input type="text" name="body" class="ir-reply-input"
+                         placeholder="Balas {{ reply.created_by.first_name|default:reply.created_by.username }}..."
+                         autocomplete="off">
+                  <button type="submit" class="comment-send-btn" title="Kirim">
+                    <i class="ri-send-plane-2-fill"></i>
+                  </button>
+                </form>
+              </div>
+              {% endif %}
+
+            </div>{# /inline-reply-content #}
+          </div>{# /inline-reply-item #}
+          {% empty %}
+          <p class="text-muted small text-center py-2 mb-0">Belum ada komentar.</p>
+          {% endfor %}
+        </div>{# /replies-list #}
+
+        {# ── Form komentar baru (top-level) ── #}
+        {% if fi.item_type != 'discussion' or not fi.extra.is_closed %}
+        <div class="comment-row" style="padding-top:.4rem;">
+          <div class="comment-avatar-init">
+            {{ request.user.get_full_name|default:request.user.username|first|upper }}
+          </div>
+          <form method="post"
+                action="{% url 'course-discussion-detail' course.uuid disc.id %}"
+                class="comment-input-wrap quick-comment-form"
+                data-disc="{{ disc.id }}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'course-discussion-list' course.uuid %}#post-{{ disc.id }}">
+            <input type="text" name="body" class="comment-input"
+                   placeholder="Tambahkan komentar..."
+                   autocomplete="off">
+            <button type="submit" class="comment-send-btn" title="Kirim">
+              <i class="ri-send-plane-2-fill"></i>
+            </button>
+          </form>
         </div>
+        {% endif %}
 
-        {# Quick comment form #}
-        <form method="post"
-              action="{% url 'course-discussion-detail' course.uuid disc.id %}"
-              class="comment-input-wrap quick-comment-form"
-              data-disc="{{ disc.id }}">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{% url 'course-discussion-list' course.uuid %}">
-          <input type="text" name="body" class="comment-input"
-                 placeholder="Tambahkan komentar..."
-                 autocomplete="off">
-          <button type="submit" class="comment-send-btn" title="Kirim">
-            <i class="ri-send-plane-2-fill"></i>
-          </button>
-        </form>
-      </div>
-      {% endif %}
+      </div>{# /inline-comments #}
       {% endif %}
 
     </div>{# /post-card #}
@@ -677,23 +878,13 @@
 document.addEventListener('DOMContentLoaded', function () {
   const csrfToken = '{{ csrf_token }}';
 
-  /* ── Delete Modal ── */
-  const deleteModal = document.getElementById('deleteDiscModal');
-  if (deleteModal) {
-    deleteModal.addEventListener('show.bs.modal', function (e) {
-      const btn = e.relatedTarget;
-      document.getElementById('deleteDiscTitle').textContent = btn.dataset.title;
-      document.getElementById('btnConfirmDeleteDisc').href   = btn.dataset.href;
-    });
-  }
-
   /* ── Like Toggle (AJAX) ── */
   document.querySelectorAll('.btn-like').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      const discId   = btn.dataset.discId;
-      const url      = btn.dataset.url;
-      const iconEl   = document.getElementById('like-icon-'  + discId);
-      const countEl  = document.getElementById('like-count-' + discId);
+      const discId  = btn.dataset.discId;
+      const url     = btn.dataset.url;
+      const iconEl  = document.getElementById('like-icon-'  + discId);
+      const countEl = document.getElementById('like-count-' + discId);
 
       fetch(url, {
         method: 'POST',
@@ -709,7 +900,6 @@ document.addEventListener('DOMContentLoaded', function () {
           btn.classList.remove('liked');
           iconEl.className = 'ri-heart-line';
         }
-        /* micro-animation */
         iconEl.style.transform = 'scale(1.4)';
         setTimeout(() => { iconEl.style.transform = 'scale(1)'; }, 200);
       })
@@ -720,6 +910,103 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ── Like icon transition ── */
   document.querySelectorAll('.btn-like i').forEach(function (el) {
     el.style.transition = 'transform .2s cubic-bezier(.34,1.56,.64,1)';
+  });
+
+  /* ── Toggle Inline Comments ── */
+  function openComments(targetId) {
+    const section = document.getElementById(targetId);
+    if (!section) return;
+    const isOpen = section.style.display !== 'none';
+    section.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+      section.style.opacity = '0';
+      section.style.transition = 'opacity .2s ease';
+      requestAnimationFrame(() => { section.style.opacity = '1'; });
+      const inp = section.querySelector('.comment-input');
+      if (inp) setTimeout(() => inp.focus(), 220);
+    }
+  }
+
+  document.querySelectorAll('.btn-toggle-comments').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openComments(btn.dataset.target);
+    });
+  });
+
+  /* ── Auto-expand berdasarkan URL hash (#post-{disc_id}) ── */
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#post-')) {
+    const discId  = hash.replace('#post-', '');
+    const section = document.getElementById('comments-' + discId);
+    if (section) {
+      section.style.display = 'block';
+      const card = document.getElementById('post-' + discId);
+      if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }
+
+  /* ── Enter to submit komentar (top-level) ── */
+  document.querySelectorAll('.quick-comment-form').forEach(function (form) {
+    const input = form.querySelector('.comment-input');
+    if (!input) return;
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (input.value.trim()) form.submit();
+      }
+    });
+  });
+
+  /* ── Like Reply (AJAX) ── */
+  document.querySelectorAll('.ir-like-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const url     = btn.dataset.url;
+      const replyId = btn.dataset.replyId;
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'Accept': 'application/json' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.liked) {
+          btn.classList.add('ir-liked');
+          btn.textContent = 'Disukai';
+        } else {
+          btn.classList.remove('ir-liked');
+          btn.textContent = 'Suka';
+        }
+        const countEl = document.getElementById('reply-like-count-' + replyId);
+        if (countEl) {
+          countEl.innerHTML = data.count > 0
+            ? '<i class="ri-heart-fill" style="color:#ea5455;"></i> ' + data.count
+            : '';
+        }
+      })
+      .catch(console.error);
+    });
+  });
+
+  /* ── Toggle form balas per-komentar ── */
+  document.querySelectorAll('.ir-reply-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const form = document.getElementById(btn.dataset.target);
+      if (!form) return;
+      form.classList.toggle('d-none');
+      if (!form.classList.contains('d-none')) {
+        const inp = form.querySelector('input[name="body"]');
+        if (inp) inp.focus();
+      }
+    });
+  });
+
+  /* ── Enter to submit form balas per-komentar ── */
+  document.querySelectorAll('.ir-reply-input').forEach(function (inp) {
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (inp.value.trim()) inp.closest('form').submit();
+      }
+    });
   });
 
   /* ── Pin Toggle ── */
@@ -745,17 +1032,6 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(r => r.json())
       .then(() => location.reload())
       .catch(console.error);
-    });
-  });
-
-  /* ── Quick Comment: focus effect ── */
-  document.querySelectorAll('.quick-comment-form').forEach(function (form) {
-    const input = form.querySelector('.comment-input');
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (input.value.trim()) form.submit();
-      }
     });
   });
 

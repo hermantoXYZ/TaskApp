@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views import View
 from django.utils import timezone
-
+from collections import defaultdict
 from web_project import TemplateLayout
 from web_project.template_helpers.theme import TemplateHelper
 
@@ -455,6 +455,11 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
     # ── Sort newest first ────────────────────────────────────────────
     feed_items.sort(key=lambda x: x['created_at'], reverse=True)
 
+    feed_items = [
+        fi for fi in feed_items
+        if fi['item_type'] == 'discussion' or fi['disc'] is not None
+    ]
+    
     # Filter "Diskusi": hanya baris yang punya CourseDiscussion di DB / feed.
     if filter_type == 'discussion':
         feed_items = [fi for fi in feed_items if fi['disc'] is not None]
@@ -473,7 +478,78 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
             d.like_count_  = d.like_count()
             d.reply_count_ = d.reply_count()
 
+    # ── Prefetch top replies untuk inline display ─────────────────────
+
+    inline_replies_qs = (
+        CourseDiscussionReply.objects
+        .filter(discussion_id__in=all_disc_ids, parent__isnull=True)
+        .select_related('created_by')
+        .order_by('created_at')
+    )
+    replies_map = defaultdict(list)
+    for reply in inline_replies_qs:
+        replies_map[reply.discussion_id].append(reply)
+
+    for fi in feed_items:
+        d = fi['disc']
+        if d:
+            d.inline_replies_ = replies_map.get(d.id, [])
+
+    # ── Like count + user_liked untuk top-level replies ───────────────
+    all_top_reply_ids = [
+        r.id
+        for fi in feed_items
+        if fi['disc'] and hasattr(fi['disc'], 'inline_replies_')
+        for r in fi['disc'].inline_replies_
+    ]
+    if all_top_reply_ids:
+        user_liked_reply_ids = set(
+            CourseDiscussionLike.objects
+            .filter(user=user, reply_id__in=all_top_reply_ids)
+            .values_list('reply_id', flat=True)
+        )
+
+        # Prefetch children (nested replies)
+        children_qs = (
+            CourseDiscussionReply.objects
+            .filter(parent_id__in=all_top_reply_ids)
+            .select_related('created_by')
+            .order_by('created_at')
+        )
+        children_map = defaultdict(list)
+        for child in children_qs:
+            children_map[child.parent_id].append(child)
+
+        # Like data untuk children
+        all_child_ids = [c.id for clist in children_map.values() for c in clist]
+        user_liked_child_ids = set(
+            CourseDiscussionLike.objects
+            .filter(user=user, reply_id__in=all_child_ids)
+            .values_list('reply_id', flat=True)
+        ) if all_child_ids else set()
+
+        for fi in feed_items:
+            d = fi['disc']
+            if d and hasattr(d, 'inline_replies_'):
+                for reply in d.inline_replies_:
+                    reply.user_liked_  = reply.id in user_liked_reply_ids
+                    reply.like_count_  = reply.like_count()
+                    reply.children_    = children_map.get(reply.id, [])
+                    for child in reply.children_:
+                        child.user_liked_ = child.id in user_liked_child_ids
+                        child.like_count_ = child.like_count()
+    else:
+        for fi in feed_items:
+            d = fi['disc']
+            if d and hasattr(d, 'inline_replies_'):
+                for reply in d.inline_replies_:
+                    reply.user_liked_ = False
+                    reply.like_count_ = 0
+                    reply.children_   = []
+
     return feed_items
+
+
 
 
 # ─────────────────────────────────────────────

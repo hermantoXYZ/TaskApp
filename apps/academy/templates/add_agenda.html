@@ -215,17 +215,7 @@
             <label for="{{ form.location.id_for_label }}">Lokasi (Ruangan)</label>
           </div>
 
-          {# --- Learning Outcome --- #}
-          <div class="form-floating form-floating-outline mb-3">
-            <textarea
-              name="{{ form.learning_outcome.html_name }}"
-              id="{{ form.learning_outcome.id_for_label }}"
-              class="form-control" placeholder="Capaian pembelajaran"
-              style="height:70px;">{{ form.learning_outcome.value|default_if_none:'' }}</textarea>
-            <label for="{{ form.learning_outcome.id_for_label }}">Capaian Pembelajaran</label>
-          </div>
-
-          {# --- Online Toggle --- #}
+            {# --- Online Toggle --- #}
           <div class="form-check form-switch mb-3">
             {% if form.is_online.value %}
               <input type="checkbox" name="{{ form.is_online.html_name }}" class="form-check-input" id="{{ form.is_online.id_for_label }}" checked onchange="toggleMeetingUrl()">
@@ -249,6 +239,18 @@
             {% endif %}
           </div>
 
+          
+          {# --- Learning Outcome --- #}
+          <div class="form-floating form-floating-outline mb-3">
+            <textarea
+              name="{{ form.learning_outcome.html_name }}"
+              id="{{ form.learning_outcome.id_for_label }}"
+              class="form-control" placeholder="Capaian pembelajaran"
+              style="height:70px;">{{ form.learning_outcome.value|default_if_none:'' }}</textarea>
+            <label for="{{ form.learning_outcome.id_for_label }}">Capaian Pembelajaran</label>
+          </div>
+
+        
           <div class="form-check mb-3">
             {% if form.allow_discussion.value %}
               <input type="checkbox" name="{{ form.allow_discussion.html_name }}" class="form-check-input" id="{{ form.allow_discussion.id_for_label }}" checked>
@@ -256,7 +258,7 @@
               <input type="checkbox" name="{{ form.allow_discussion.html_name }}" class="form-check-input" id="{{ form.allow_discussion.id_for_label }}">
             {% endif %}
             <label class="form-check-label" for="{{ form.allow_discussion.id_for_label }}">
-              <strong>Tampilkan di beranda diskusi</strong> — buat thread komentar &amp; suka untuk sesi ini (opsional)
+              Tampilkan di beranda diskusi..
             </label>
             {% if form.allow_discussion.errors %}
               <div class="text-danger small">{% for e in form.allow_discussion.errors %}{{ e }}{% endfor %}</div>
@@ -315,7 +317,7 @@
 
             {# Nomor sesi / tanggal kolom kiri #}
             <div class="text-center flex-shrink-0" style="min-width:48px;">
-              <div class="badge bg-label-{% if agenda.is_done %}success{% else %}primary{% endif %} rounded-3 px-2 py-1 mb-1" style="font-size:0.65rem;">
+              <div class="badge bg-label-{% if agenda.is_done %}success{% else %}danger{% endif %} rounded-3 px-2 py-1 mb-1" style="font-size:0.65rem;">
                 {{ agenda.agenda_type }}
               </div>
               <div class="fw-bold" style="font-size:1.05rem; line-height:1;">{{ agenda.agenda_date|date:"d" }}</div>
