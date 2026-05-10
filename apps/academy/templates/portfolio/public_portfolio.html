@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portofolio {{ owner.first_name }}</title>
+  <meta name="description" content="Halaman portofolio {{ owner.first_name }} — mahasiswa {{ usermhs.prodi.nama_prodi|default:'' }}">
+  {% load static %}
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <!-- Remix Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand: #2ecc71; /* Warna hijau aksen */
+      --text-main: #222222;
+      --text-muted: #666666;
+      --bg-main: #ffffff;
+      --border-color: #e0e0e0;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .text-brand { color: var(--brand) !important; }
+    .bg-brand { background-color: var(--brand) !important; }
+
+    /* ── Utilities & Common ── */
+    .section-subtitle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brand);
+      font-size: 0.95rem;
+      font-weight: 500;
+      font-style: italic;
+      margin-bottom: 1.5rem;
+    }
+    .section-subtitle::before, .section-subtitle::after {
+      content: '';
+      display: inline-block;
+      width: 40px;
+      height: 1px;
+      background-color: var(--brand);
+      margin: 0 15px;
+    }
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 4rem;
+    }
+
+    /* ── Sticky Nav / Top Bar ── */
+    .top-bar {
+      padding: 1rem 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .top-bar a {
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .top-bar a:hover { color: var(--brand); }
+
+    /* ── Portfolio Items ── */
+    .porto-img-wrapper {
+      width: 100%;
+      height: 380px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      background-color: #f5f5f5;
+    }
+    .porto-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .porto-item:hover .porto-img {
+      transform: scale(1.03);
+    }
+    .porto-cat {
+      color: var(--brand);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.4rem;
+    }
+    .porto-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-main);
+    }
+    .btn-arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      background-color: var(--brand);
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-arrow:hover {
+      background-color: #27ae60;
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    /* ── Services Section ── */
+    .services-section {
+      margin-top: 8rem;
+    }
+    .service-row {
+      border-top: 1px solid var(--border-color);
+      padding: 2.5rem 0;
+      display: flex;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .service-row:hover {
+      background-color: #fcfcfc;
+    }
+    .service-num {
+      font-weight: 500;
+      font-size: 1.1rem;
+      width: 8%;
+    }
+    .service-title-col {
+      width: 32%;
+    }
+    .service-title-col .porto-cat { margin-bottom: 0.2rem; color: var(--text-main); font-weight: 700;}
+    .service-title {
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .service-desc {
+      width: 50%;
+      padding-right: 3rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .service-btn {
+      width: 10%;
+      text-align: right;
+    }
+
+    /* ── Awards Section ── */
+    .awards-section {
+      margin-top: 8rem;
+      margin-bottom: 5rem;
+    }
+    .award-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 2rem;
+    }
+    .award-header h2 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 700;
+    }
+    .view-all {
+      color: var(--brand);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    .view-all:hover { text-decoration: underline; }
+    
+    .award-row {
+      border-top: 1px solid var(--border-color);
+      padding: 1.8rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .award-name {
+      width: 40%;
+      font-size: 1.15rem;
+      font-weight: 500;
+    }
+    .award-cat {
+      width: 40%;
+      color: var(--text-main);
+      font-size: 1.05rem;
+    }
+    .award-year {
+      width: 20%;
+      text-align: right;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: linear-gradient(180deg, #ffffff 0%, #f4f4f4 100%);
+      padding: 2.5rem 0;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+    .footer a {
+      color: var(--text-main);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer a:hover { color: var(--brand); }
+
+    /* ── Hero Personal Info ── */
+    .hero-asterisk {
+      color: var(--brand);
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      line-height: 1;
+    }
+    .hero-intro-text {
+      font-size: 1.8rem;
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--text-main);
+      max-width: 950px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-nav-pills {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 4rem;
+    }
+    .hero-pill {
+      padding: 0.6rem 1.8rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      background-color: #f4f4f4;
+      color: var(--text-main);
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .hero-pill.active {
+      background-color: var(--brand);
+      color: #fff;
+    }
+    .hero-pill:hover:not(.active) {
+      background-color: #e8e8e8;
+    }
+
+    .personal-card {
+      background-color: #f8f8f8;
+      border-radius: 24px;
+      padding: 4rem;
+      display: flex;
+      align-items: center;
+      gap: 4rem;
+    }
+    .personal-avatar-wrapper {
+      flex: 0 0 35%;
+      text-align: center;
+    }
+    .personal-avatar {
+      width: 280px;
+      height: 280px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 8px solid #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    .personal-info-content {
+      flex: 1;
+    }
+    .personal-info-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .personal-info-desc {
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
+      font-size: 0.95rem;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .info-box {
+      background-color: #fff;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .info-box-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .info-box-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      word-break: break-all;
+    }
+    .social-links {
+      display: flex;
+      gap: 1rem;
+    }
+    .social-links a {
+      color: var(--text-main);
+      font-size: 1.3rem;
+      transition: color 0.2s;
+      text-decoration: none;
+    }
+    .social-links a:hover {
+      color: var(--brand);
+    }
+
+    /* ── Marquee Banner ── */
+    .marquee-wrapper {
+      background-color: var(--brand);
+      color: #fff;
+      padding: 1.2rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100vw;
+      margin-left: calc(-50vw + 50%);
+    }
+    .marquee-content {
+      display: inline-block;
+      animation: marquee 20s linear infinite;
+      font-weight: 600;
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+    }
+    .marquee-content span {
+      margin: 0 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .marquee-content i {
+      font-size: 1.5rem;
+    }
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+      .personal-card { flex-direction: column; padding: 2.5rem; gap: 2rem; }
+      .hero-intro-text { font-size: 1.5rem; }
+      .service-row { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 2rem 0;}
+      .service-num, .service-title-col, .service-desc, .service-btn { width: 100%; padding-right: 0;}
+      .service-btn { text-align: left; }
+      
+      .award-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 1.5rem 0;}
+      .award-name, .award-cat, .award-year { width: 100%; text-align: left; }
+    }
+    @media (max-width: 576px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .personal-avatar { width: 200px; height: 200px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<nav class="top-bar">
+  <div class="container d-flex justify-content-between align-items-center">
+    <a href="{% url 'app-academy-dashboard' %}">
+      <i class="ri-arrow-left-line me-1"></i> Dashboard
+    </a>
+    {% if is_own %}
+    <a href="{% url 'portfolio-list' %}" class="text-brand">
+      <i class="ri-settings-3-line me-1"></i> Kelola Portofolio
+    </a>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="container pb-5">
+  
+  <!-- Hero / Intro Section -->
+  <div class="text-center pt-5 mt-2">
+    <div class="hero-asterisk"><i class="ri-asterisk"></i></div>
+    <div class="hero-intro-text">
+      Halo, saya <b>{{ owner.first_name }}</b>, seorang Mahasiswa <b>{{ usermhs.prodi.nama_prodi|default:"" }}</b>. Pengembangan Karya portofolio profesional selama menjadi Mahasiswa di <b>{{ usermhs.prodi.nama_prodi|default:"" }} Universitas Negeri Makassar</b>.
+    </div>
+    <div class="hero-nav-pills">
+      <a href="#" class="hero-pill active">ABOUT ME</a>
+      <a href="#" class="hero-pill">EXPERIENCE</a>
+      <a href="#" class="hero-pill">EDUCATION</a>
+      <a href="#" class="hero-pill">SKILLS</a>
+    </div>
+  </div>
+
+  <!-- Personal Info Card -->
+  <div class="personal-card mt-3 mb-5">
+    <div class="personal-avatar-wrapper">
+      {% if usermhs and usermhs.photo %}
+        <img src="{{ usermhs.photo.url }}" alt="Avatar" class="personal-avatar">
+      {% else %}
+        <img src="{% static 'img/avatars/1.png' %}" alt="Avatar" class="personal-avatar" style="background: #e0e0e0;">
+      {% endif %}
+    </div>
+    <div class="personal-info-content">
+      <h2 class="personal-info-title">Personal Info</h2>
+      <p class="personal-info-desc">
+        Saya adalah individu yang bersemangat untuk terus belajar dan mengembangkan kemampuan. Melalui portofolio ini, saya ingin membagikan hasil karya, proyek, dan pengalaman terbaik saya selama masa studi.
+      </p>
+      
+      <div class="info-grid">
+        <div class="info-box">
+          <div class="info-box-label">Email</div>
+          <div class="info-box-value">{{ owner.email|default:"email@example.com" }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Phone</div>
+          <div class="info-box-value">{{ usermhs.telp|default:"-" }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Address</div>
+          <div class="info-box-value">{{ usermhs.alamat|default:"-" }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Follow</div>
+          <div class="social-links mt-1">
+            <a href="#"><i class="ri-facebook-circle-fill"></i></a>
+            <a href="#"><i class="ri-twitter-fill"></i></a>
+            <a href="#"><i class="ri-instagram-line"></i></a>
+            <a href="#"><i class="ri-linkedin-fill"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marquee Banner -->
+  <div class="marquee-wrapper mb-5">
+    <div class="marquee-content">
+      <span>{{ total_all }}+ Project Completed <i class="ri-asterisk"></i></span>
+      <span>Skill Keahlian <i class="ri-asterisk"></i></span>
+      <span>Pengalaman Organisasi <i class="ri-asterisk"></i></span>
+      <span>Kreatif & Inovatif <i class="ri-asterisk"></i></span>
+      <!-- Loop -->
+      <span>{{ total_all }}+ Project Completed <i class="ri-asterisk"></i></span>
+      <span>Skill Keahlian <i class="ri-asterisk"></i></span>
+      <span>Pengalaman Organisasi <i class="ri-asterisk"></i></span>
+      <span>Kreatif & Inovatif <i class="ri-asterisk"></i></span>
+    </div>
+  </div>
+
+  <!-- Portfolio Header -->
+  <div class="text-center pt-5 mt-4">
+    <div class="section-subtitle">Complete Project</div>
+    <h1 class="section-title">Look At My Portfolio And Give Me<br>Your Feedback</h1>
+  </div>
+
+  <!-- Portfolio Grid -->
+  {% if projects %}
+  <div class="row g-5">
+    {% for porto in projects %}
+    <div class="col-md-6">
+      <div class="porto-item">
+        <div class="porto-img-wrapper">
+          {% if porto.thumbnail %}
+          <img src="{{ porto.thumbnail.url }}" alt="{{ porto.title }}" class="porto-img">
+          {% else %}
+          <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-muted">
+            <i class="ri-image-line" style="font-size: 3rem;"></i>
+          </div>
+          {% endif %}
+        </div>
+        <div class="d-flex justify-content-between align-items-start mt-4">
+          <div class="pe-3">
+            <div class="porto-cat">
+              {% if porto.category_portfolio %}{{ porto.category_portfolio.name }}{% else %}{{ porto.get_activity_type_display }}{% endif %}
+            </div>
+            <h4 class="porto-title">
+              <a href="{% url 'public-portfolio-detail' owner.username porto.slug %}" class="text-decoration-none" style="color: inherit;">{{ porto.title }}</a>
+            </h4>
+          </div>
+          <a href="{% url 'public-portfolio-detail' owner.username porto.slug %}" 
+             class="btn-arrow flex-shrink-0">
+            <i class="ri-arrow-right-up-line fs-5"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="ri-folder-open-line d-block mb-3" style="font-size: 3rem; color: #ccc;"></i>
+    <h5>Belum ada portofolio publik</h5>
+    <p class="small">Portofolio yang dipublikasikan akan muncul di sini.</p>
+  </div>
+  {% endif %}
+
+  <!-- Services Section -->
+  <div class="services-section">
+    <div class="text-center">
+      <div class="section-subtitle">Activities & Experiences</div>
+      <h1 class="section-title">My Special Experience For Your Business<br>Development</h1>
+    </div>
+
+    <div class="services-list mt-5">
+      {% for svc in services %}
+      <div class="service-row {% if forloop.last %}border-bottom{% endif %}">
+        <div class="service-num">{{ forloop.counter|stringformat:"02d" }}</div>
+        <div class="service-title-col">
+          <div class="porto-cat text-dark">{{ svc.get_activity_type_display }}</div>
+          <h3 class="service-title">
+            <a href="{% url 'public-portfolio-detail' owner.username svc.slug %}" class="text-decoration-none" style="color: inherit;">{{ svc.title }}</a>
+          </h3>
+        </div>
+        <div class="service-desc">
+          {{ svc.description|default:"-" }}
+        </div>
+        <div class="service-btn">
+          <a href="{% url 'public-portfolio-detail' owner.username svc.slug %}" class="btn-arrow"><i class="ri-arrow-right-up-line fs-5"></i></a>
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-center py-5 text-muted border-top border-bottom">
+        <i class="ri-archive-line d-block mb-3" style="font-size: 3rem; color: #ccc;"></i>
+        <h5>Belum ada aktivitas & pengalaman</h5>
+        <p class="small mb-0">Pengalaman organisasi, magang, atau aktivitas lainnya akan muncul di sini.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Awards Section -->
+  <div class="awards-section">
+    <div class="award-header">
+      <h2>Awards & Certifications</h2>
+    </div>
+
+    <div class="award-list">
+      {% for award in awards %}
+      <div class="award-row {% if forloop.last %}border-bottom{% endif %}">
+        <div class="award-name">
+          <a href="{% url 'public-portfolio-detail' owner.username award.slug %}" class="text-decoration-none" style="color: inherit;">{{ award.title }}</a>
+        </div>
+        <div class="award-cat">{{ award.get_activity_type_display }}</div>
+        <div class="award-year d-flex align-items-center justify-content-end gap-3">
+          <span>{{ award.created_at|date:"Y" }}</span>
+          {% if award.project_url %}
+          <a href="{{ award.project_url }}" target="_blank" class="text-brand fs-5"><i class="ri-external-link-line"></i></a>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-center py-5 text-muted border-top border-bottom">
+        <i class="ri-award-line d-block mb-3" style="font-size: 3rem; color: #ccc;"></i>
+        <h5>Belum ada penghargaan</h5>
+        <p class="small mb-0">Sertifikat dan pencapaian kompetisi akan muncul di sini.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
+    <div>
+      Copyright &copy; 2023 <span class="text-brand">{{ owner.get_full_name|default:owner.username }}</span>. All rights reserved.
+    </div>
+    <div class="d-flex gap-4 mt-3 mt-md-0">
+      <a href="#">Terms & Condition</a>
+      <a href="#">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

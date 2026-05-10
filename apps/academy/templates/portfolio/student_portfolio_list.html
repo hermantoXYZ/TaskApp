@@ -1,0 +1,149 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}Portofolio Saya{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+<div class="mb-4">
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+<!-- List Portofolio -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+      <h5 class="card-title mb-0">Daftar Portofolio</h5>
+      <small class="text-muted">Total {{ portfolios.count }} portofolio</small>
+    </div>
+    <a href="{% url 'portfolio-add' %}" class="btn btn-primary btn-sm">
+      <i class="ri-add-line me-1"></i> Tambah Baru
+    </a>
+  </div>
+
+  <div class="card-body p-0">
+    {% if portfolios %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4" style="width:40%">Judul / Deskripsi</th>
+            <th>Tipe Aktivitas</th>
+            <th>Kategori</th>
+            <th>Status</th>
+            <th>Verified</th>
+            <th>Tanggal</th>
+            <th class="text-center pe-4">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for porto in portfolios %}
+          <tr>
+            <td class="ps-4">
+              <div class="d-flex align-items-center gap-3">
+                {% if porto.thumbnail %}
+                <img src="{{ porto.thumbnail.url }}" alt="{{ porto.title }}"
+                     class="rounded-2 object-fit-cover flex-shrink-0"
+                     style="width:52px; height:52px;">
+                {% else %}
+                <div class="avatar flex-shrink-0">
+                  <span class="avatar-initial rounded-2 bg-label-secondary">
+                    <i class="ri-folder-image-line ri-20px"></i>
+                  </span>
+                </div>
+                {% endif %}
+                <div>
+                  <span class="fw-semibold d-block text-truncate" style="max-width:260px;" title="{{ porto.title }}">
+                    {{ porto.title }}
+                  </span>
+                  {% if porto.is_featured %}
+                  <span class="badge bg-label-warning badge-sm me-1">
+                    <i class="ri-star-line ri-12px"></i> Unggulan
+                  </span>
+                  {% endif %}
+                  {% if porto.project_url %}
+                  <a href="{{ porto.project_url }}" target="_blank" rel="noopener noreferrer"
+                     class="text-muted small" title="{{ porto.project_url }}">
+                    <i class="ri-external-link-line ri-12px"></i> Link
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-label-info">
+                {{ porto.get_activity_type_display }}
+              </span>
+            </td>
+            <td>
+              <span class="text-muted small">{{ porto.category_portfolio.name|default:"—" }}</span>
+            </td>
+            <td>
+              {% if porto.status == 'published' %}
+              <span class="badge bg-label-success">Published</span>
+              {% elif porto.status == 'draft' %}
+              <span class="badge bg-label-secondary">Draft</span>
+              {% else %}
+              <span class="badge bg-label-warning">Archived</span>
+              {% endif %}
+            <td>
+              {% if porto.verification_status == 'verified' %}
+                <span class="badge text-success"><i class="ri-shield-check-line me-1"></i>Terverifikasi</span>
+              {% elif porto.verification_status == 'rejected' %}
+                <span class="badge text-warning"><i class="ri-close-circle-line me-1"></i>Ditolak</span>
+              {% else %}
+                <span class="badge text-dark"><i class="ri-time-line me-1"></i>Pending</span>
+              {% endif %}
+            </td>
+            <td>
+              <small class="text-muted">{{ porto.created_at|date:"d M Y" }}</small>
+            </td>
+            <td class="text-center pe-4">
+              <div class="d-flex justify-content-center gap-2">
+                <a href="{% url 'portfolio-edit' porto.id %}"
+                   class="btn btn-sm btn-icon btn-outline-primary"
+                   title="Edit">
+                  <i class="ri-pencil-line ri-16px"></i>
+                </a>
+                <form method="post" action="{% url 'portfolio-delete' porto.id %}"
+                      onsubmit="return confirm('Yakin ingin menghapus portofolio ini?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Hapus">
+                    <i class="ri-delete-bin-line ri-16px"></i>
+                  </button>
+                </form>
+                  <a href="{% url 'public-portfolio' porto.user.username %}"
+                 target="_blank"
+                 class="btn btn-sm btn-icon btn-outline-primary"
+                 title="Lihat Halaman Publik">
+                <i class="ri-external-link-line ri-16px"></i>
+              </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 my-3">
+      <div class="avatar avatar-xl bg-label-secondary rounded-circle mx-auto mb-3">
+        <i class="ri-folder-user-line ri-40px"></i>
+      </div>
+      <h5 class="mb-1">Belum ada portofolio</h5>
+      <p class="text-muted mb-3">Mulai dokumentasikan karya dan pencapaian Anda.</p>
+      <a href="{% url 'portfolio-add' %}" class="btn btn-primary btn-sm px-4">
+        <i class="ri-add-line me-1"></i> Tambah Portofolio Pertama
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

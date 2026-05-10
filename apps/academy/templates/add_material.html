@@ -102,8 +102,8 @@
   {% endif %}
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Tambah Materi Pembelajaran</h5>
-         <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+        <h5 class="mb-0">{% if is_edit %}Edit{% else %}Tambah{% endif %} Materi Pembelajaran</h5>
+         <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary btn-sm">
             <i class="ri-arrow-go-back-line me-1"></i> Kembali
          </a> 
       </div>
@@ -150,7 +150,7 @@
             <hr class="mt-0" />
           </div>
 
-          <div class="col-md-12">
+          <!-- <div class="col-md-12">
             <div class="form-floating form-floating-outline">
               {{ form.material_type }}
               <label for="{{ form.material_type.id_for_label }}">Tipe Materi</label>
@@ -171,7 +171,7 @@
               <label for="{{ form.file_attachment.id_for_label }}">Upload File</label>
             </div>
             <small class="text-muted">PDF, DOCX, PPTX (Max 10MB)</small>
-          </div>
+          </div> -->
 
           <div class="col-md-12">
             <label class="form-label mb-2">Deskripsi / Teks Bacaan</label>
@@ -181,13 +181,6 @@
           <div class="col-12">
             <h6 class="mt-2">3. Pengaturan Tambahan</h6>
             <hr class="mt-0" />
-          </div>
-
-          <div class="col-md-6">
-            <div class="form-floating form-floating-outline">
-              {{ form.duration_seconds }}
-              <label for="{{ form.duration_seconds.id_for_label }}">Estimasi Durasi (Detik)</label>
-            </div>
           </div>
 
           <div class="col-md-6 d-flex align-items-center">
@@ -204,9 +197,18 @@
             </div>
           </div>
 
-          <div class="col-12 mt-4 d-flex justify-content-end">
-            <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary me-3">Batal</a>
-            <button type="submit" class="btn btn-primary">Simpan Materi</button>
+          <div class="col-12 mt-4 d-flex justify-content-between align-items-center">
+            <div class="text-muted small">
+              {% if is_edit and material.created_by %}
+                <i class="ri-user-line me-1"></i>
+                Dibuat oleh: <strong>{{ material.created_by.nip.get_full_name|default:material.created_by.nip.username }}</strong>
+                <span class="text-muted ms-2">· {{ material.created_at|date:"d M Y, H:i" }}</span>
+              {% endif %}
+            </div>
+            <div>
+              <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary me-3">Batal</a>
+              <button type="submit" class="btn btn-primary">{% if is_edit %}Perbarui{% else %}Simpan{% endif %} Materi</button>
+            </div>
           </div>
 
         </form>
@@ -217,26 +219,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Kita gunakan jQuery bawaan template untuk event listener select2
-    const typeSelect = $('#id_material_type'); 
-    
-    function toggleFields() {
-        const val = typeSelect.val();
-        // Reset display
-        $('#field-video-container, #field-file-container').hide();
-
-        if (val === 'video') {
-            $('#field-video-container').fadeIn();
-        } else if (val === 'reading' || val === 'assignment') {
-            $('#field-file-container').fadeIn();
-        }
+    // Select2 init (untuk dropdown agenda)
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('.select2').select2();
     }
-
-    // Event Listener khusus Select2 (karena Select2 mengubah DOM standar)
-    typeSelect.on('select2:select change', toggleFields);
-    
-    // Run on load
-    toggleFields();
 });
 </script>
 {% endblock %}

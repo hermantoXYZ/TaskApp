@@ -1,0 +1,141 @@
+{% extends layout_path %}
+{% load static %}
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<style>
+  .grade-section-title {
+    font-size: .8rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #a5a3ae; margin-bottom: 1rem; margin-top: 2rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .grade-section-title::after {
+    content: ''; flex: 1; height: 1px; background: rgba(0,0,0,.07);
+  }
+  .grade-row:hover { background: rgba(115,103,240,.04); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h4 class="fw-bold mb-1"><span class="text-muted fw-light">Course /</span> Tabel Nilai</h4>
+      <p class="text-muted mb-0 small"><i class="ri-book-read-line me-1"></i> {{ course.name }}</p>
+    </div>
+    <a href="{% url 'course-player' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+      <i class="ri-arrow-left-line me-1"></i> Kembali ke Kelas
+    </a>
+  </div>
+
+  <div class="grade-section-title"><i class="ri-task-line"></i> Nilai Tugas & Latihan</div>
+  <div class="card shadow-none border" style="border-radius:12px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th class="ps-4">Judul Tugas</th>
+            <th>Tenggat Waktu</th>
+            <th>Waktu Kumpul</th>
+            <th class="text-center">Status</th>
+            <th class="text-center pe-4">Nilai Akhir</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in assignment_data %}
+          <tr class="grade-row">
+            <td class="ps-4 fw-semibold text-heading" style="font-size:.9rem;">
+              {{ task.title }}
+            </td>
+            <td class="text-muted small">
+              {{ task.due_date|date:"d M Y, H:i" }}
+            </td>
+            <td class="text-muted small">
+              {% if task.submitted_at %}
+                {{ task.submitted_at|date:"d M Y, H:i" }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if task.submitted_at %}
+                <span class="badge bg-label-success rounded-pill">Terkumpul</span>
+              {% else %}
+                <span class="badge bg-label-warning rounded-pill">Belum Mengumpulkan</span>
+              {% endif %}
+            </td>
+            <td class="text-center pe-4">
+              {% if task.score is not None %}
+                <span class="fw-bold text-success fs-5">{{ task.score|floatformat:0 }}</span>
+              {% else %}
+                <span class="text-muted fst-italic small">Belum Dinilai</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-4 text-muted">Belum ada tugas pada mata kuliah ini.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grade-section-title"><i class="ri-survey-line"></i> Nilai Ujian & Evaluasi (Kuis)</div>
+  <div class="card shadow-none border" style="border-radius:12px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th class="ps-4">Judul Ujian</th>
+            <th>Durasi Waktu</th>
+            <th>Waktu Penyelesaian</th>
+            <th class="text-center">Status</th>
+            <th class="text-center pe-4">Nilai Akhir</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for quiz in quiz_data %}
+          <tr class="grade-row">
+            <td class="ps-4 fw-semibold text-heading" style="font-size:.9rem;">
+              {{ quiz.title }}
+            </td>
+            <td class="text-muted small">
+              {{ quiz.duration }} Menit
+            </td>
+            <td class="text-muted small">
+              {% if quiz.date_taken %}
+                {{ quiz.date_taken|date:"d M Y, H:i" }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if quiz.date_taken %}
+                <span class="badge bg-label-success rounded-pill">Selesai</span>
+              {% else %}
+                <span class="badge bg-label-secondary rounded-pill">Belum Dikerjakan</span>
+              {% endif %}
+            </td>
+            <td class="text-center pe-4">
+              {% if quiz.score is not None %}
+                <span class="fw-bold text-success fs-5">{{ quiz.score|floatformat:0 }}</span>
+              {% else %}
+                <span class="text-muted fst-italic small">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-4 text-muted">Belum ada ujian/kuis pada mata kuliah ini.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,29 +1,44 @@
 from django.urls import path
-from .views import AcademyView, AcademyDashboardView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, DeleteCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView
+from .views import AcademyView, AcademyDashboardView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView, MediaLibraryListView, MediaLibraryUploadView, MediaLibraryDeleteView, MediaLibraryAttachView, DeleteAgendaMediaItemView, ListDosenCourse
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
-from .views_prodi_set import UserListView, UserListJsonView
-from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView, CourseLeaderboardView
+from .views_prodi_set import UserListView, reset_password, LecturerPerformanceView, LecturerPerformanceDetailView, ClassReportView
+from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView, CourseLeaderboardView, StudentCourseGradesView
 from .views_export_data import CourseRecapitulationView
-from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView, CalendarEventListCreateView, CalendarEventDetailView
+from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView, CalendarEventListCreateView, CalendarEventDetailView, StudentPortfolioListView, StudentPortfolioAddView, StudentPortfolioEditView, StudentPortfolioDeleteView, AdminPortfolioListView, PortfolioVerifyView, PublicPortfolioView, DosenPortfolioListView, PublicPortfolioDetailView, AdminPortfolioDeleteView, KanbanBoardListCreateView, KanbanBoardDetailView, KanbanTaskListCreateView, KanbanTaskDetailView, KanbanReorderView, KanbanUserSearchView
 from .views_dosen import DosenProfileView, AddBookView, ManageCategoryView, DeleteBookView, DeleteCategoryView, ListBookView, EditBookView
 from .views_discussion import (
     CourseDiscussionListView, CourseDiscussionDetailView, CourseDiscussionTogglePinView, CourseDiscussionToggleCloseView,
+    CourseDiscussionDeleteView,
     DiscussionLikeToggleView, ReplyLikeToggleView, DiscussionReplyDeleteView,
 )
+from .views_documentation import DocumentationListView, DocumentationDetailView
 from django.contrib.auth.views import LogoutView
+from .views_import import (
+    SetupSemesterView,
+    ImportCoursesView,
+    ImportCoachesView,
+    ImportParticipantsView,
+    DownloadTemplateView,
+)
 
 urlpatterns = [
+    # === SETUP AWAL SEMESTER (Import Excel) ===
+    path('setup/semester/', SetupSemesterView.as_view(), name='setup-semester'),
+    path('import/courses/', ImportCoursesView.as_view(), name='import-courses'),
+    path('import/coaches/', ImportCoachesView.as_view(), name='import-coaches'),
+    path('import/participants/', ImportParticipantsView.as_view(), name='import-participants'),
+    path('import/template/<str:tipe>/', DownloadTemplateView.as_view(),   name='download-template'),
+
     path('tambah/academy/course/', AddCourse.as_view(), name='tambah-academy-course'),
     path('views/academy/course/<uuid:course_uuid>/', ViewsAllCourse.as_view(), name='edit-all-academy-course'),
     path('edit/academy/course/<uuid:course_uuid>/', EditCourse.as_view(), name='edit-academy-course'),
     path('list/academy/course/', ListCourse.as_view(), name='list-academy-course'),
     path('course/<uuid:course_uuid>/participant/', views.AddCourseParticipant.as_view(), name='add-course-participant'),
-    path('course/<uuid:course_uuid>/participant/<int:participant_id>/delete/', views.DeleteCourseParticipant.as_view(), name='delete-participant'),
     path('course/<uuid:course_uuid>/agenda/', AddCourseAgenda.as_view(), name='add-course-agenda'),
     path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/edit/', views.EditCourseAgenda.as_view(), name='edit-course-agenda'),
-    path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/delete/', DeleteCourseAgenda.as_view(), name='delete-agenda'),
+    # path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/delete/', DeleteCourseAgenda.as_view(), name='delete-agenda'),
     path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/attendance/', views.CourseAttendanceView.as_view(), name='course-attendance'),
     path('course/<uuid:course_uuid>/curriculum/', ManageCurriculumView.as_view(), name='manage-curriculum'),
     path('course/<uuid:course_uuid>/curriculum/material/', AddCourseMaterialView.as_view(), name='add-course-material'),
@@ -41,8 +56,9 @@ urlpatterns = [
     path('course/delete/<uuid:pk>/', DeleteProgramStudiCourse.as_view(), name='delete-program-studi-course'),
     path('list-course-period', AddCoursePeriod.as_view(), name='list-course-period'),
     path('course/period/edit/<uuid:pk>/', EditCoursePeriod.as_view(), name='edit-course-period'),
-    path('course/period/delete/<uuid:pk>/', DeleteCoursePeriod.as_view(), name='delete-course-period'),
     path('course/<uuid:course_uuid>/rekapitulasi/', CourseRecapitulationView.as_view(), name='course-rekapitulasi'),
+    # === DOSEN URL ===
+    path('list/dosen/course/', ListDosenCourse.as_view(), name='list-dosen-course'),
 
     # === PUBLIC COURSE PREVIEW URLS ===
     path('course/<uuid:course_uuid>/preview/public/', CoursePreviewPublicView.as_view(), name='course-preview-public'),   
@@ -56,13 +72,17 @@ urlpatterns = [
     path('login/', views.loginView, name='login'),
     path("logout/",LogoutView.as_view(),name="logout",),
     path("app/user/listss/", UserListView.as_view(), name="app-user-lists"),
-    path("users/json/", UserListJsonView.as_view(), name="user-list-json"),
+    path("app/user/<str:id>/reset-password/", reset_password, name="app-user-reset-password"),
+    path("reports/lps/",LecturerPerformanceView.as_view(),name="lps-report"),
+    path("reports/lps/<str:nip>/",LecturerPerformanceDetailView.as_view(), name="lps-detail"),
+    path("reports/class-report/", ClassReportView.as_view(), name="lecturer-class-report"),
     path("", views.loginView, name="login"),
     
     # === PUBLIC URLS ===
     path('account/password/change/', AppPasswordChangeView.as_view(), name='password_change'),
 
     # QUIZ URLS
+    path('course/<uuid:course_uuid>/assessment/', views.CourseAssessmentView.as_view(), name='course-assessment'),
     path('course/<uuid:course_uuid>/quizzes/', views.CourseQuizListView.as_view(), name='course-quiz-list'),
     path('course/<uuid:course_uuid>/quizzes/create/', views.QuizCreateView.as_view(), name='course-quiz-create'),
     path('course/<uuid:course_uuid>/quiz/<uuid:quiz_id>/edit/', views.CourseQuizUpdateView.as_view(), name='course-quiz-edit'),
@@ -78,6 +98,7 @@ urlpatterns = [
     path('app/academy/course/', StudentCourseListView.as_view(), name='app-academy-course'),
     path('course/<uuid:course_uuid>/learn/', CoursePlayerView.as_view(), name='course-player'),
     path('course/<uuid:course_uuid>/leaderboard/', CourseLeaderboardView.as_view(), name='course-leaderboard'),
+    path('course/<uuid:course_uuid>/grades/', StudentCourseGradesView.as_view(), name='student-course-grades'),
     path('course/<uuid:course_uuid>/learn/material/<int:material_id>/', CoursePlayerView.as_view(), name='course-player-material'),
     path('course/<uuid:course_uuid>/learn/assignment/<int:assignment_id>/', CoursePlayerView.as_view(), name='course-player-assignment'),
 
@@ -103,6 +124,15 @@ urlpatterns = [
 
     # === KANBAN & CHAT URLS === #
     path('app/kanban/', KanbanAcademyView.as_view(), name="app-kanban"),
+
+    # === KANBAN API ===
+    path('api/kanban/boards/',                                   login_required(KanbanBoardListCreateView.as_view()), name='api-kanban-boards'),
+    path('api/kanban/boards/<uuid:board_id>/',                   login_required(KanbanBoardDetailView.as_view()),     name='api-kanban-board-detail'),
+    path('api/kanban/boards/<uuid:board_id>/tasks/',             login_required(KanbanTaskListCreateView.as_view()),  name='api-kanban-tasks'),
+    path('api/kanban/tasks/<uuid:task_id>/',                     login_required(KanbanTaskDetailView.as_view()),      name='api-kanban-task-detail'),
+    path('api/kanban/reorder/',                                  login_required(KanbanReorderView.as_view()),         name='api-kanban-reorder'),
+    path('api/kanban/users/',                                    login_required(KanbanUserSearchView.as_view()),      name='api-kanban-users'),
+
     path('chat/', ChatAcademyViews.as_view(), name='chat-index'),
     path('chat/<uuid:room_uuid>/', ChatAcademyViews.as_view(), name='chat-detail'),
     path('chat/start/<int:target_user_id>/', StartChatView.as_view(), name='chat-start'),
@@ -113,12 +143,45 @@ urlpatterns = [
     path('api/calendar/events/', login_required(CalendarEventListCreateView.as_view()), name='api-calendar-events'),
     path('api/calendar/events/<int:pk>/', login_required(CalendarEventDetailView.as_view()), name='api-calendar-event-detail'),
 
+    # === MEDIA LIBRARY API URLS ===
+    path('api/media-library/',                   MediaLibraryListView.as_view(),   name='media-library-list'),
+    path('api/media-library/upload/',             MediaLibraryUploadView.as_view(), name='media-library-upload'),
+    path('api/media-library/attach/',             MediaLibraryAttachView.as_view(), name='media-library-attach'),
+    path('api/media-library/<uuid:pk>/delete/',   MediaLibraryDeleteView.as_view(), name='media-library-delete'),
+
+    path('course/<uuid:course_uuid>/media-item/<int:item_id>/delete/',
+        DeleteAgendaMediaItemView.as_view(),
+        name='delete-agenda-media-item'),
+
     # === DISCUSSION / FORUM URLS ===
     path('course/<uuid:course_uuid>/discussions/', CourseDiscussionListView.as_view(), name='course-discussion-list'),
+    path('course/<uuid:course_uuid>/discussions/delete/<int:disc_id>/', CourseDiscussionDeleteView.as_view(), name='course-discussion-delete'),
     path('course/<uuid:course_uuid>/discussions/<int:disc_id>/', CourseDiscussionDetailView.as_view(), name='course-discussion-detail'),
     path('course/<uuid:course_uuid>/discussions/<int:disc_id>/pin/', CourseDiscussionTogglePinView.as_view(), name='course-discussion-pin'),
     path('course/<uuid:course_uuid>/discussions/<int:disc_id>/close/', CourseDiscussionToggleCloseView.as_view(), name='course-discussion-close'),
     path('course/<uuid:course_uuid>/discussions/<int:disc_id>/like/', DiscussionLikeToggleView.as_view(), name='discussion-like'),
     path('course/<uuid:course_uuid>/discussions/reply/<int:reply_id>/like/', ReplyLikeToggleView.as_view(), name='discussion-reply-like'),
     path('course/<uuid:course_uuid>/discussions/reply/<int:reply_id>/delete/', DiscussionReplyDeleteView.as_view(), name='discussion-reply-delete'),
+
+    # === PORTFOLIO MAHASISWA ===
+    path('app/portfolio/', StudentPortfolioListView.as_view(), name='portfolio-list'),
+    path('app/portfolio/add/', StudentPortfolioAddView.as_view(), name='portfolio-add'),
+    path('app/portfolio/<uuid:pk>/edit/', StudentPortfolioEditView.as_view(), name='portfolio-edit'),
+    path('app/portfolio/<uuid:pk>/delete/', StudentPortfolioDeleteView.as_view(), name='portfolio-delete'),
+
+    # === ADMIN PORTFOLIO ===
+    path('prodi/portfolio/', AdminPortfolioListView.as_view(), name='admin-portfolio-list'),
+    path('prodi/portfolio/<uuid:pk>/verify/', PortfolioVerifyView.as_view(), name='portfolio-verify'),
+    path('prodi/portfolio/<uuid:pk>/delete/', AdminPortfolioDeleteView.as_view(), name='admin-portfolio-delete'),
+
+    # === DOSEN PORTOFOLIO ===
+    path('portfolio/mahasiswa', DosenPortfolioListView.as_view(), name='dosen-portfolio-list'),
+
+    # === PUBLIC PORTFOLIO  /@username ===
+    path('@<str:username>/',                             PublicPortfolioView.as_view(),       name='public-portfolio'),
+    path('@<str:username>/<slug:slug>/',                 PublicPortfolioDetailView.as_view(), name='public-portfolio-detail'),
+
+    # === DOCUMENTATION URLS ===
+    path('app/documentation/', DocumentationListView.as_view(), name='documentation-list'),
+    path('app/documentation/<slug:slug>/', DocumentationDetailView.as_view(), name='documentation-detail'),
 ]

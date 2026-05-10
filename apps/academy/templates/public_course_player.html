@@ -248,34 +248,28 @@
                     {% if active_item.is_published %}
                         
                         <div class="p-2">
-                            <div class="cursor-pointer">
-                                {% if active_item.material_type == 'video' %}
-                                    <div class="plyr__video-embed" id="plyr-video-player">
-                                        <iframe src="{{ active_item.video_url }}" allowfullscreen allowtransparency allow="autoplay"></iframe>
-                                    </div>
-                                {% else %}
-                                    <div class="p-12 text-center bg-lighter rounded">
-                                        <div class="mb-3"><i class="ri-article-line ri-3x text-primary"></i></div>
-                                        <h4>{{ active_item.title }}</h4>
-                                        <p class="text-muted">Materi ini berupa bahan bacaan.</p>
-                                        {% if active_item.file_attachment %}
-                                            <a href="{{ active_item.file_attachment.url }}" class="btn btn-outline-primary" target="_blank">
-                                                <i class="ri-download-line me-1"></i> Download File
-                                            </a>
-                                        {% endif %}
-                                    </div>
+                            <!-- Header materi artikel -->
+                            <div class="p-4 rounded mb-3">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-success rounded-pill">Bahan Bacaan</span>
+                                </div>
+                                <h4 class="mb-1">{{ active_item.title }}</h4>
+                                {% if active_item.created_by %}
+                                    <small class="text-muted">
+                                        <i class="ri-user-line me-1"></i>
+                                        {{ active_item.created_by.nip.get_full_name|default:active_item.created_by.nip.username }}
+                                        <span class="ms-2">· {{ active_item.created_at|date:"d M Y" }}</span>
+                                    </small>
                                 {% endif %}
                             </div>
                         </div>
 
                         <div class="card-body pt-3">
-                            <!-- <h5 class="mb-4">{{ active_item.title }}</h5>
-                             -->
                             <div class="course-content-body mb-6">
-                                {% if active_item.material_type == 'video' and active_item.text_content %}
-                                    <div class="mt-3">{{ active_item.text_content|safe }}</div>
-                                {% elif active_item.material_type == 'reading' %}
-                                    {{ active_item.text_content|safe|default:"<p class='text-muted fst-italic'>Tidak ada konten teks.</p>" }}
+                                {% if active_item.text_content %}
+                                    {{ active_item.text_content|safe }}
+                                {% else %}
+                                    <p class="text-muted fst-italic">Belum ada konten teks untuk materi ini.</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -509,18 +503,11 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="d-flex align-items-center">
                                     <div class="material-icon">
-                                        {% if material.material_type == 'video' %}
-                                            <i class="ri-play-circle-line" style="font-size: 14px;"></i>
-                                        {% else %}
-                                            <i class="ri-article-line" style="font-size: 14px;"></i>
-                                        {% endif %}
+                                        <i class="ri-article-line" style="font-size: 14px;"></i>
                                     </div>
                                     <span class="text-wrap lh-sm">{{ material.title }}</span>
                                 </div>
                             </div>
-                            <small class="d-block mt-1 ms-5 opacity-75" style="font-size: 0.75rem;">
-                                {{ material.get_duration_display }}
-                            </small>
                         </div>
                     </a>
                 {% else %}

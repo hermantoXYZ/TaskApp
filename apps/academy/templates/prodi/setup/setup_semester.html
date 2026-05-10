@@ -1,0 +1,284 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Setup Awal Semester{% endblock %}
+
+{% block content %}
+
+{# ── MESSAGES ── #}
+{% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags|default:'info' }}{% endif %} alert-dismissible d-flex align-items-center gap-2 py-2 mb-3" role="alert">
+    {% if msg.tags == 'success' %}<i class="ri-checkbox-circle-line"></i>
+    {% elif msg.tags == 'warning' %}<i class="ri-alert-line"></i>
+    {% elif msg.tags == 'error' %}<i class="ri-close-circle-line"></i>
+    {% else %}<i class="ri-information-line"></i>{% endif %}
+    <span>{{ msg }}</span>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endif %}
+
+{# ── STEP 1: PERIODE ── #}
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary rounded-circle p-2" style="width:28px;height:28px;line-height:1;font-size:.8rem;">1</span>
+      <div>
+        <h6 class="mb-0">Pilih Periode Semester</h6>
+        <small class="text-muted">Semua import di bawah terikat ke periode yang dipilih</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <div id="selected-period-badge" class="d-none">
+        <span class="badge bg-success rounded-pill">
+          <i class="ri-check-line me-1"></i>Terpilih: <span id="selected-period-name-badge"></span>
+        </span>
+      </div>
+      <a href="{% url 'list-course-period' %}" class="btn btn-outline-primary btn-sm waves-effect">
+        <i class="ri-add-line me-1"></i>Buat Periode Baru
+      </a>
+      <a href="{% url 'list-academy-course' %}" class="btn btn-outline-secondary btn-sm waves-effect">
+        <i class="ri-arrow-left-line me-1"></i>Kembali
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+      {% for p in all_periods %}
+      <div class="col-12 col-sm-6 col-lg-4">
+        <div class="border rounded-3 p-3 h-100 period-card {% if active_period and active_period.id == p.id %}period-active{% endif %}"
+             onclick="selectPeriod('{{ p.id }}','{{ p.name }}')" id="period-{{ p.id }}">
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <span class="fw-semibold text-heading">{{ p.name }}</span>
+            {% if p.is_active %}
+              <span class="badge bg-label-success rounded-pill ms-2">Aktif</span>
+            {% endif %}
+          </div>
+          <div class="text-muted small mb-2">{{ p.start_date|date:"d M Y" }} – {{ p.end_date|date:"d M Y" }}</div>
+          <div class="text-muted small">
+            <i class="ri-book-open-line me-1"></i>{{ p.courses.count }} MK
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center py-4 text-muted">
+        <i class="ri-calendar-line ri-32px d-block mb-2 opacity-50"></i>
+        Belum ada periode. <a href="{% url 'list-course-period' %}">Buat periode baru</a> terlebih dahulu.
+      </div>
+      {% endfor %}
+    </div>
+    <input type="hidden" id="selected-period-id" value="{% if active_period %}{{ active_period.id }}{% endif %}">
+  </div>
+</div>
+
+{# ── STEP 2: IMPORT MATA KULIAH ── #}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-success rounded-circle p-2" style="width:28px;height:28px;line-height:1;font-size:.8rem;">2</span>
+      <div>
+        <h6 class="mb-0">Import Mata Kuliah</h6>
+        <small class="text-muted">Upload Excel berisi daftar MK &mdash; kode, nama, SKS, kelas</small>
+      </div>
+    </div>
+    <a href="{% url 'download-template' 'courses' %}" class="btn btn-outline-success btn-sm waves-effect">
+      <i class="ri-download-2-line me-1"></i>Download Template
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" action="{% url 'import-courses' %}" enctype="multipart/form-data" id="form-courses">
+      {% csrf_token %}
+      <input type="hidden" name="period_id" id="course-period-id" value="{% if active_period %}{{ active_period.id }}{% endif %}">
+
+      <div class="upload-zone rounded-3 border p-4 text-center mb-3" id="dropzone-courses"
+           onclick="document.getElementById('file-courses').click()" style="cursor:pointer;border-style:dashed!important;">
+        <i class="ri-file-excel-2-line ri-32px text-success d-block mb-2"></i>
+        <p class="fw-medium mb-1">Drag &amp; drop file <code>.xlsx</code> di sini</p>
+        <p class="text-muted small mb-0">atau klik untuk pilih file</p>
+        <div id="file-courses-name" class="mt-2 badge bg-label-success d-none"></div>
+      </div>
+      <input type="file" name="file_courses" id="file-courses" accept=".xlsx,.xls" class="d-none"
+             onchange="showFileName('file-courses','file-courses-name','dropzone-courses')">
+
+      <button type="submit" class="btn btn-success waves-effect waves-light btn-sm"
+              onclick="return injectPeriod('course-period-id')">
+        <i class="ri-upload-cloud-line me-1"></i>Import Mata Kuliah
+      </button>
+      <small class="text-muted ms-2">Duplikat (kode+kelas+periode sama) dilewati otomatis.</small>
+    </form>
+  </div>
+</div>
+
+{# ── STEP 3: ASSIGN DOSEN ── #}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-warning rounded-circle p-2 text-dark" style="width:28px;height:28px;line-height:1;font-size:.8rem;">3</span>
+      <div>
+        <h6 class="mb-0">Assign Dosen Pengampu</h6>
+        <small class="text-muted">Upload Excel: kode MK, kelas, NIP dosen</small>
+      </div>
+    </div>
+    <a href="{% url 'download-template' 'coaches' %}" class="btn btn-outline-warning btn-sm waves-effect">
+      <i class="ri-download-2-line me-1"></i>Download Template
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" action="{% url 'import-coaches' %}" enctype="multipart/form-data" id="form-coaches">
+      {% csrf_token %}
+      <input type="hidden" name="period_id" id="coach-period-id" value="{% if active_period %}{{ active_period.id }}{% endif %}">
+
+      <div class="upload-zone rounded-3 border p-4 text-center mb-3" id="dropzone-coaches"
+           onclick="document.getElementById('file-coaches').click()" style="cursor:pointer;border-style:dashed!important;">
+        <i class="ri-file-excel-2-line ri-32px text-warning d-block mb-2"></i>
+        <p class="fw-medium mb-1">Drag &amp; drop file <code>.xlsx</code> di sini</p>
+        <p class="text-muted small mb-0">atau klik untuk pilih file</p>
+        <div id="file-coaches-name" class="mt-2 badge bg-label-warning d-none"></div>
+      </div>
+      <input type="file" name="file_coaches" id="file-coaches" accept=".xlsx,.xls" class="d-none"
+             onchange="showFileName('file-coaches','file-coaches-name','dropzone-coaches')">
+
+      <button type="submit" class="btn btn-warning waves-effect btn-sm text-dark"
+              onclick="return injectPeriod('coach-period-id')">
+        <i class="ri-upload-cloud-line me-1"></i>Import Dosen
+      </button>
+      <small class="text-muted ms-2">Satu MK bisa punya lebih dari 1 dosen — cukup tambahkan baris baru.</small>
+    </form>
+  </div>
+</div>
+
+{# ── STEP 4: ENROLL MAHASISWA ── #}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-info rounded-circle p-2" style="width:28px;height:28px;line-height:1;font-size:.8rem;">4</span>
+      <div>
+        <h6 class="mb-0">Enroll Mahasiswa (Peserta)</h6>
+        <small class="text-muted">Upload Excel: kode MK, kelas, NIM mahasiswa</small>
+      </div>
+    </div>
+    <a href="{% url 'download-template' 'participants' %}" class="btn btn-outline-info btn-sm waves-effect">
+      <i class="ri-download-2-line me-1"></i>Download Template
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" action="{% url 'import-participants' %}" enctype="multipart/form-data" id="form-participants">
+      {% csrf_token %}
+      <input type="hidden" name="period_id" id="participant-period-id" value="{% if active_period %}{{ active_period.id }}{% endif %}">
+
+      <div class="upload-zone rounded-3 border p-4 text-center mb-3" id="dropzone-participants"
+           onclick="document.getElementById('file-participants').click()" style="cursor:pointer;border-style:dashed!important;">
+        <i class="ri-file-excel-2-line ri-32px text-info d-block mb-2"></i>
+        <p class="fw-medium mb-1">Drag &amp; drop file <code>.xlsx</code> di sini</p>
+        <p class="text-muted small mb-0">atau klik untuk pilih file</p>
+        <div id="file-participants-name" class="mt-2 badge bg-label-info d-none"></div>
+      </div>
+      <input type="file" name="file_participants" id="file-participants" accept=".xlsx,.xls" class="d-none"
+             onchange="showFileName('file-participants','file-participants-name','dropzone-participants')">
+
+      <button type="submit" class="btn btn-info waves-effect waves-light btn-sm text-white"
+              onclick="return injectPeriod('participant-period-id')">
+        <i class="ri-upload-cloud-line me-1"></i>Import Peserta
+      </button>
+      <small class="text-muted ms-2">Satu file bisa berisi ratusan mahasiswa ke berbagai MK sekaligus.</small>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block page_css %}
+<style>
+  .period-card { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .period-card:hover { border-color: var(--bs-primary) !important; }
+  .period-active { border-color: var(--bs-primary) !important; box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb),.15); }
+  .upload-zone { transition: background .15s, border-color .15s; }
+  .upload-zone:hover { border-color: var(--bs-primary) !important; background: var(--bs-primary-bg-subtle); }
+  .upload-zone.file-ready { border-color: var(--bs-success) !important; background: var(--bs-success-bg-subtle); }
+  .upload-zone.dragover { border-color: var(--bs-primary) !important; background: var(--bs-primary-bg-subtle); transform: scale(1.01); }
+</style>
+{% endblock %}
+
+
+{% block page_js %}
+{{ block.super }}
+<script>
+  let selectedPeriodId = "{{ active_period.id|default:'' }}";
+
+  /* ── Pilih periode ── */
+  function selectPeriod(id, name) {
+    selectedPeriodId = id;
+    document.querySelectorAll('.period-card').forEach(c => c.classList.remove('period-active'));
+    document.getElementById('period-' + id).classList.add('period-active');
+    document.getElementById('selected-period-id').value = id;
+
+    /* Badge di header */
+    document.getElementById('selected-period-name-badge').textContent = name;
+    document.getElementById('selected-period-badge').classList.remove('d-none');
+
+    /* Sync semua hidden inputs */
+    ['course-period-id','coach-period-id','participant-period-id'].forEach(iid => {
+      const el = document.getElementById(iid);
+      if (el) el.value = id;
+    });
+  }
+
+  /* ── Validasi periode sebelum submit ── */
+  function injectPeriod(inputId) {
+    if (!selectedPeriodId) {
+      alert('Silakan pilih periode terlebih dahulu (Step 1).');
+      document.getElementById('step-periode') && document.getElementById('step-periode').scrollIntoView({ behavior: 'smooth' });
+      return false;
+    }
+    const el = document.getElementById(inputId);
+    if (el) el.value = selectedPeriodId;
+    return true;
+  }
+
+  /* ── Tampilkan nama file ── */
+  function showFileName(inputId, labelId, zoneId) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    const zone  = document.getElementById(zoneId);
+    if (input.files.length > 0) {
+      label.textContent = '📎 ' + input.files[0].name;
+      label.classList.remove('d-none');
+      zone.classList.add('file-ready');
+    }
+  }
+
+  /* ── Drag & Drop ── */
+  document.querySelectorAll('.upload-zone').forEach(zone => {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const inputId = zone.id.replace('dropzone-', 'file-');
+      const input   = document.getElementById(inputId);
+      if (input) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+
+  /* ── Auto-select periode aktif ── */
+  document.addEventListener('DOMContentLoaded', () => {
+    {% if active_period %}
+    selectPeriod('{{ active_period.id }}', '{{ active_period.name }}');
+    {% endif %}
+  });
+</script>
+{% endblock page_js %}

@@ -189,7 +189,7 @@
 <div class="row g-6">
 <div class="col-lg-8">
     
-    <div class="card mb-6">
+    <div class="card mb-6 shadow-none border-1">
 {% if messages %}
   {% for message in messages %}
        <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
@@ -214,14 +214,14 @@
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-announcement">
                 <i class="tf-icons ri-notification-3-line me-2"></i> <span class="d-none d-sm-block">Info</span>
                 {% if course.announcements.count > 0 %}
-                    <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2">{{ course.announcements.count }}</span>
+                     <div class="badge bg-warning rounded-pill ms-auto" style="font-size: 0.6rem;">{{ course.announcements.count }}</div>
                 {% endif %}
               </button>
             </li>
             <li class="nav-item">
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-quizzes">
                 <i class="tf-icons ri-survey-line me-2"></i> <span class="d-none d-sm-block">Quiz/Task</span>
-                {% if quizzes %}<span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2">{{ quizzes.count }}</span>{% endif %}
+            
               </button>
             </li>
             <li class="nav-item">
@@ -289,34 +289,28 @@
                                 </div>
                             {% endif %}
 
-                            <div class="cursor-pointer">
-                                {% if active_item.material_type == 'video' %}
-                                    <div class="plyr__video-embed" id="plyr-video-player">
-                                        <iframe src="{{ active_item.video_url }}" allowfullscreen allowtransparency allow="autoplay"></iframe>
-                                    </div>
-                                {% else %}
-                                    <div class="p-12 text-center bg-lighter rounded">
-                                        <div class="mb-3"><i class="ri-article-line ri-3x text-primary"></i></div>
-                                        <h4>{{ active_item.title }}</h4>
-                                        <p class="text-muted">Materi ini berupa bahan bacaan.</p>
-                                        {% if active_item.file_attachment %}
-                                            <a href="{{ active_item.file_attachment.url }}" class="btn btn-outline-primary" target="_blank">
-                                                <i class="ri-download-line me-1"></i> Download File
-                                            </a>
-                                        {% endif %}
-                                    </div>
+                            <!-- Header materi artikel -->
+                            <div class="p-4 rounded mb-3">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-success rounded-pill">Bahan Bacaan</span>
+                                </div>
+                                <h4 class="mb-1">{{ active_item.title }}</h4>
+                                {% if active_item.created_by %}
+                                    <small class="text-muted">
+                                        <i class="ri-user-line me-1"></i>
+                                        {{ active_item.created_by.nip.get_full_name|default:active_item.created_by.nip.username }}
+                                        <span class="ms-2">· {{ active_item.created_at|date:"d M Y" }}</span>
+                                    </small>
                                 {% endif %}
                             </div>
                         </div>
 
                         <div class="card-body pt-3">
-                            <!-- <h5 class="mb-4">{{ active_item.title }}</h5>
-                             -->
                             <div class="course-content-body mb-6">
-                                {% if active_item.material_type == 'video' and active_item.text_content %}
-                                    <div class="mt-3">{{ active_item.text_content|safe }}</div>
-                                {% elif active_item.material_type == 'reading' %}
-                                    {{ active_item.text_content|safe|default:"<p class='text-muted fst-italic'>Tidak ada konten teks.</p>" }}
+                                {% if active_item.text_content %}
+                                    {{ active_item.text_content|safe }}
+                                {% else %}
+                                    <p class="text-muted fst-italic">Belum ada konten teks untuk materi ini.</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -339,7 +333,7 @@
                     
                     {% if active_item.is_published or request.user == course.instructor %}
                         
-                        <div class="p-4 bg-label-warning rounded border border-warning border-opacity-25">
+                        <div class="p-4 rounded border border-1 border-opacity-25">
                             {% if not active_item.is_published %}
                                 <div class="alert alert-solid-warning mb-3">
                                     <i class="ri-eye-off-line me-1"></i> <strong>Draft:</strong> Tugas ini belum dipublikasikan ke mahasiswa.
@@ -356,7 +350,7 @@
                                         {% endif %}
                                         <span class="badge bg-label-secondary rounded-pill">Max Score: {{ active_item.max_score }}</span>
                                     </div>
-                                    <h4 class="text-warning mb-1 fw-bold">{{ active_item.title }}</h4>
+                                    <h4 class="mb-1 fw-bold">{{ active_item.title }}</h4>
                                     <p class="mb-0 text-muted small">
                                         <i class="ri-time-line me-1"></i> Deadline: <strong>{{ active_item.due_date|date:"l, d F Y - H:i" }}</strong>
                                     </p>
@@ -377,7 +371,6 @@
                                 
                                 {% if submission %}
                                     <div class="alert alert-success d-flex align-items-start" role="alert">
-                                        <i class="ri-checkbox-circle-line me-3 ri-xl mt-1"></i>
                                         <div class="w-100">
                                             <h6 class="alert-heading mb-1">Status: Terkirim</h6>
                                             <p class="mb-1">
@@ -461,7 +454,7 @@
                         <div class="d-flex flex-column gap-3">
                             {% for info in announcements %}
                             
-                            <div class="card border {% if info.is_pinned %}border-primary shadow-sm{% else %}border-secondary border-opacity-25{% endif %}">
+                            <div class="card border {% if info.is_pinned %}border-1 shadow-none{% else %}border-secondary border-opacity-25{% endif %}">
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <div class="d-flex align-items-center gap-2">
@@ -524,7 +517,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="mb-0">Rekap Kehadiran</h5>
-                        <span class="badge bg-label-success">Total Hadir: {{ total_hadir|default:"0" }}</span>
+                        <span class="badge bg-label-primary">Total Hadir: {{ total_hadir|default:"0" }}</span>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover table-bordered">
@@ -551,7 +544,7 @@
                                         {% else %}<span class="badge bg-secondary">Belum Absen</span>{% endif %}
                                     </td>
                                     <td>{{ item.notes|default:"-" }}</td>
-                                    <td>{{ item.created_at }}</td>
+                                    <td>{{ item.created_at|date:"H:i" }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -565,12 +558,18 @@
         <div class="card shadow-none border-0">
             <div class="card-body px-0 pt-0">
                 
+                <div class="d-flex justify-content-end mb-3 mt-2">
+                    <a href="{% url 'student-course-grades' course.uuid %}" class="btn btn-primary rounded-pill shadow-sm px-4">
+                        <i class="ri-table-2 me-2"></i> Lihat Rekap Tabel Nilai
+                    </a>
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
                     <div>
                         <h5 class="mb-1">Daftar Ujian & Evaluasi</h5>
                         <p class="text-muted small mb-0">Selesaikan ujian berikut sebelum tenggat waktu.</p>
                     </div>
-                    <span class="badge bg-label-primary rounded-pill">{{ quizzes.count }} Tersedia</span>
+                    <span class="badge bg-primary rounded-pill">{{ quizzes.count }} Tersedia</span>
                 </div>
 
                 {% if quizzes %}
@@ -581,17 +580,7 @@
                                 <div class="card-body p-3">
                                     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                                         
-                                        <div class="d-flex align-items-start gap-3 w-100">
-                                            <div class="avatar avatar-lg flex-shrink-0">
-                                                <div class="avatar-initial rounded {% if quiz.user_is_done %}bg-label-success text-success{% else %}bg-label-primary text-primary{% endif %}">
-                                                    {% if quiz.user_is_done %}
-                                                        <i class="ri-checkbox-circle-fill ri-24px"></i>
-                                                    {% else %}
-                                                        <i class="ri-file-edit-line ri-24px"></i>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                            
+                                        <div class="d-flex align-items-start gap-3 w-100">    
                                             <div class="w-100">
                                                 <div class="d-flex justify-content-between align-items-start">
                                                     <h5 class="mb-1">
@@ -624,10 +613,10 @@
                                                     {% endif %}
 
                                                     <span class="badge bg-label-secondary fw-normal">
-                                                        <i class="ri-time-line me-1"></i> {{ quiz.duration_minutes }} Menit
+                                                       {{ quiz.duration_minutes }} Menit
                                                     </span>
                                                     <span class="badge bg-label-secondary fw-normal">
-                                                        <i class="ri-list-check me-1"></i> {{ quiz.questions.count }} Soal
+                                                      {{ quiz.questions.count }} Soal
                                                     </span>
                                                 </div>
                                             </div>
@@ -710,8 +699,8 @@
                             <h5 class="mb-1">Daftar Tugas</h5>
                             <p class="text-muted small mb-0">Kumpulkan tugas sebelum batas waktu yang ditentukan.</p>
                         </div>
-                        <span class="badge bg-label-warning rounded-pill">
-                            <i class="ri-file-list-3-line me-1"></i> Per Pertemuan
+                        <span class="badge bg-primary rounded-pill">
+                            Per Pertemuan
                         </span>
                     </div>
 
@@ -730,15 +719,6 @@
                                             <div class="card-body p-3">
                                                 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
                                                     <div class="d-flex align-items-start gap-3 w-100">
-                                                        <div class="avatar avatar-sm flex-shrink-0">
-                                                            <div class="avatar-initial rounded {% if task.id in completed_assignment_ids %}bg-label-success text-success{% else %}bg-label-warning text-warning{% endif %}">
-                                                                {% if task.id in completed_assignment_ids %}
-                                                                    <i class="ri-checkbox-circle-fill ri-18px"></i>
-                                                                {% else %}
-                                                                    <i class="ri-file-list-3-line ri-18px"></i>
-                                                                {% endif %}
-                                                            </div>
-                                                        </div>
                                                         <div class="w-100">
                                                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
                                                                 <h6 class="mb-1 fw-bold">
@@ -770,7 +750,7 @@
                                                                 {% for sub in task.submissions.all %}
                                                                     {% if sub.student.nim == request.user %}
                                                                         {% if sub.score is not None %}
-                                                                            <span class="badge bg-label-success fw-bold" style="font-size: 0.85rem; position: relative; z-index: 2;">
+                                                                            <span style="font-size: 0.85rem; position: relative; z-index: 2;">
                                                                                 <i class="ri-award-line me-1"></i> Nilai: {{ sub.score|floatformat:0 }}
                                                                             </span>
                                                                         {% else %}
@@ -950,13 +930,6 @@
                         <div class="w-100">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="d-flex align-items-center">
-                                    <div class="material-icon">
-                                        {% if material.material_type == 'video' %}
-                                            <i class="ri-play-circle-line" style="font-size: 14px;"></i>
-                                        {% else %}
-                                            <i class="ri-article-line" style="font-size: 14px;"></i>
-                                        {% endif %}
-                                    </div>
                                     <span class="text-wrap lh-sm">{{ material.title }}</span>
                                 </div>
                                 {% if not material.is_published %}
@@ -978,9 +951,40 @@
                     </div>
                 {% endif %}
             {% endfor %}
+            {% if section.media_items.all %}
+                 {% if section.materials.all %}<div class="divider"><div class="divider-text">MEDIA ASSETS</div></div>{% endif %}
+                 
+                 {% for item in section.media_items.all %}
+                    <a href="{% if item.media_file.file %}{{ item.media_file.file.url }}{% elif item.media_file.video_url %}{{ item.media_file.video_url }}{% else %}#{% endif %}" target="_blank" class="course-item">
+                        <div class="me-3 pt-1 text-center" style="width: 1.2em;">
+                            {% if item.media_file.file_type == 'pdf' %}
+                              <i class="ri-file-pdf-line text-danger ri-lg"></i>
+                            {% elif item.media_file.file_type == 'docx' %}
+                              <i class="ri-file-word-line text-primary ri-lg"></i>
+                            {% elif item.media_file.file_type == 'pptx' %}
+                              <i class="ri-file-ppt-line text-warning ri-lg"></i>
+                            {% elif item.media_file.file_type == 'video_url' %}
+                              <i class="ri-youtube-line text-danger ri-lg"></i>
+                            {% elif item.media_file.file_type == 'image' %}
+                              <i class="ri-image-line text-success ri-lg"></i>
+                            {% else %}
+                              <i class="ri-file-line text-secondary ri-lg"></i>
+                            {% endif %}
+                        </div>
+                        <div class="w-100">
+                            <div class="d-flex align-items-center">
+                                <span class="text-wrap lh-sm">{{ item.media_file.name }}</span>
+                            </div>
+                            <small class="d-block mt-1 opacity-75" style="font-size: 0.75rem;">
+                                {{ item.media_file.file_size_display }}
+                            </small>
+                        </div>
+                    </a>
+                 {% endfor %}
+            {% endif %}
 
             {% if section.assignments.all %}
-                 {% if section.materials.all %}<div class="divider"><div class="divider-text">TUGAS</div></div>{% endif %}
+                 {% if section.materials.all or section.media_items.all %}<div class="divider"><div class="divider-text">TUGAS</div></div>{% endif %}
                  
                  {% for task in section.assignments.all %}
                     {% if task.is_published or request.user == course.instructor %}

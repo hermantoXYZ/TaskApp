@@ -1,7 +1,9 @@
 
 # Register your models here.
-from .models import ChatMessage, ChatRoom, UserDosen, UserMhs, UserProdi, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, CourseAssignment, StudentAssignmentSubmission, StudentQuizAnswer, StudentQuizAttempt, QuizOption, BookCategory, Book, CalendarEvent, CourseDiscussion, CourseDiscussionReply, CourseDiscussionLike
+from .models import ChatMessage, ChatRoom, UserDosen, UserMhs, UserProdi, Prodi, CoursePeriod, Course, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, StudentMaterialProgress, CourseAssignment, StudentAssignmentSubmission, StudentQuizAnswer, StudentQuizAttempt, QuizOption, BookCategory, Book, CalendarEvent, CourseDiscussion, CourseDiscussionReply, CourseDiscussionLike, CourseGroup, MediaFile, AgendaMediaItem, CategoryPortfolio, StudentPortfolio, KanbanBoard, KanbanTask, AppDocumentation
 from django.contrib import admin
+
+admin.site.register(AppDocumentation)
 
 
 
@@ -44,3 +46,10 @@ admin.site.register(CalendarEvent)
 admin.site.register(CourseDiscussion)
 admin.site.register(CourseDiscussionReply)
 admin.site.register(CourseDiscussionLike)
+admin.site.register(CourseGroup)
+admin.site.register(MediaFile)
+admin.site.register(AgendaMediaItem)
+admin.site.register(CategoryPortfolio)
+admin.site.register(StudentPortfolio)
+admin.site.register(KanbanBoard)
+admin.site.register(KanbanTask)

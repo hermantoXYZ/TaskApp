@@ -1,0 +1,257 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Dashboard Prodi – {{ prodi.nama_prodi|default:"Program Studi" }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<style>
+  /* Reuse stat card pattern dari app_academy_dashboard */
+  .prodi-stat-card {
+    border-radius: 12px;
+    border: 1px solid rgba(var(--bs-body-color-rgb,0,0,0),.07);
+    background: var(--bs-card-bg);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: box-shadow .2s;
+  }
+  .prodi-stat-card:hover { box-shadow: 0 6px 20px rgba(115,103,240,.1); }
+  .prodi-stat-card .stat-icon {
+    width: 48px; height: 48px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+  }
+  .prodi-stat-card .stat-num {
+    font-size: 1.6rem; font-weight: 700; line-height: 1;
+    color: var(--bs-heading-color);
+  }
+  .prodi-stat-card .stat-lbl {
+    font-size: .78rem; color: #a5a3ae; margin-top: 2px;
+  }
+
+  /* Course table rows */
+  .prodi-course-row { transition: background .15s; }
+  .prodi-course-row:hover { background: rgba(115,103,240,.04); }
+
+  /* Period filter select */
+  .prodi-period-select {
+    border: 1px solid rgba(115,103,240,.25);
+    border-radius: 8px; font-size: .87rem; height: 36px;
+    padding: 0 12px; background: var(--bs-body-bg);
+    color: var(--bs-body-color); outline: none;
+    min-width: 170px; cursor: pointer;
+    transition: border-color .2s;
+  }
+  .prodi-period-select:focus { border-color: #7367f0; }
+
+  /* Section divider */
+  .prodi-section-title {
+    font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #a5a3ae; margin-bottom: .75rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .prodi-section-title::after {
+    content: ''; flex: 1; height: 1px; background: rgba(0,0,0,.07);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Header ── #}
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-5">
+  <div>
+    <h4 class="mb-1 fw-bold">Dashboard Aktivitas Pembelajaran</h4>
+    <p class="text-muted mb-0" style="font-size:.87rem;">
+      <i class="ri-building-4-line me-1"></i>
+      {{ prodi.nama_prodi|default:"Semua Program Studi" }}
+    </p>
+  </div>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="text-muted small">Periode:</span>
+    <form method="get" id="periodForm">
+      <select name="period" class="prodi-period-select" onchange="this.form.submit()">
+        <option value="">Semua Periode</option>
+        {% for p in all_periods %}
+          <option value="{{ p.id }}" {% if active_period and active_period.id == p.id %}selected{% endif %}>
+            {{ p.name }}{% if p.is_active %} ✓{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+{% if active_period %}
+<div class="alert alert-primary border-0 rounded-3 py-2 px-3 mb-5 d-flex align-items-center gap-2" style="font-size:.85rem; background:rgba(115,103,240,.08);">
+  <i class="ri-calendar-2-line text-primary"></i>
+  <span>Menampilkan data untuk periode <strong>{{ active_period.name }}</strong></span>
+</div>
+{% endif %}
+
+{# ── Statistik Ringkasan ── #}
+<div class="prodi-section-title"><i class="ri-bar-chart-2-line"></i> Statistik Jumlah{% if active_period %} — {{ active_period.name }}{% endif %}</div>
+<div class="row g-4 mb-6">
+
+  <div class="col-6 col-sm-4 col-lg-2">
+    <div class="prodi-stat-card">
+      <div>
+        <div class="stat-num">{{ total_courses }}</div>
+        <div class="stat-lbl">Jumlah Kelas</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-4 col-lg-2">
+    <div class="prodi-stat-card">
+      <div>
+        <div class="stat-num">{{ total_agendas }}</div>
+        <div class="stat-lbl">Jumlah Sesi</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-4 col-lg-2">
+    <div class="prodi-stat-card">
+      <div>
+        <div class="stat-num">{{ total_dosen }}</div>
+        <div class="stat-lbl">Jumlah Dosen</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-4 col-lg-2">
+    <div class="prodi-stat-card">
+      <div>
+        <div class="stat-num">{{ total_mahasiswa }}</div>
+        <div class="stat-lbl">Jumlah Mahasiswa</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-4 col-lg-2">
+    <div class="prodi-stat-card">
+      <div>
+        <div class="stat-num">{{ total_materials }}</div>
+        <div class="stat-lbl">Jumlah Bahan Ajar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-4 col-lg-2">
+    <div class="prodi-stat-card">
+      <div>
+        <div class="stat-num">{{ total_tasks }}</div>
+        <div class="stat-lbl">Jumlah Tugas</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Daftar Kelas ── #}
+<div class="prodi-section-title"><i class="ri-list-check-3"></i> Daftar Kelas Aktif</div>
+
+{% if courses_detail %}
+<div class="card shadow-none border" style="border-radius:12px; overflow:hidden;">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="prodiCourseTable">
+      <thead class="table-light small text-uppercase text-muted">
+        <tr>
+          <th class="ps-4">Mata Kuliah</th>
+          <th>Kelas</th>
+          <th>Dosen</th>
+          <th class="text-center">Mahasiswa</th>
+          <th class="text-center">Bahan Ajar</th>
+          <th class="text-center">Tugas</th>
+          <th class="text-center">SKS</th>
+          <th style="width:48px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in courses_detail %}
+        <tr class="prodi-course-row"
+            data-search="{{ c.name|lower }} {{ c.code|lower }}">
+          <td class="ps-4">
+            <div class="fw-semibold text-heading" style="font-size:.9rem;">{{ c.name }}</div>
+            <div class="text-muted small">{{ c.code }} &bull; {{ c.prodi.nama_prodi }}</div>
+          </td>
+          <td>
+            <span class="badge bg-label-primary rounded-pill">{{ c.group }}</span>
+          </td>
+          <td style="max-width:180px;">
+            <div class="d-flex flex-wrap gap-1">
+              {% for coach in c.coaches.all %}
+                <span class="badge bg-label-secondary rounded-pill" style="font-size:.72rem;">
+                  {{ coach.nip.first_name|default:coach.nip.username }}
+                </span>
+              {% empty %}
+                <span class="text-muted fst-italic small">&mdash;</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="fw-semibold">{{ c.student_count }}</span>
+          </td>
+          <td class="text-center">
+            <span class="fw-semibold">{{ c.material_count }}</span>
+          </td>
+          <td class="text-center">
+            <span class="fw-semibold">{{ c.task_count }}</span>
+          </td>
+          <td class="text-center">
+            <span class="text-muted small">{{ c.credit_t|add:c.credit_p }} SKS</span>
+          </td>
+          <td class="pe-3">
+            <a href="#"
+               class="btn btn-sm btn-icon btn-text-secondary rounded-pill"
+               title="Lihat Detail">
+              <i class="ri-eye-line"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# Quick filter input #}
+<div class="mt-3 d-flex align-items-center gap-2">
+  <i class="ri-search-line text-muted"></i>
+  <input type="text" id="prodiSearchInput" class="form-control form-control-sm" style="max-width:280px;"
+         placeholder="Filter nama / kode mata kuliah...">
+  <span class="text-muted small" id="prodiFilterCount"></span>
+</div>
+
+{% else %}
+<div class="card shadow-none border text-center py-5">
+  <i class="ri-book-dead-line ri-3x text-secondary opacity-50 mb-2"></i>
+  <p class="text-muted mb-0">Belum ada kelas aktif pada periode ini.</p>
+</div>
+{% endif %}
+
+<script>
+(function(){
+  var inp = document.getElementById('prodiSearchInput');
+  var countEl = document.getElementById('prodiFilterCount');
+  if (!inp) return;
+  inp.addEventListener('input', function(){
+    var q = this.value.trim().toLowerCase();
+    var rows = document.querySelectorAll('#prodiCourseTable tbody tr');
+    var visible = 0;
+    rows.forEach(function(row){
+      var match = !q || (row.dataset.search||'').includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    countEl.textContent = q ? visible + ' kelas ditemukan' : '';
+  });
+})();
+</script>
+
+{% endblock %}

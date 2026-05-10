@@ -60,39 +60,82 @@
 
 {% block content %}
 
-<div class="card mb-4 bg-primary text-white">
-    <div class="card-body p-4">
-       <div class="d-flex justify-content-between align-items-start">
-          <div>
-             <h6 class="text-white opacity-75 mb-1 text-uppercase">Rekapitulasi Penilaian</h6>
-             <h3 class="text-white mb-3">{{ course.name }}</h3>
-             
-             <div class="d-flex flex-wrap gap-2">
-                 <span class="badge header-badge rounded-pill px-3 py-2">
-                    <i class="ri-barcode-box-line me-1"></i> Kode: <strong>{{ course.code }}</strong>
-                 </span>
-                 <span class="badge header-badge rounded-pill px-3 py-2">
-                    <i class="ri-community-line me-1"></i> Kelas: <strong>{{ course.group }}</strong>
-                 </span>
-                 <span class="badge header-badge rounded-pill px-3 py-2">
-                    <i class="ri-calendar-check-line me-1"></i> Periode: <strong>{{ course.period }}</strong>
-                 </span>
-                  <span class="badge header-badge rounded-pill px-3 py-2">
-                    <i class="ri-user-follow-line me-1"></i> Mahasiswa Aktif: <strong>{{ rekap_data|length }}</strong>
-                 </span>
-             </div>
-          </div>
-       </div>
+{# ====== COURSE HEADER CARD (identik add_agenda.html) ====== #}
+<div class="card mb-6 shadow-none rounded-1">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+      <h5 class="mb-1">
+        Agenda Pertemuan &mdash; <span class="fw-bold">{{ course.name }} - {{ course.group }}</span>
+      </h5>
+      <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+        <small class="text-muted">Kode: {{ course.code }}</small>
+        <span class="badge bg-label-info rounded-pill">
+          <i class="ri-group-line me-1"></i>{{ course.participants.count }} Peserta
+        </span>
+        <span class="badge bg-label-warning rounded-pill">
+          <i class="ri-book-2-line me-1"></i>{{ course.credit_t }}T / {{ course.credit_p }}P SKS
+        </span>
+      </div>
     </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'add-course-announcement' course.uuid %}" class="btn btn-sm btn-outline-warning">
+        <i class="ri-megaphone-line me-1"></i>Pengumuman
+      </a>
+      <a href="{% url 'add-course-participant' course.uuid %}" class="btn btn-sm btn-outline-info">
+        <i class="ri-group-line me-1"></i>Peserta
+      </a>
+      <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-sm btn-outline-secondary">
+        <i class="ri-arrow-go-back-line me-1"></i>
+      </a>
+    </div>
+    <div class="card-body py-3 px-0 border-bottom">
+      <div class="d-flex flex-wrap align-items-start gap-3">
+        <div>
+          <div class="text-uppercase text-muted fw-semibold" style="font-size:0.7rem;letter-spacing:.08em;">Program Studi</div>
+          <div class="fw-bold text-heading">{{ course.prodi }}</div>
+        </div>
+        <div class="vr mx-1 opacity-25 align-self-stretch d-none d-sm-block"></div>
+        <div>
+          <div class="text-uppercase text-muted fw-semibold" style="font-size:0.7rem;letter-spacing:.08em;">Periode Akademik</div>
+          <div class="fw-bold text-heading">{{ course.period }}</div>
+        </div>
+        <div class="vr mx-1 opacity-25 align-self-stretch d-none d-sm-block"></div>
+        <div>
+          <div class="text-uppercase text-muted fw-semibold" style="font-size:0.7rem;letter-spacing:.08em;">Pengajar</div>
+          <div class="fw-bold text-heading">{% for coach in course.coaches.all %}{{ coach.nip.first_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs" id="courseNavTabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link px-3" href="{% url 'add-course-agenda' course.uuid %}">Sesi</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link px-3" href="{% url 'course-assessment' course.uuid %}">Asesmen</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link px-3" href="{% url 'course-discussion-list' course.uuid %}">Diskusi</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link px-3" href="{% url 'add-course-participant' course.uuid %}">Peserta</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link active px-3" href="{% url 'course-rekapitulasi' course.uuid %}">Laporan Nilai</a>
+    </li>
+     <li class="nav-item">
+      <a class="nav-link px-3" href="{% url 'edit-all-academy-course' course.uuid %}">Info Kelas</a>
+    </li>
+
+  </ul>
 </div>
+
 
 <div class="card">
   <div class="card-header border-bottom d-flex justify-content-between align-items-center">
     <h5 class="mb-0">Transkrip Lengkap</h5>
     <div class="d-flex gap-2">
-        <a href="{% url 'manage-curriculum' course.uuid %}" class="btn btn-outline-secondary">
-           <i class="ri-arrow-go-back-line me-1"></i> Kembali
-       </a>
        <a href="?export=excel" class="btn btn-success">
            <i class="ri-file-excel-2-line me-1"></i> Export Excel
        </a>

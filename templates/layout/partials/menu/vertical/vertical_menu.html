@@ -1,5 +1,4 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-  
   {% if not navbar_full %}
   <div class="app-brand demo">
     <a href="{% url 'app-academy-dashboard' %}" class="app-brand-link">
@@ -8,7 +7,6 @@
       </span>
       <span class="app-brand-text demo menu-text fw-semibold ms-2">{% get_theme_variables 'template_name' %}</span>
     </a>
-
     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M8.47365 11.7183C8.11707 12.0749 8.11707 12.6531 8.47365 13.0097L12.071 16.607C12.4615 16.9975 12.4615 17.6305 12.071 18.021C11.6805 18.4115 11.0475 18.4115 10.657 18.021L5.83009 13.1941C5.37164 12.7356 5.37164 11.9924 5.83009 11.5339L10.657 6.707C11.0475 6.31653 11.6805 6.31653 12.071 6.707C12.4615 7.09747 12.4615 7.73053 12.071 8.121L8.47365 11.7183Z" fill-opacity="0.9" />
@@ -19,100 +17,34 @@
   {% endif %}
   <div class="menu-inner-shadow"></div>
   <ul class="menu-inner py-1">
-    
     <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-dashboard' %}active{% endif %}">
       <a href="{% url 'app-academy-dashboard' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-home-smile-line"></i>
         <div>Dashboard</div>
       </a>
     </li>
-
-    {% if user.userprodi %}
-    <li class="menu-header mt-5">
-      <span class="menu-header-text">{{ user.userprodi.prodi.nama_prodi }}</span>
-    </li>
-    
-    {% endif %}
-
-    {% if user.is_superuser or user.userdosen or user.usermhs %}
+    {% if user.userdosen or user.usermhs %}
      <li class="menu-header mt-5">
       <span class="menu-header-text">Kaizen</span>
     </li>
-    {% endif %}
-    
-        {% if user.usermhs %}
-    <li class="menu-item {% if 'library' in request.path %}active{% endif %}">
-      <a href="{% url 'student-library-list' %}" class="menu-link">
-        <i class="menu-icon tf-icons ri-book-read-line"></i>
-        <div>Perpustakaan Digital</div>
-      </a>
-    </li>
-    {% endif %}
-
-  
-
-    {% if user.is_superuser or user.userdosen or user.usermhs %}
       <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-calender' %}active{% endif %}">
       <a href="{% url 'app-academy-calender' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-calendar-schedule-line"></i>
         <div>My Calendar</div>
+        <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
       </a>
     </li>
-    <li class="menu-header mt-5">
-      <span class="menu-header-text">Apps & Pages</span>
-    </li>
-    <li class="menu-item {% if request.resolver_match.url_name == 'chat-index' %}active{% endif %}">
-      <a href="{% url 'chat-index' %}" class="menu-link">
-        <i class="menu-icon tf-icons ri-wechat-line"></i>
-        <div>Chat</div>
-      </a>
-    </li>
-    <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">
+     <li class="menu-item {% if request.resolver_match.url_name == 'app-kanban' %}active{% endif %}">
       <a href="{% url 'app-kanban' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-drag-drop-line"></i>
         <div>Kanban</div>
+        <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
       </a>
     </li>
     {% endif %}
-    
-    <!-- <li class="menu-item">
-  <a href="https://data.findstock.id/?tipe=Kota" class="menu-link" target="_blank">
-    <i class="menu-icon tf-icons ri-database-2-line"></i>
-    <div>Data</div>
-  </a>
-</li> -->
-  
 
- 
 
-    {% if user.is_superuser or user.userdosen %}
-    <li class="menu-item {% if 'program-studi' in request.path or 'list-academy' in request.path or 'list-course' in request.path %}active open{% endif %}">
-      <a href="javascript:void(0);" class="menu-link menu-toggle">
-        <i class="menu-icon tf-icons ri-graduation-cap-line"></i>
-        <div>Academy</div>
-      </a>
-      <ul class="menu-sub">
-        <li class="menu-item {% if request.resolver_match.url_name == 'program-studi-course' %}active{% endif %}">
-          <a href="{% url 'program-studi-course' %}" class="menu-link">
-            <div>Program Studi</div>
-          </a>
-        </li>
-        <li class="menu-item {% if request.resolver_match.url_name == 'list-course-period' %}active{% endif %}">
-          <a href="{% url 'list-course-period' %}" class="menu-link">
-            <div>Periode</div>
-          </a>
-        </li>
-        <li class="menu-item {% if request.resolver_match.url_name == 'list-academy-course' %}active{% endif %}">
-          <a href="{% url 'list-academy-course' %}" class="menu-link">
-            <div>List</div>
-          </a>
-        </li>
-      
-      </ul>
-    </li>
-    {% endif %}
-
-    {% if user.is_superuser or user.userdosen %}
+    {% if user.userdosen %}
     <li class="menu-item {% if 'library' in request.path or 'categories' in request.path %}active open{% endif %}">
       <a href="javascript:void(0);" class="menu-link menu-toggle">
         <i class="menu-icon tf-icons ri-book-read-line"></i>
@@ -141,6 +73,52 @@
 
 
     {% if user.usermhs %}
+    <li class="menu-item {% if 'library' in request.path %}active{% endif %}">
+      <a href="{% url 'student-library-list' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-book-read-line"></i>
+        <div>Perpustakaan Digital</div>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if user.userdosen or user.usermhs %}
+    <li class="menu-header mt-5">
+      <span class="menu-header-text">Apps & Pages</span>
+    </li>
+
+  {% if user.userdosen %}
+    <li class="menu-item {% if 'list/dosen/course' in request.path %}active{% endif %}">
+      <a href="{% url 'list-dosen-course' %}" class="menu-link">
+        <i class="menu-icon ri-graduation-cap-line"></i>
+        <div>My Kelas</div>
+      </a>
+    </li>
+    {% endif %}
+
+    
+
+
+    <li class="menu-item {% if request.resolver_match.url_name == 'chat-index' %}active{% endif %}">
+      <a href="{% url 'chat-index' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-wechat-line"></i>
+        <div>Chat</div>
+      </a>
+    </li> 
+    {% endif %}
+
+    {% if user.userdosen %}
+
+    <li class="menu-item {% if 'portfolio/mahasiswa' in request.path %}active{% endif %}">
+      <a href="{% url 'dosen-portfolio-list' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-folder-shield-2-line"></i>
+        <div>Portofolio Mhs</div>
+        <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
+      </a> 
+    </li>
+    {% endif %}
+
+
+    {% if user.usermhs %}
     <li class="menu-item {% if request.resolver_match.url_name == 'app-academy-course' %}active{% endif %}">
       <a href="{% url 'app-academy-course' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-graduation-cap-line"></i>
@@ -149,21 +127,86 @@
     </li>
     {% endif %}
 
-    {% if user.is_superuser %}
-    <li class="menu-item {% if 'app-user' in request.path %}active open{% endif %}">
-      <a href="javascript:void(0);" class="menu-link menu-toggle">
+        {% if user.usermhs %}
+    <li class="menu-item {% if 'portfolio' in request.path %}active{% endif %}">
+      <a href="{% url 'portfolio-list' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-folder-user-line"></i>
+        <div>Portofolio</div>
+         <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if user.is_superuser or user.userprodi %}
+      <li class="menu-header mt-5">
+      <span class="menu-header-text">Master Data</span>
+    </li>
+     <li class="menu-item {% if request.resolver_match.url_name == 'program-studi-course' %}active{% endif %}">
+      <a href="{% url 'program-studi-course' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-user-add-line"></i>
+        <div>Program Studi</div>
+      </a>
+    </li>
+ 
+
+ <li class="menu-item {% if request.resolver_match.url_name == 'list-course-period' %}active{% endif %}">
+      <a href="{% url 'list-course-period' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-calendar-line"></i>
+        <div>Periode Akademik</div>
+      </a>
+    </li>
+ 
+    
+
+     <li class="menu-item {% if request.resolver_match.url_name == 'list-academy-course' %}active{% endif %}">
+      <a href="{% url 'list-academy-course' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-bar-chart-grouped-line"></i>
+        <div>List Course</div>
+      </a>
+    </li>
+ 
+
+    <li class="menu-header mt-5">
+      <span class="menu-header-text">Reports</span>
+    </li>
+
+    <!-- Lecturer Performance Score -->
+    <li class="menu-item {% if request.resolver_match.url_name == 'lps-report' %}active{% endif %}">
+      <a href="{% url 'lps-report' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-bar-chart-grouped-line"></i>
+        <div>Lecturer Performance</div>
+           <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
+      </a>
+    </li>
+
+    <!-- Lecture Laporan Kelas -->
+    <li class="menu-item {% if request.resolver_match.url_name == 'lecturer-class-report' %}active{% endif %}">
+      <a href="{% url 'lecturer-class-report' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-table-view"></i>
+        <div>Laporan Kelas</div>
+        <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
+      </a>
+    </li>
+
+ 
+
+    <li class="menu-item {% if 'prodi/portfolio' in request.path %}active{% endif %}">
+      <a href="{% url 'admin-portfolio-list' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-folder-shield-2-line"></i>
+        <div>Portofolio Mhs</div>
+           <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
+      </a>
+    </li>
+
+       <li class="menu-item {% if request.resolver_match.url_name == 'app-user-lists' %}active{% endif %}">
+      <a href="{% url 'app-user-lists' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-user-line"></i>
         <div>Users</div>
       </a>
-      <ul class="menu-sub">
-        <li class="menu-item {% if request.resolver_match.url_name == 'app-user-lists' %}active{% endif %}">
-          <a href="{% url 'app-user-lists' %}" class="menu-link">
-            <div>List</div>
-          </a>
-        </li>
-      </ul>
     </li>
+
     {% endif %}
+
 
     <li class="menu-header mt-5">
       <span class="menu-header-text">Others</span>
@@ -186,15 +229,17 @@
     {% endif %}
 
     <li class="menu-item">
-      <a href="#" target="_blank" class="menu-link">
+      <a href="https://chat.whatsapp.com/BocqeHlc7GyDacZHS9WxGd?mode=gi_t" target="_blank" class="menu-link">
         <i class="menu-icon tf-icons ri-lifebuoy-line"></i>
         <div>Support</div>
+           <div class="badge bg-success rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
       </a>
     </li>
-    <li class="menu-item">
-      <a href="#" target="_blank" class="menu-link">
+    <li class="menu-item {% if 'app/documentation' in request.path %}active{% endif %}">
+      <a href="{% url 'documentation-list' %}" class="menu-link">
         <i class="menu-icon tf-icons ri-article-line"></i>
-        <div>Documentation</div>
+        <div>Panduan & Bantuan</div>
+        <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</div>
       </a>
     </li>
 

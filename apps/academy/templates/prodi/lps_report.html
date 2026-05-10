@@ -1,0 +1,198 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Lecturer Performance Score (LPS){% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+
+{# ── Page Header ── #}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-6">
+  <div>
+    <h4 class="mb-1">Lecturer Performance Score <span class="text-muted fs-5">(LPS)</span></h4>
+    <p class="text-muted mb-0 small">
+      Rekap skor performa Dosen berdasarkan aktivitas mereka di seluruh kelas yang diajar pada periode tertentu.
+    </p>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="ri-information-line"></i><div>{{ message }}</div>
+    </div>
+  {% endfor %}
+{% endif %}
+
+{# ── Filter ── #}
+<div class="card mb-4 shadow-none">
+  <div class="card-body py-3">
+    <form method="get" class="d-flex flex-wrap align-items-end gap-3">
+
+      <div class="flex-grow-1" style="min-width:200px;">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" value="{{ search }}"
+                 class="form-control" placeholder="Cari nama / NIDN / NIP pengajar">
+          <span class="input-group-text"><i class="ri-search-line"></i></span>
+        </div>
+      </div>
+
+      <div style="min-width:200px;">
+        <select name="prodi" class="form-select form-select-sm">
+          <option value="">Semua Program Studi</option>
+          {% for p in prodis %}
+            <option value="{{ p.id }}" {% if sel_prodi == p.id|stringformat:"s" %}selected{% endif %}>
+              {{ p.nama_prodi }} ({{ p.strata }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="min-width:160px;">
+        <select name="period" class="form-select form-select-sm">
+          <option value="">Semua Periode</option>
+          {% for per in periods %}
+            <option value="{{ per.id }}" {% if sel_period == per.id|stringformat:"s" %}selected{% endif %}>
+              {{ per.name }}{% if per.is_active %}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="ri-filter-3-line me-1"></i>Filter
+        </button>
+        <a href="{% url 'lps-report' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Table ── #}
+<div class="card">
+  <div class="card-datatable table-responsive">
+    <table class="table table-hover" id="lpsTable">
+      <thead>
+        <tr>
+          <th>NO</th>
+          <th>Dosen</th>
+          <th class="text-center"> Kelas</th>
+          <th class="text-center bg-label-info" style="white-space: nowrap;">
+            Lesson Planning(30%)
+          </th>
+          <th class="text-center bg-label-primary" style="white-space: nowrap;">
+            Learning Process (40%)
+          </th>
+          <th class="text-center bg-label-warning" style="white-space: nowrap;">
+            Learning Assessment(30%)
+          </th>
+          <th class="text-center fw-bold">Skor</th>
+          <th style="width:48px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in lps_data %}
+        {% with d=item.dosen s=item.scores %}
+        <tr>
+          <td class="text-muted small">{{ forloop.counter }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div>
+                <span class="fw-semibold small">
+                  {{ d.nip.first_name }}
+                </span>
+                {% if d.jafung %}
+                  <small class="text-muted d-block">{{ d.jafung }}</small>
+                  <p class="small">{{ d.nidn|default:d.nip.username }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-label-primary rounded-pill">{{ s.jumlah_kelas }}</span>
+          </td>
+          <td class="text-center">
+            <span class="fw-semibold">{{ s.lesson_planning }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:60px;">
+              <div class="progress-bar bg-info"
+                   style="width:{% widthratio s.lesson_planning 30 100 %}%"></div>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="fw-semibold">{{ s.learning_process }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:60px;">
+              <div class="progress-bar bg-primary"
+                   style="width:{% widthratio s.learning_process 40 100 %}%"></div>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="fw-semibold">{{ s.learning_assessment }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:60px;">
+              <div class="progress-bar bg-warning"
+                   style="width:{% widthratio s.learning_assessment 30 100 %}%"></div>
+            </div>
+          </td>
+          <td class="text-center">
+            {% if s.total >= 85 %}
+              <span class="fw-bold text-success">{{ s.total }}%</span>
+            {% elif s.total >= 70 %}
+              <span class="fw-bold text-warning">{{ s.total }}%</span>
+            {% else %}
+              <span class="fw-bold text-danger">{{ s.total }}%</span>
+            {% endif %}
+          </td>
+
+           <td class="pe-3">
+            <a href="{% url 'lps-detail' d.nip.username %}{% if sel_period %}?period={{ sel_period }}{% endif %}"
+               class="btn btn-sm btn-icon btn-text-secondary rounded-pill"
+               title="Lihat Detail">
+              <i class="ri-eye-line"></i>
+            </a>
+          </td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5 text-muted fst-italic">
+            Tidak ada data dosen yang sesuai filter.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+$(document).ready(function () {
+  $('#lpsTable').DataTable({
+    dom: '<"d-flex justify-content-between align-items-center p-3"lf>t<"d-flex justify-content-between align-items-center p-3"ip>',
+    language: {
+      search:     'Cari:',
+      lengthMenu: 'Tampilkan _MENU_',
+      info:       'Menampilkan _START_–_END_ dari _TOTAL_ dosen',
+      paginate:   { previous: '‹', next: '›' },
+      zeroRecords:'Tidak ada data.'
+    },
+    columnDefs: [
+      { orderable: false, targets: [0] },
+      { type: 'num', targets: [4, 5, 6, 7] },
+    ],
+    order: [[7, 'desc']],
+    pageLength: 25,
+  });
+});
+</script>
+
+{% endblock %}

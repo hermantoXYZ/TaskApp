@@ -1,0 +1,252 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Manajemen Portofolio Mahasiswa{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+
+{# ── Page Header ── #}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-6">
+  <div>
+    <h4 class="mb-1">Portofolio Mahasiswa</h4>
+    <p class="text-muted mb-0 small">Verifikasi dan kelola portofolio yang dikirimkan mahasiswa.</p>
+  </div>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} d-flex align-items-center gap-2 mb-4" role="alert">
+  <i class="ri-information-line"></i><div>{{ message }}</div>
+</div>
+{% endfor %}
+{% endif %}
+
+{# ── Summary Cards ── #}
+<div class="row g-4 mb-5">
+  <div class="col-sm-4">
+    <div class="card shadow-none border text-center py-3">
+      <div class="card-body">
+        <h4 class="mb-0">{{ total_pending }}</h4>
+        <small class="text-muted">Menunggu</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card shadow-none border text-center py-3">
+      <div class="card-body">
+        <h4 class="mb-0">{{ total_verified }}</h4>
+        <small class="text-muted">Terverifikasi</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card shadow-none border text-center py-3">
+      <div class="card-body">
+        <h4 class="mb-0">{{ total_rejected }}</h4>
+        <small class="text-muted">Ditolak</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Filter ── #}
+<div class="card mb-4 shadow-none">
+  <div class="card-body py-3">
+    <form method="get" class="d-flex flex-wrap align-items-end gap-3">
+      <div class="flex-grow-1" style="min-width:200px;">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" value="{{ q }}"
+                 class="form-control" placeholder="Cari judul, nama, atau NIM mahasiswa">
+          <span class="input-group-text"><i class="ri-search-line"></i></span>
+        </div>
+      </div>
+      <div style="min-width:180px;">
+        <select name="vstatus" class="form-select form-select-sm">
+          <option value="">Semua Status</option>
+          <option value="pending"  {% if sel_vstatus == 'pending' %}selected{% endif %}>Menunggu</option>
+          <option value="verified" {% if sel_vstatus == 'verified' %}selected{% endif %}>Terverifikasi</option>
+          <option value="rejected" {% if sel_vstatus == 'rejected' %}selected{% endif %}>Ditolak</option>
+        </select>
+      </div>
+      <div style="min-width:180px;">
+        <select name="atype" class="form-select form-select-sm">
+          <option value="">Semua Tipe</option>
+          {% for val, lbl in activity_choices %}
+          <option value="{{ val }}" {% if sel_atype == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="ri-filter-3-line me-1"></i>Filter
+        </button>
+        <a href="{% url 'admin-portfolio-list' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Table ── #}
+<div class="card">
+  <div class="card-datatable table-responsive">
+    <table class="table table-hover" id="portfolioTable">
+      <thead>
+        <tr>
+          <th>NO</th>
+          <th>Mahasiswa</th>
+          <th>Judul Portofolio</th>
+          <th>Tipe</th>
+          <th class="text-center">Status</th>
+          <th class="text-center">Verifikasi</th>
+          <th class="text-center" style="width:190px;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for porto in portfolios %}
+        <tr>
+          <td class="text-muted small">{{ forloop.counter }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div>
+                <span class="fw-semibold small d-block">{{ porto.user.first_name }}</span>
+                <small class="text-muted">{{ porto.user.username }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="fw-semibold d-block" style="max-width:280px;" title="{{ porto.title }}">
+              {{ porto.title|truncatechars:60 }}
+            </span>
+            {% if porto.is_featured %}
+            <span class="badge bg-label-warning badge-sm border-pill">Unggulan</span>
+            {% endif %}
+          </td>
+          <td><span class="badge bg-label-secondary">{{ porto.get_activity_type_display }}</span></td>
+          <td class="text-center">
+            {% if porto.status == 'published' %}
+              <span class="badge bg-label-success">Published</span>
+            {% elif porto.status == 'draft' %}
+              <span class="badge bg-label-secondary">Draft</span>
+            {% else %}
+              <span class="badge bg-label-warning">Archived</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if porto.verification_status == 'verified' %}
+              <span class="badge text-dark"><i class="ri-shield-check-line me-1"></i>Terverifikasi</span>
+            {% elif porto.verification_status == 'rejected' %}
+              <span class="badge text-dark"><i class="ri-close-circle-line me-1"></i>Ditolak</span>
+            {% else %}
+              <span class="badge text-dark"><i class="ri-time-line me-1"></i>Pending</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <div class="d-flex justify-content-center gap-1 flex-wrap">
+
+              {# Quick verify / reject via mini form + modal note #}
+              {% if porto.verification_status != 'verified' %}
+              <form method="post" action="{% url 'portfolio-verify' porto.id %}" class="d-inline"
+                    onsubmit="return setNote(this, '{{ porto.title|escapejs }}', 'verify')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="verify">
+                <button type="submit" class="btn btn-sm btn-icon btn-success"
+                        title="Verifikasi">
+                  <i class="ri-shield-check-line ri-16px"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {% if porto.verification_status != 'rejected' %}
+              <form method="post" action="{% url 'portfolio-verify' porto.id %}" class="d-inline"
+                    onsubmit="return setNote(this, '{{ porto.title|escapejs }}', 'reject')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn btn-sm btn-icon btn-danger"
+                        title="Tolak">
+                  <i class="ri-close-circle-line ri-16px"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {% if porto.verification_status != 'pending' %}
+              <form method="post" action="{% url 'portfolio-verify' porto.id %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset">
+                <button type="submit" class="btn btn-sm btn-icon btn-outline-secondary"
+                        title="Reset ke Pending">
+                  <i class="ri-refresh-line ri-16px"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {% if user.is_superuser %}
+              <form method="post" action="{% url 'admin-portfolio-delete' porto.id %}" class="d-inline"
+                    onsubmit="return confirm('Yakin ingin menghapus portofolio mahasiswa ini? Tindakan ini tidak dapat dibatalkan.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Hapus Portofolio">
+                  <i class="ri-delete-bin-line ri-16px"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              <a href="{% url 'public-portfolio-detail' porto.user.username porto.slug %}"
+                 target="_blank"
+                 class="btn btn-sm btn-icon btn-outline-primary"
+                 title="Lihat Detail Portofolio">
+                <i class="ri-external-link-line ri-16px"></i>
+              </a>
+
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5 text-muted fst-italic">
+            Tidak ada portofolio yang sesuai filter.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── DataTable + Inline Note Prompt ── #}
+<script>
+/* Minta catatan verifikasi sebelum submit */
+function setNote(form, title, action) {
+    const label = action === 'verify' ? 'verifikasi' : 'penolakan';
+    return true;
+}
+
+$(document).ready(function () {
+  $('#portfolioTable').DataTable({
+    dom: '<"d-flex justify-content-between align-items-center p-3"lf>t<"d-flex justify-content-between align-items-center p-3"ip>',
+    language: {
+      search:     'Cari:',
+      lengthMenu: 'Tampilkan _MENU_',
+      info:       'Menampilkan _START_–_END_ dari _TOTAL_',
+      paginate:   { previous: '‹', next: '›' },
+      zeroRecords:'Tidak ada data.'
+    },
+    columnDefs: [
+      { orderable: false, targets: [0, 7] },
+    ],
+    order: [[0, 'asc']],
+    pageLength: 25,
+  });
+});
+</script>
+
+{% endblock %}

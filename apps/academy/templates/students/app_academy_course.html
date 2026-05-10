@@ -29,36 +29,6 @@
 
 {% block content %}
 <div class="app-academy">
-  
-  <div class="card mb-6 overflow-hidden position-relative bg-primary">
-    <div class="position-absolute bottom-0 start-0 bg-white opacity-10 rounded-circle" style="width: 150px; height: 150px; margin-bottom: -40px; margin-left: -40px;"></div>
-
-    <div class="card-body p-0">
-        <div class="row g-0 align-items-center">
-            
-            <div class="col-md-3 d-none d-md-flex justify-content-center align-items-end pt-4">
-                <img src="{% static 'img/illustrations/bulb-light.png' %}" 
-                     class="img-fluid" height="100" style="opacity: 0.9; transform: rotate(-10deg);" alt="Bulb">
-            </div>
-
-            <div class="col-md-6 text-center py-5 px-4">
-                <h3 class="text-white fw-bold mb-1">Welcome back, {{ request.user.first_name|capfirst }}!</h3>
-                <p class="text-white text-opacity-75 mb-4">Lanjutkan progres belajarmu hari ini.</p>
-                
-                <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="input-group input-group-lg input-group-merge shadow-sm">
-                    <span class="input-group-text border-0 ps-3 bg-white"><i class="ri-search-line"></i></span>
-                    <input type="text" class="form-control border-0 ps-2 bg-white" placeholder="Apa yang ingin Anda pelajari hari ini?" />
-                    <button class="btn btn-primary px-4" type="button">Cari</button>
-                </div>
-            </div>
-        </div>
-            </div>
-        </div>
-    </div>
-</div>
-
   <div class="card mb-6">
     <div class="card-header d-flex flex-wrap justify-content-between gap-4">
       <div class="card-title mb-0 me-1">
@@ -66,11 +36,16 @@
         <p class="mb-0 text-body">Total {{ my_courses.count }} mata kuliah diambil.</p>
       </div>
       <div class="d-flex justify-content-md-end align-items-center gap-6 flex-wrap">
-        <select class="form-select form-select-sm w-px-250">
-          <option value="all">Semua</option>
-          <option value="active">Aktif</option>
-          <option value="completed">Selesai</option>
-        </select>
+        <form method="get" class="mb-0">
+          <select name="period" class="form-select form-select-sm w-px-250" onchange="this.form.submit()">
+            <option value="">Semua Tahun Ajar / Periode</option>
+            {% for p in available_periods %}
+            <option value="{{ p.id }}" {% if sel_period == p.id|stringformat:"s" %}selected{% endif %}>
+              {{ p.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </form>
 
         <div class="form-check form-switch mb-0">
           <input type="checkbox" class="form-check-input" id="CourseSwitch" checked />

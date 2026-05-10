@@ -11,7 +11,7 @@ from web_project.template_helpers.theme import TemplateHelper
 from .models import (
     Course, CourseDiscussion, CourseDiscussionReply, CourseDiscussionLike,
     CourseParticipant, CourseAgenda, CourseMaterial, CourseAssignment,
-    UserDosen, UserMhs,
+    CourseAnnouncement, UserDosen, UserMhs,
 )
 
 
@@ -80,6 +80,12 @@ FEED_CONFIG = {
         'action_text': 'membuka diskusi di',
         'disc_type':   'general',
     },
+    'announcement': {
+        'icon':        'ri-megaphone-line',
+        'color':       'danger',
+        'action_text': 'memposting pengumuman di',
+        'disc_type':   'general',
+    },
 }
 
 
@@ -89,7 +95,7 @@ FEED_CONFIG = {
 
 def _purge_auto_disc_if_disabled(course, item_type, obj):
     """
-    Hapus thread otomatis yang terikat ke agenda/materi/tugas bila diskusi
+    Hapus thread otomatis yang terikat ke agenda/materi/tugas/pengumuman bila diskusi
     dinonaktifkan, agar tidak tertinggal baris di admin / DB.
     """
     if item_type == 'agenda':
@@ -103,6 +109,8 @@ def _purge_auto_disc_if_disabled(course, item_type, obj):
         CourseDiscussion.objects.filter(course=course, material=obj).delete()
     elif item_type == 'assignment':
         CourseDiscussion.objects.filter(course=course, assignment=obj).delete()
+    elif item_type == 'announcement':
+        CourseDiscussion.objects.filter(course=course, announcement=obj).delete()
 
 
 def _feed_linked_discussion(course, item_type, obj):
@@ -171,6 +179,20 @@ def _feed_linked_discussion(course, item_type, obj):
                 )
         return disc
 
+    if item_type == 'announcement':
+        disc = CourseDiscussion.objects.filter(course=course, announcement=obj).first()
+        if not disc:
+            fallback = _fallback_user()
+            if fallback:
+                disc = CourseDiscussion.objects.create(
+                    course=course,
+                    discussion_type='general',
+                    announcement=obj,
+                    title=obj.title,
+                    created_by=fallback,
+                )
+        return disc
+
     return None
 
 
@@ -218,6 +240,16 @@ def _sync_linked_discussion_on_content_save(course, item_type, obj, fallback_use
                 title=obj.title,
                 created_by=fallback_user,
             )
+    elif item_type == 'announcement':
+        disc = CourseDiscussion.objects.filter(course=course, announcement=obj).first()
+        if not disc:
+            CourseDiscussion.objects.create(
+                course=course,
+                discussion_type='general',
+                announcement=obj,
+                title=obj.title,
+                created_by=fallback_user,
+            )
 
 
 # ─────────────────────────────────────────────
@@ -242,6 +274,7 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
     show_material = not filter_type or filter_type == 'material' or filter_type == 'discussion'
     show_assignment = not filter_type or filter_type == 'assignment' or filter_type == 'discussion'
     show_manual_discussion = not filter_type or filter_type == 'discussion'
+    show_announcement = not filter_type or filter_type == 'announcement'
 
     # ── 1. Agendas ──────────────────────────────────────────────────
     if show_agenda:
@@ -265,6 +298,18 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
                 except Exception:
                     pass
 
+            # Ambil lampiran media (AgendaMediaItem) untuk ditampilkan di feed
+            media_items = []
+            for item in agenda.media_items.select_related('media_file').all():
+                mf = item.media_file
+                media_items.append({
+                    'name':       mf.name,
+                    'file_type':  mf.file_type,
+                    'file_url':   mf.file.url if mf.file else None,
+                    'video_url':  mf.video_url or None,
+                    'size':       mf.file_size_display,
+                })
+
             feed_items.append({
                 'item_type':        'agenda',
                 'source':           agenda,
@@ -276,7 +321,7 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
                 'course_name':      course.name,
                 'session_name':     agenda.title,
                 'title':            agenda.title,
-                'description':      agenda.description or '',
+                'description': getattr(agenda, 'description', None) or agenda.title,
                 'icon':             cfg['icon'],
                 'color':            cfg['color'],
                 'attachment_url':   None,
@@ -289,6 +334,7 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
                     'is_online':   agenda.is_online,
                     'meeting_url': agenda.meeting_url,
                     'agenda_type': agenda.agenda_type,
+                    'media_items': media_items,
                 },
             })
 
@@ -314,25 +360,6 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
                 except Exception:
                     pass
 
-            att_url  = mat.file_attachment.url  if mat.file_attachment  else None
-            att_name = mat.file_attachment.name.split('/')[-1] if mat.file_attachment else None
-            if att_name and '.' in att_name:
-                ext = att_name.rsplit('.', 1)[-1].lower()
-                att_icon = {
-                    'pdf': 'ri-file-pdf-2-line', 'doc':  'ri-file-word-line',
-                    'docx':'ri-file-word-line',   'ppt':  'ri-file-ppt-2-line',
-                    'pptx':'ri-file-ppt-2-line',  'xls':  'ri-file-excel-2-line',
-                    'xlsx':'ri-file-excel-2-line', 'zip':  'ri-file-zip-line',
-                }.get(ext, 'ri-file-line')
-                att_color = {
-                    'pdf': '#e74c3c', 'doc': '#2980b9', 'docx': '#2980b9',
-                    'ppt': '#e67e22', 'pptx':'#e67e22', 'xls':  '#27ae60',
-                    'xlsx':'#27ae60', 'zip': '#8e44ad',
-                }.get(ext, '#697a8d')
-            else:
-                att_icon  = 'ri-file-line'
-                att_color = '#697a8d'
-
             feed_items.append({
                 'item_type':        'material',
                 'source':           mat,
@@ -347,14 +374,12 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
                 'description':      mat.text_content[:200] if mat.text_content else '',
                 'icon':             cfg['icon'],
                 'color':            cfg['color'],
-                'attachment_url':   att_url,
-                'attachment_name':  att_name,
-                'attachment_icon':  att_icon,
-                'attachment_color': att_color,
+                'attachment_url':   None,
+                'attachment_name':  None,
+                'attachment_icon':  'ri-article-line',
+                'attachment_color': '#696cff',
                 'is_published':     mat.is_published,
                 'extra': {
-                    'material_type': mat.material_type,
-                    'video_url':     mat.video_url,
                     'mat_id':        mat.id,
                     'course_uuid':   str(course.uuid),
                 },
@@ -414,12 +439,68 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
                 },
             })
 
-    # ── 4. Manual student discussions (no linked source) ────────────
+    # ── 4. Announcements (CourseAnnouncement) ──────────────────────
+    if show_announcement:
+        announcements = (
+            CourseAnnouncement.objects
+            .filter(course=course)
+            .select_related('created_by__nip')
+            .order_by('-is_pinned', '-created_at')
+        )
+        PRIORITY_COLORS = {
+            'low':    '#8592a3',
+            'normal': '#696cff',
+            'high':   '#ff9f43',
+            'urgent': '#ea5455',
+        }
+        for ann in announcements:
+            creator_dosen = ann.created_by or fallback_coach
+            creator_user  = creator_dosen.nip if creator_dosen else user
+            cfg = FEED_CONFIG['announcement']
+            disc = _feed_linked_discussion(course, 'announcement', ann)
+
+            photo_url = None
+            if creator_dosen and creator_dosen.photo:
+                try:
+                    photo_url = creator_dosen.photo.url
+                except Exception:
+                    pass
+
+            feed_items.append({
+                'item_type':        'announcement',
+                'source':           ann,
+                'disc':             disc,
+                'created_by_user':  creator_user,
+                'photo_url':        photo_url,
+                'created_at':       ann.created_at,
+                'action_text':      cfg['action_text'],
+                'course_name':      course.name,
+                'session_name':     '',
+                'title':            ann.title,
+                'description':      ann.content[:200] if ann.content else '',
+                'icon':             cfg['icon'],
+                'color':            cfg['color'],
+                'attachment_url':   None,
+                'attachment_name':  None,
+                'attachment_icon':  '',
+                'attachment_color': '',
+                'is_published':     True,
+                'extra': {
+                    'priority':       ann.priority,
+                    'priority_color': PRIORITY_COLORS.get(ann.priority, '#696cff'),
+                    'is_pinned':      ann.is_pinned,
+                    'content':        ann.content,
+                    'allow_discussion': ann.allow_discussion,
+                },
+            })
+
+    # ── 5. Manual student discussions (no linked source) ────────────
     if show_manual_discussion:
         student_discs = (
             CourseDiscussion.objects
             .filter(course=course, agenda__isnull=True,
-                    material__isnull=True, assignment__isnull=True)
+                    material__isnull=True, assignment__isnull=True,
+                    announcement__isnull=True)
             .select_related('created_by')
             .prefetch_related('likes', 'replies')
             .order_by('-created_at')
@@ -455,11 +536,12 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
     # ── Sort newest first ────────────────────────────────────────────
     feed_items.sort(key=lambda x: x['created_at'], reverse=True)
 
+    # Pengumuman (announcement) tidak butuh CourseDiscussion thread, tampilkan selalu
     feed_items = [
         fi for fi in feed_items
-        if fi['item_type'] == 'discussion' or fi['disc'] is not None
+        if fi['item_type'] in ('discussion', 'announcement') or fi['disc'] is not None
     ]
-    
+
     # Filter "Diskusi": hanya baris yang punya CourseDiscussion di DB / feed.
     if filter_type == 'discussion':
         feed_items = [fi for fi in feed_items if fi['disc'] is not None]
@@ -593,6 +675,42 @@ class CourseDiscussionListView(DiscussionBaseView):
             filter_type=filter_type,
         )
         return self.render(context)
+
+
+class CourseDiscussionDeleteView(DiscussionBaseView):
+    """
+    Hapus satu discussion.
+    Hanya dosen atau admin yang boleh hapus.
+    """
+    def post(self, request, course_uuid, disc_id):
+        try:
+            course, is_dosen, is_student = _get_course_access(request, course_uuid)
+        except PermissionError as e:
+            messages.error(request, str(e))
+            return redirect('app-academy-dashboard')
+
+        if not is_dosen:
+            messages.error(request, "Anda tidak punya hak untuk menghapus diskusi.")
+            return redirect('course-discussion-list', course_uuid=course_uuid)
+
+        try:
+            disc = CourseDiscussion.objects.get(id=disc_id, course=course)
+        except CourseDiscussion.DoesNotExist:
+            messages.error(request, "Diskusi tidak ditemukan.")
+            return redirect('course-discussion-list', course_uuid=course_uuid)
+
+        title_for_msg = disc.title or f"diskusi (ID:{disc_id})"
+        disc.delete()
+
+        messages.success(request,
+            f"Diskusi '{title_for_msg}' berhasil dihapus."
+        )
+        next_url = request.POST.get("next") or request.GET.get("next") or \
+                   request.META.get("HTTP_REFERER") or \
+                   reverse_lazy("course-discussion-list", args=[course_uuid])
+
+        return redirect(next_url)
+
 
 # ─────────────────────────────────────────────
 # 3. Detail Diskusi + Reply

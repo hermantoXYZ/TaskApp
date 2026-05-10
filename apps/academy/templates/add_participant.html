@@ -7,18 +7,12 @@
 
 {% block vendor_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
-<link rel="stylesheet" href="{% static 'vendor/libs/bootstrap-select/bootstrap-select.css' %}" />
-
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
 {% endblock vendor_css %}
 
 {% block vendor_js %}
 {{ block.super }}
-<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
-<script src="{% static 'vendor/libs/bootstrap-select/bootstrap-select.js' %}"></script>
-
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 {% endblock vendor_js %}
 
@@ -29,58 +23,12 @@
 {% block content %}
 <div class="row">
   <div class="col-12">
-    
-    <form method="post">
-    {% csrf_token %}
-    
-    <div class="card mb-6">
-         <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-           Tambah Mahasiswa Baru
-        </h5>
-         <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-outline-secondary btn-sm">
-            <i class="ri-arrow-go-back-line me-1"></i> Kembali
-         </a>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          
-          <div class="col-md-6 mb-6">
-            <div class="form-floating form-floating-outline">
-              <select id="select2Disabled" class="select2 form-select" disabled>
-                <option value="{{ course.id }}" selected>{{ course.name }} ({{ course.code }} - {{ course.group}})</option>
-              </select>
-              <label for="select2Disabled">Mata Kuliah</label>
-            </div>
-          </div>
-
-          <div class="col-md-6 mb-6">
-            <div class="form-floating form-floating-outline">
-              {{ form.list_mahasiswa }} 
-              <label for="{{ form.list_mahasiswa.id_for_label }}">Pilih Mahasiswa</label>
-            </div>
-            {% if form.list_mahasiswa.errors %}
-                <div class="text-danger small mt-1">{{ form.list_mahasiswa.errors }}</div>
-            {% endif %}
-          </div>
-          
-        </div> 
-        
-        <div class="row mt-4">
-            <div class="col-12 d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary">
-                    <i class="ri-user-add-line me-1"></i> Simpan Partisipan
-                </button>
-            </div>
-        </div>
-
-      </div>
-    </div>
-    </form> 
-    <hr class="my-5">
     <div class="card">
-        <div class="card-header border-bottom">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Daftar Mahasiswa di Kelas Ini</h5>
+            <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+                <i class="ri-arrow-go-back-line me-1"></i> Kembali
+            </a>
         </div>
         <div class="card-datatable table-responsive">
             <table id="tableParticipant" class="dt-responsive table table-bordered">
@@ -91,7 +39,6 @@
                         <th>Last Login</th>
                         <th>Tanggal Join</th>
                         <th>Status</th>
-                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -131,16 +78,6 @@
                             {% else %}
                                 <span class="badge bg-label-secondary">Non-Aktif</span>
                             {% endif %}
-                        </td>
-                        <td>
-                            <a href="javascript:void(0);" 
-                            class="btn btn-sm btn-icon btn-text-secondary rounded-pill text-danger"
-                            data-bs-toggle="modal" 
-                            data-bs-target="#deleteParticipantModal"
-                            data-href="{% url 'delete-participant' course.uuid p.id %}"
-                            title="Hapus Mahasiswa">
-                                <i class="ri-delete-bin-7-line"></i>
-                            </a>
                         </td>
                     </tr>
                     {% empty %}
@@ -204,17 +141,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var studentSelect = $('select[name="list_mahasiswa"]'); 
-    if (studentSelect.length) {
-        studentSelect.select2({
-            placeholder: "Cari dan pilih nama mahasiswa...",
-            allowClear: true,
-            width: '100%',
-            closeOnSelect: false 
-        });
-    }
-    $('#select2Disabled').select2(); 
-
     $('#tableParticipant').DataTable({
         responsive: true,
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',

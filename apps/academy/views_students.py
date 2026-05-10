@@ -95,11 +95,21 @@ class StudentCourseListView(StudentsRequiredMixin, UsersView):
 
             enrolled_course_ids = enrolled_participants.values_list('course_id', flat=True)
 
-            my_courses = Course.objects.filter(id__in=enrolled_course_ids)\
+            my_courses_qs = Course.objects.filter(id__in=enrolled_course_ids)\
                 .select_related('prodi', 'period')\
                 .prefetch_related('coaches', 'agendas__materials')\
                 .order_by('-created_at')
 
+            # Ambil periode unik yang tersedia dari course yang diambil mahasiswa
+            available_periods = list({c.period for c in my_courses_qs if c.period})
+            available_periods.sort(key=lambda p: getattr(p, 'start_date', getattr(p, 'created_at', p.id)), reverse=True)
+
+            # Logic Filter
+            sel_period = self.request.GET.get('period', '')
+            if sel_period:
+                my_courses_qs = my_courses_qs.filter(period__id=sel_period)
+
+            my_courses = my_courses_qs
             participant_map = {p.course_id: p for p in enrolled_participants}
 
             for course in my_courses:
@@ -118,8 +128,12 @@ class StudentCourseListView(StudentsRequiredMixin, UsersView):
                     course.progress = 0
 
             context['my_courses'] = my_courses
+            context['available_periods'] = available_periods
+            context['sel_period'] = sel_period
         else:
             context['my_courses'] = []
+            context['available_periods'] = []
+            context['sel_period'] = ''
 
         context.update({
             "title": "Academy - Kursus Saya",
@@ -135,7 +149,7 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
 
     def get(self, request, course_uuid, material_id=None, assignment_id=None, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
-        sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials', 'assignments')
+        sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials', 'assignments', 'media_items__media_file')
 
         # === 1. LOGIK ACTIVE ITEM (BAWAAN ANDA) ===
         active_item = None
@@ -143,10 +157,10 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
         submission = None
 
         if material_id:
-            active_item = get_object_or_404(CourseMaterial, id=material_id)
+            active_item = get_object_or_404(CourseMaterial, id=material_id, agenda__course=course)
             active_type = 'material'
         elif assignment_id:
-            active_item = get_object_or_404(CourseAssignment, id=assignment_id)
+            active_item = get_object_or_404(CourseAssignment, id=assignment_id, agenda__course=course)
             active_type = 'assignment'
         else:
             first_material = CourseMaterial.objects.filter(
@@ -297,7 +311,7 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
 
         if material_id:
             # ... (Material logic remains the same) ...
-            material = get_object_or_404(CourseMaterial, id=material_id)
+            material = get_object_or_404(CourseMaterial, id=material_id, agenda__course=course)
             progress, created = StudentMaterialProgress.objects.get_or_create(
                 participant=participant, material=material
             )
@@ -309,7 +323,7 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
             return redirect('course-player-material', course_uuid=course.uuid, material_id=material_id)
 
         elif assignment_id:
-            assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+            assignment = get_object_or_404(CourseAssignment, id=assignment_id, agenda__course=course)
 
             # Consolidated Deadline Check
             is_overdue = timezone.now() > assignment.due_date
@@ -624,6 +638,52 @@ class StudentQuizResultView(StudentsRequiredMixin, AcademyView):
                 'correct': total_correct, 
                 'final_score': attempt.total_score
             }
+        })
+        return context
+
+class StudentCourseGradesView(StudentsRequiredMixin, AcademyView):
+    template_name = "students/student_course_grades.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        course_uuid = self.kwargs.get('course_uuid')
+        course = get_object_or_404(Course, uuid=course_uuid)
+        
+        mhs_profile = get_object_or_404(UserMhs, nim=self.request.user)
+        participant = get_object_or_404(CourseParticipant, course=course, mahasiswa=mhs_profile)
+
+        # 1. Quizzes
+        quizzes = CourseQuiz.objects.filter(course=course, is_published=True).order_by('start_time')
+        quiz_data = []
+        for q in quizzes:
+            last_attempt = StudentQuizAttempt.objects.filter(
+                quiz=q, participant=participant, finished_at__isnull=False
+            ).order_by('-finished_at').first()
+            quiz_data.append({
+                'title': q.title,
+                'duration': q.duration_minutes,
+                'score': last_attempt.total_score if last_attempt else None,
+                'date_taken': last_attempt.finished_at if last_attempt else None,
+            })
+
+        # 2. Assignments
+        assignments = CourseAssignment.objects.filter(agenda__course=course, is_published=True).order_by('due_date')
+        assignment_data = []
+        for a in assignments:
+            sub = StudentAssignmentSubmission.objects.filter(assignment=a, student=mhs_profile).first()
+            assignment_data.append({
+                'title': a.title,
+                'due_date': a.due_date,
+                'score': sub.score if sub and sub.score is not None else None,
+                'submitted_at': sub.updated_at if sub else None,
+            })
+
+        context.update({
+            "title": "Rekap Nilai",
+            "heading": f"Tabel Nilai - {course.name}",
+            "course": course,
+            "quiz_data": quiz_data,
+            "assignment_data": assignment_data,
         })
         return context
 

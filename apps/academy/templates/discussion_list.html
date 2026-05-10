@@ -12,7 +12,7 @@
    FEED LAYOUT
 ══════════════════════════════════════════ */
 .feed-wrap {
-  max-width: 680px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -388,7 +388,10 @@
   {# ── Filter Strip ── #}
   <div class="filter-strip mb-2">
     <a href="{% url 'course-discussion-list' course.uuid %}" class="filter-pill {% if not filter_type %}active{% endif %}">
-      <i class="ri-layout-grid-line"></i> Semua
+      <i class="ri-layout-grid-line"></i> Semuaaa
+    </a>
+    <a href="?type=announcement" class="filter-pill {% if filter_type == 'announcement' %}active{% endif %}">
+      <i class="ri-megaphone-line"></i> Pengumuman
     </a>
     <a href="?type=agenda" class="filter-pill {% if filter_type == 'agenda' %}active{% endif %}">
       <i class="ri-calendar-event-line"></i> Agenda
@@ -432,6 +435,8 @@
                 bg-success
               {% elif fi.item_type == 'assignment' %}
                 bg-warning
+              {% elif fi.item_type == 'announcement' %}
+                bg-danger
               {% else %}
                 bg-info
               {% endif %}
@@ -439,6 +444,7 @@
               {% if fi.item_type == 'agenda' %}#696cff,#9c9eff
               {% elif fi.item_type == 'material' %}#28c76f,#48da89
               {% elif fi.item_type == 'assignment' %}#ff9f43,#ffb976
+              {% elif fi.item_type == 'announcement' %}#ea5455,#ff7b7b
               {% else %}#03c3ec,#5ce7ff{% endif %})">
               {{ name|first|upper }}
             </div>
@@ -465,9 +471,9 @@
             </div>
           </div>
 
-          {# Menu (dosen only) #}
+          {# Menu (dosen only) – hanya tampil bila disc ada #}
           {% if is_dosen or request.user.is_superuser %}
-            {% if fi.item_type == 'discussion' %}
+            {% if disc and fi.item_type == 'discussion' or disc and fi.item_type == 'announcement' %}
             <div class="post-menu">
               <div class="dropdown">
                 <button class="btn btn-sm btn-icon btn-outline-secondary border-0"
@@ -475,6 +481,7 @@
                   <i class="ri-more-2-fill"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                  {% if fi.item_type == 'discussion' %}
                   <li>
                     <button class="dropdown-item btn-pin-disc"
                             data-url="{% url 'course-discussion-pin' course.uuid disc.id %}">
@@ -490,6 +497,7 @@
                     </button>
                   </li>
                   <li><hr class="dropdown-divider"></li>
+                  {% endif %}
                   <li>
                     <a class="dropdown-item text-danger" href="javascript:void(0);"
                        data-bs-toggle="modal" data-bs-target="#deleteDiscModal"
@@ -504,16 +512,14 @@
             {% endif %}
           {% endif %}
 
-        </div>{# /post-header #}
+        </div>
 
-        {# ── Draft Banner (dosen view) ── #}
         {% if is_dosen and not fi.is_published and fi.item_type != 'agenda' and fi.item_type != 'discussion' %}
           <div class="draft-banner">
             <i class="ri-eye-off-line"></i> Draft – belum dipublikasikan ke mahasiswa
           </div>
         {% endif %}
 
-        {# ── Type badge for discussions ── #}
         {% if fi.item_type == 'discussion' %}
           {% if fi.extra.is_pinned %}
             <span class="badge bg-label-primary rounded-pill me-1 mb-2" style="font-size:.72rem;">
@@ -527,10 +533,8 @@
           {% endif %}
         {% endif %}
 
-        {# ── Title ── #}
         <div class="post-title">{{ fi.title }}</div>
 
-        {# ── Agenda Info Box ── #}
         {% if fi.item_type == 'agenda' %}
           <div class="agenda-info-box">
             <div class="info-chip">
@@ -559,7 +563,46 @@
           </div>
         {% endif %}
 
-        {# ── Assignment Deadline Box ── #}
+        {% if fi.item_type == 'agenda' and fi.extra.media_items %}
+          <div class="mt-2 mb-1">
+            <div class="d-flex align-items-center gap-1 mb-2" style="font-size:.75rem; color:#8592a3; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">
+              <i class="ri-folder-open-line"></i> Berkas Sesi
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              {% for mf in fi.extra.media_items %}
+                {% if mf.file_type == 'pdf' %}<a href="{% if mf.file_url %}{{ mf.file_url }}{% elif mf.video_url %}{{ mf.video_url }}{% else %}#{% endif %}" target="_blank" class="d-inline-flex align-items-center gap-2 text-decoration-none rounded-2 px-2 py-1" style="border:1px solid rgba(231,76,60,.3); background:rgba(231,76,60,.06); max-width:230px;" title="{{ mf.name }}"><i class="ri-file-pdf-2-line" style="color:#e74c3c; font-size:1rem; flex-shrink:0;"></i><span style="font-size:.78rem; color:#566a7f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">{{ mf.name }}</span>{% if mf.size and mf.size != '—' %}<span style="font-size:.68rem; color:#a1acb8; white-space:nowrap; flex-shrink:0;">{{ mf.size }}</span>{% endif %}</a>
+                {% elif mf.file_type == 'docx' %}<a href="{% if mf.file_url %}{{ mf.file_url }}{% else %}#{% endif %}" target="_blank" class="d-inline-flex align-items-center gap-2 text-decoration-none rounded-2 px-2 py-1" style="border:1px solid rgba(41,128,185,.3); background:rgba(41,128,185,.06); max-width:230px;" title="{{ mf.name }}"><i class="ri-file-word-line" style="color:#2980b9; font-size:1rem; flex-shrink:0;"></i><span style="font-size:.78rem; color:#566a7f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">{{ mf.name }}</span>{% if mf.size and mf.size != '—' %}<span style="font-size:.68rem; color:#a1acb8; white-space:nowrap; flex-shrink:0;">{{ mf.size }}</span>{% endif %}</a>
+                {% elif mf.file_type == 'pptx' %}<a href="{% if mf.file_url %}{{ mf.file_url }}{% else %}#{% endif %}" target="_blank" class="d-inline-flex align-items-center gap-2 text-decoration-none rounded-2 px-2 py-1" style="border:1px solid rgba(230,126,34,.3); background:rgba(230,126,34,.06); max-width:230px;" title="{{ mf.name }}"><i class="ri-file-ppt-2-line" style="color:#e67e22; font-size:1rem; flex-shrink:0;"></i><span style="font-size:.78rem; color:#566a7f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">{{ mf.name }}</span>{% if mf.size and mf.size != '—' %}<span style="font-size:.68rem; color:#a1acb8; white-space:nowrap; flex-shrink:0;">{{ mf.size }}</span>{% endif %}</a>
+                {% elif mf.file_type == 'video_url' %}<a href="{% if mf.video_url %}{{ mf.video_url }}{% else %}#{% endif %}" target="_blank" class="d-inline-flex align-items-center gap-2 text-decoration-none rounded-2 px-2 py-1" style="border:1px solid rgba(234,84,85,.3); background:rgba(234,84,85,.06); max-width:230px;" title="{{ mf.name }}"><i class="ri-youtube-line" style="color:#ea5455; font-size:1rem; flex-shrink:0;"></i><span style="font-size:.78rem; color:#566a7f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">{{ mf.name }}</span></a>
+                {% elif mf.file_type == 'image' %}<a href="{% if mf.file_url %}{{ mf.file_url }}{% else %}#{% endif %}" target="_blank" class="d-inline-flex align-items-center gap-2 text-decoration-none rounded-2 px-2 py-1" style="border:1px solid rgba(40,199,111,.3); background:rgba(40,199,111,.06); max-width:230px;" title="{{ mf.name }}"><i class="ri-image-line" style="color:#28c76f; font-size:1rem; flex-shrink:0;"></i><span style="font-size:.78rem; color:#566a7f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">{{ mf.name }}</span>{% if mf.size and mf.size != '—' %}<span style="font-size:.68rem; color:#a1acb8; white-space:nowrap; flex-shrink:0;">{{ mf.size }}</span>{% endif %}</a>
+                {% else %}<a href="{% if mf.file_url %}{{ mf.file_url }}{% else %}#{% endif %}" target="_blank" class="d-inline-flex align-items-center gap-2 text-decoration-none rounded-2 px-2 py-1" style="border:1px solid rgba(105,108,255,.3); background:rgba(105,108,255,.06); max-width:230px;" title="{{ mf.name }}"><i class="ri-file-line" style="color:#696cff; font-size:1rem; flex-shrink:0;"></i><span style="font-size:.78rem; color:#566a7f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">{{ mf.name }}</span>{% if mf.size and mf.size != '—' %}<span style="font-size:.68rem; color:#a1acb8; white-space:nowrap; flex-shrink:0;">{{ mf.size }}</span>{% endif %}</a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        {# ── Announcement Info Box ── #}
+        {% if fi.item_type == 'announcement' %}
+          <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+            {% if fi.extra.is_pinned %}
+              <span class="badge bg-label-primary rounded-pill" style="font-size:.72rem;">
+                <i class="ri-pushpin-fill me-1"></i>Disematkan
+              </span>
+            {% endif %}
+            <span class="badge rounded-pill" style="font-size:.72rem; background-color:{{ fi.extra.priority_color }}20; color:{{ fi.extra.priority_color }}; border:1px solid {{ fi.extra.priority_color }}40;">
+              <i class="ri-alarm-warning-line me-1"></i>
+              {% if fi.extra.priority == 'urgent' %}Mendesak
+              {% elif fi.extra.priority == 'high' %}Penting
+              {% elif fi.extra.priority == 'low' %}Rendah
+              {% else %}Normal{% endif %}
+            </span>
+          </div>
+          <div class="post-description" style="-webkit-line-clamp:unset; overflow:visible;">
+            {{ fi.extra.content }}
+          </div>
+        {% endif %}
+
         {% if fi.item_type == 'assignment' %}
           <div class="deadline-box">
             <i class="ri-alarm-warning-line" style="font-size:1.2rem;color:#ff9f43;"></i>
@@ -579,13 +622,6 @@
             </div>
           </div>
         {% endif %}
-
-        {# ── Description preview ── #}
-        {% if fi.description %}
-          <div class="post-description">{{ fi.description|striptags }}</div>
-        {% endif %}
-
-        {# ── Attachment ── #}
         {% if fi.attachment_url and fi.attachment_name %}
           <div class="post-attachment">
             <div class="att-icon-wrap" style="background:{{ fi.attachment_color }};">
@@ -598,16 +634,15 @@
           </div>
         {% endif %}
 
-        {# ── Material: Video Link ── #}
-        {% if fi.item_type == 'material' and fi.extra.material_type == 'video' and fi.extra.video_url %}
+        {% if fi.item_type == 'material' %}
           <div class="post-attachment">
-            <div class="att-icon-wrap" style="background:#ea5455;">
-              <i class="ri-youtube-line"></i>
+            <div class="att-icon-wrap" style="background:#696cff;">
+              <i class="ri-article-line"></i>
             </div>
-            <span class="att-filename">Video Pembelajaran</span>
+            <span class="att-filename">Bahan Bacaan</span>
             <a href="{% url 'course-player-material' fi.extra.course_uuid fi.extra.mat_id %}"
                class="att-download">
-              <i class="ri-play-circle-line"></i> Tonton
+              <i class="ri-book-open-line"></i> Baca
             </a>
           </div>
         {% endif %}
@@ -621,7 +656,8 @@
           </a>
         {% endif %}
 
-        {% if not disc and fi.item_type != 'discussion' %}
+        {# ── Thread belum diaktifkan (hanya untuk konten non-announcement) ── #}
+        {% if not disc and fi.item_type != 'discussion' and fi.item_type != 'announcement' %}
           <p class="text-muted small mb-0 mt-1">
             <i class="ri-information-line me-1"></i>Thread beranda diskusi untuk konten ini belum diaktifkan.
           </p>
@@ -671,7 +707,6 @@
         </div>
       </div>
 
-      {# ── Inline Comments Section (collapsible) ── #}
       <div id="comments-{{ disc.id }}" class="inline-comments" style="display:none;">
 
         {# ── Daftar reply ── #}
@@ -816,11 +851,6 @@
 
     {# ── Empty State ── #}
     <div class="feed-empty">
-      <div class="avatar avatar-xl mx-auto mb-3">
-        <span class="avatar-initial rounded-circle bg-label-primary">
-          <i class="ri-home-smile-2-line ri-3x"></i>
-        </span>
-      </div>
       {% if filter_type == 'discussion' %}
         <h5 class="mb-1">Belum ada diskusi</h5>
         <p class="text-muted mb-0 small">

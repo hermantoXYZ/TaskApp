@@ -1,0 +1,179 @@
+{% extends layout_path %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit{% else %}Tambah{% endif %} Portofolio{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb breadcrumb-style1">
+    <li class="breadcrumb-item">
+      <a href="{% url 'portfolio-list' %}">Portofolio</a>
+    </li>
+    <li class="breadcrumb-item active">
+      {% if is_edit %}Edit{% else %}Tambah{% endif %}
+    </li>
+  </ol>
+</nav>
+
+{% if messages %}
+<div class="mb-4">
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  {# Muat CSS & JS Summernote dari form #}
+  {{ form.media }}
+
+  <div class="row g-4">
+
+    <!-- Kolom Kiri: Informasi Utama -->
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="ri-folder-user-line me-2 text-primary"></i>
+            {% if is_edit %}Edit{% else %}Tambah{% endif %} Portofolio
+          </h5>
+        </div>
+        <div class="card-body">
+
+          <!-- Judul -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold" for="{{ form.title.id_for_label }}">Judul <span class="text-danger">*</span></label>
+            {{ form.title }}
+            {% if form.title.errors %}
+            <div class="text-danger small mt-1">{{ form.title.errors }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Deskripsi Singkat -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">Deskripsi Singkat</label>
+            {{ form.description }}
+            <small class="text-muted">Tampil sebagai ringkasan di halaman list.</small>
+            {% if form.description.errors %}
+            <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Body / Penjelasan Lengkap — Summernote -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold" for="{{ form.body.id_for_label }}">Penjelasan Lengkap</label>
+            {{ form.body }}
+            {% if form.body.errors %}
+            <div class="text-danger small mt-1">{{ form.body.errors }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Project URL -->
+          <div class="mb-2">
+            <label class="form-label fw-semibold" for="{{ form.project_url.id_for_label }}">Link Project / GitHub / Demo</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="ri-links-line"></i></span>
+              {{ form.project_url }}
+            </div>
+            <small class="text-muted">Link project, presentasi, GitHub, GDrive, atau YouTube.</small>
+            {% if form.project_url.errors %}
+            <div class="text-danger small mt-1">{{ form.project_url.errors }}</div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Kolom Kanan: Metadata & Thumbnail -->
+    <div class="col-lg-4">
+
+      <!-- Thumbnail -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h6 class="card-title mb-0">Thumbnail</h6>
+        </div>
+        <div class="card-body">
+          {% if is_edit and portfolio.thumbnail %}
+          <div class="mb-3 text-center">
+            <img src="{{ portfolio.thumbnail.url }}" alt="Thumbnail saat ini"
+                 class="img-fluid rounded-2 mb-2" style="max-height:160px; object-fit:cover;">
+            <p class="text-muted small mb-0">Thumbnail saat ini</p>
+          </div>
+          {% endif %}
+          <label class="form-label fw-semibold" for="{{ form.thumbnail.id_for_label }}">
+            {% if is_edit and portfolio.thumbnail %}Ganti Thumbnail{% else %}Upload Thumbnail{% endif %}
+          </label>
+          {{ form.thumbnail }}
+          <small class="text-muted d-block mt-1">Format: JPG, PNG, WEBP (opsional)</small>
+          {% if form.thumbnail.errors %}
+          <div class="text-danger small mt-1">{{ form.thumbnail.errors }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Klasifikasi -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h6 class="card-title mb-0">Klasifikasi</h6>
+        </div>
+        <div class="card-body">
+
+          <!-- Tipe Aktivitas -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.activity_type.id_for_label }}">Tipe Aktivitas</label>
+            {{ form.activity_type }}
+          </div>
+
+          <!-- Kategori -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.category_portfolio.id_for_label }}">Kategori</label>
+            {{ form.category_portfolio }}
+          </div>
+
+          <!-- Mata Kuliah Terkait -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.course.id_for_label }}">Mata Kuliah Terkait</label>
+            {{ form.course }}
+          </div>
+
+          <!-- Status -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.status.id_for_label }}">Status</label>
+            {{ form.status }}
+          </div>
+
+          <!-- Unggulan -->
+          <div class="form-check form-switch">
+            {{ form.is_featured }}
+            <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
+              Tandai sebagai unggulan
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="ri-save-line me-1"></i>
+          {% if is_edit %}Simpan Perubahan{% else %}Tambah Portofolio{% endif %}
+        </button>
+        <a href="{% url 'portfolio-list' %}" class="btn btn-outline-secondary">
+          <i class="ri-arrow-left-line me-1"></i> Kembali
+        </a>
+      </div>
+
+    </div>
+  </div>
+</form>
+
+{% endblock %}

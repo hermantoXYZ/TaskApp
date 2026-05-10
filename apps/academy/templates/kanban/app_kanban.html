@@ -36,7 +36,8 @@
 {% endblock page_js %}
 
 {% block content %}
-<div class="app-kanban">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<div class="app-kanban" data-boards-url="#" data-tasks-url="#">
   <!-- Add new board -->
   <div class="row">
     <div class="col-12">
@@ -57,7 +58,7 @@
   <!-- Kanban Wrapper -->
   <div class="kanban-wrapper"></div>
 
-  <!-- Edit Task/Task & Activities -->
+  <!-- Edit Task Offcanvas -->
   <div class="offcanvas offcanvas-end kanban-update-item-sidebar">
     <div class="offcanvas-header border-bottom">
       <h5 class="offcanvas-title">Edit Task</h5>
@@ -82,8 +83,8 @@
       </div>
       <div class="tab-content px-0 pb-0">
         <!-- Update item/tasks -->
-        <div class="tab-pane fade show active" id="tab-update" role="tabpanel">
-          <form>
+        <div class="tab-pane fade show active" id="tab-update" role="panel">
+          <form id="kanban-edit-form">
             <div class="form-floating form-floating-outline mb-5">
               <input type="text" id="title" class="form-control" placeholder="Enter Title" />
               <label for="title">Title</label>
@@ -94,31 +95,31 @@
             </div>
             <div class="form-floating form-floating-outline mb-5">
               <select class="select2 select2-label form-select" id="label">
-                <option data-color="bg-label-success" value="UX">UX</option>
-                <option data-color="bg-label-warning" value="Images">
-                  Images
-                </option>
-                <option data-color="bg-label-secondary" value="App">App</option>
-                <option data-color="bg-label-danger" value="Code Review">
-                  Code Review
-                </option>
-                <option data-color="bg-label-info" value="Info">
-                  Info
-                </option>
-                <option data-color="bg-label-primary" value="Charts & Maps">
-                  Charts & Maps
-                </option>
+                <option value="">— Tanpa Label —</option>
+                <option data-color="bg-label-success" value="P0">P0</option>
+                <option data-color="bg-label-warning" value="P1">P1</option>
+                <option data-color="bg-label-secondary" value="P2">P2</option>
+                <option data-color="bg-label-danger" value="P3">P3</option>
+                <option data-color="bg-label-info" value="P4">P4</option>
+                <option data-color="bg-label-primary" value="P5">P5</option>
               </select>
               <label for="label"> label</label>
             </div>
+            <!-- Assignees multi-select -->
             <div class="mb-5">
-              <label class="form-label">Assigned</label>
-              <div class="assigned d-flex flex-wrap"></div>
+              <label class="form-label">Assign To</label>
+              <select id="kanban-assignees" class="form-select" multiple="multiple" style="width:100%">
+              </select>
+              <!-- Tampilan avatar assignee yang sudah dipilih -->
+              <div id="assignee-avatars" class="d-flex flex-wrap gap-1 mt-2"></div>
             </div>
             <div class="mb-5">
               <label class="form-label" for="attachments">Attachments</label>
               <div>
                 <input type="file" class="form-control" id="attachments" />
+              </div>
+              <div id="current-attachment" class="mt-2 d-none">
+                <!-- Link attachment lama muncul di sini -->
               </div>
             </div>
             <div class="mb-5">
@@ -138,10 +139,12 @@
             </div>
             <div>
               <div class="d-flex flex-wrap">
-                <button type="button" class="btn btn-primary me-4" data-bs-dismiss="offcanvas">
+                <!-- Tanpa data-bs-dismiss agar JS bisa handle API call dulu baru close -->
+                <button type="button" id="kanban-update-btn" class="btn btn-primary me-4">
+                  <span class="spinner-border spinner-border-sm d-none me-1" id="kanban-update-spinner"></span>
                   Update
                 </button>
-                <button type="button" class="btn btn-outline-danger" data-bs-dismiss="offcanvas">
+                <button type="button" id="kanban-delete-btn" class="btn btn-outline-danger">
                   Delete
                 </button>
               </div>
@@ -150,17 +153,6 @@
         </div>
         <!-- Activities -->
         <div class="tab-pane fade text-heading" id="tab-activity" role="tabpanel">
-          <div class="media mb-4 d-flex align-items-center">
-            <div class="avatar me-3 flex-shrink-0">
-              <span class="avatar-initial bg-label-success rounded-circle">HJ</span>
-            </div>
-            <div class="media-body ms-1">
-              <p class="mb-0">
-                <span>Jordan</span> Left the board.
-              </p>
-              <small class="text-muted">Today 11:00 AM</small>
-            </div>
-          </div>
           <div class="media mb-4 d-flex align-items-center">
             <div class="avatar me-3 flex-shrink-0">
               <img src="{% static 'img/avatars/6.png' %}" alt="Avatar" class="rounded-circle" />

@@ -1,0 +1,298 @@
+{% extends layout_path %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Laporan Kelas{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+
+{# ── Page Header ── #}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-6">
+  <div>
+    <h4 class="mb-1">Laporan Kelas</h4>
+    <p class="text-muted mb-0 small">
+      Rekap aktivitas tiap kelas meliputi Materi, Tugas, Quiz, Kehadiran, Diskusi, dan Pengumuman per periode.
+    </p>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="ri-information-line"></i><div>{{ message }}</div>
+    </div>
+  {% endfor %}
+{% endif %}
+
+{# ── Filter ── #}
+<div class="card mb-4 shadow-none">
+  <div class="card-body py-3">
+    <form method="get" class="d-flex flex-wrap align-items-end gap-3">
+
+      <div class="flex-grow-1" style="min-width:200px;">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" value="{{ search }}"
+                 class="form-control" placeholder="Cari Nama Kelas / Kode / Dosen">
+          <span class="input-group-text"><i class="ri-search-line"></i></span>
+        </div>
+      </div>
+
+      <div style="min-width:200px;">
+        <select name="prodi" class="form-select form-select-sm">
+          <option value="">Pilih Program Studi</option>
+          {% for p in prodis %}
+            <option value="{{ p.id }}" {% if sel_prodi == p.id|stringformat:"s" %}selected{% endif %}>
+              {{ p.nama_prodi }} ({{ p.strata }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="min-width:160px;">
+        <select name="period" class="form-select form-select-sm">
+          <option value="">Semua Periode</option>
+          {% for per in periods %}
+            <option value="{{ per.id }}" {% if sel_period == per.id|stringformat:"s" %}selected{% endif %}>
+              {{ per.name }}{% if per.is_active %} ✓{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="ri-filter-3-line me-1"></i>Filter
+        </button>
+        <a href="{% url 'lecturer-class-report' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Summary Cards ── #}
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-xl-2">
+    <div class="card h-100 shadow-none">
+      <div class="card-body d-flex align-items-center gap-3 p-3">
+        <div>
+          <p class="mb-0 small text-muted">Total Kelas</p>
+          <h5 class="mb-0 fw-bold">{{ summary.total_courses }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card h-100 shadow-none">
+      <div class="card-body d-flex align-items-center gap-3 p-3">
+        <div>
+          <p class="mb-0 small text-muted">Total Materi</p>
+          <h5 class="mb-0 fw-bold">{{ summary.total_materials }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card h-100 shadow-none">
+      <div class="card-body d-flex align-items-center gap-3 p-3">
+        <div>
+          <p class="mb-0 small text-muted">Total Tugas</p>
+          <h5 class="mb-0 fw-bold">{{ summary.total_assignments }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card h-100 shadow-none">
+      <div class="card-body d-flex align-items-center gap-3 p-3">
+        <div>
+          <p class="mb-0 small text-muted">Total Quiz</p>
+          <h5 class="mb-0 fw-bold">{{ summary.total_quizzes }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card h-100 shadow-none">
+      <div class="card-body d-flex align-items-center gap-3 p-3">
+        <div>
+          <p class="mb-0 small text-muted">Total Diskusi</p>
+          <h5 class="mb-0 fw-bold">{{ summary.total_discussions }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-2">
+    <div class="card h-100 shadow-none">
+      <div class="card-body d-flex align-items-center gap-3 p-3">
+        <div>
+          <p class="mb-0 small text-muted">Total Peserta</p>
+          <h5 class="mb-0 fw-bold">{{ summary.total_participants }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Table ── #}
+<div class="card">
+  <div class="card-datatable table-responsive">
+    <table class="table table-hover" id="classReportTable">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th style="white-space: nowrap;">Mata Kuliah</th>
+          <th>Kelas</th>
+          <th>Dosen</th>
+          <th class="text-center bg-label-info" style="white-space: nowrap;">
+            Materi
+            <i class="ri-information-line small" title="Jumlah materi yang diunggah di semua sesi"></i>
+          </th>
+          <th class="text-center bg-label-warning" style="white-space: nowrap;">
+            Tugas
+            <i class="ri-information-line small" title="Jumlah tugas yang diterbitkan"></i>
+          </th>
+          <th class="text-center bg-label-success" style="white-space: nowrap;">
+            Quiz
+            <i class="ri-information-line small" title="Jumlah quiz/ujian yang diterbitkan"></i>
+          </th>
+          <th class="text-center bg-label-danger" style="white-space: nowrap;">
+            Diskusi
+            <i class="ri-information-line small" title="Jumlah thread diskusi aktif"></i>
+          </th>
+          <th class="text-center bg-label-secondary" style="white-space: nowrap;">
+            Pengumuman
+            <i class="ri-information-line small" title="Jumlah pengumuman yang diterbitkan"></i>
+          </th>
+          <th class="text-center fw-bold">Sesi Terisi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in class_data %}
+        <tr>
+          <td class="text-muted small">{{ forloop.counter }}</td>
+
+          {# Kolom: Kelas #}
+          <td>
+              {{ row.course.name|upper }}
+           
+          </td>
+          <td>
+               <small class="text-muted">{{ row.course.group }}</small><br>
+          </td>
+
+          {# Kolom: Dosen #}
+          <td>
+            {% for coach in row.course.coaches.all %}
+              <div class="d-flex align-items-center gap-1 mb-1" style="white-space: nowrap;">
+                <span class="fw-semibold small">{{ coach.nip.first_name }}</span>
+              </div>
+            {% empty %}
+              <span class="text-muted fst-italic small">Belum ada dosen</span>
+            {% endfor %}
+          </td>
+          {# Kolom: Materi #}
+          <td class="text-center">
+            <span class="fw-semibold">{{ row.jumlah_materi }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:50px;">
+              <div class="progress-bar bg-info"
+                   style="width:{% if row.jumlah_materi > 0 %}{% widthratio row.jumlah_materi 16 100 %}{% else %}0{% endif %}%"></div>
+            </div>
+          </td>
+
+          {# Kolom: Tugas #}
+          <td class="text-center">
+            <span class="fw-semibold">{{ row.jumlah_tugas }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:50px;">
+              <div class="progress-bar bg-warning"
+                   style="width:{% if row.jumlah_tugas > 0 %}{% widthratio row.jumlah_tugas 16 100 %}{% else %}0{% endif %}%"></div>
+            </div>
+          </td>
+
+          {# Kolom: Quiz #}
+          <td class="text-center">
+            <span class="fw-semibold">{{ row.jumlah_quiz }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:50px;">
+              <div class="progress-bar bg-success"
+                   style="width:{% if row.jumlah_quiz > 0 %}{% widthratio row.jumlah_quiz 5 100 %}{% else %}0{% endif %}%"></div>
+            </div>
+          </td>
+
+          {# Kolom: Diskusi #}
+          <td class="text-center">
+            <span class="fw-semibold">{{ row.jumlah_diskusi }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:50px;">
+              <div class="progress-bar bg-danger"
+                   style="width:{% if row.jumlah_diskusi > 0 %}{% widthratio row.jumlah_diskusi 20 100 %}{% else %}0{% endif %}%"></div>
+            </div>
+          </td>
+
+          {# Kolom: Pengumuman #}
+          <td class="text-center">
+            <span class="fw-semibold">{{ row.jumlah_pengumuman }}</span>
+            <div class="progress mt-1" style="height:4px;min-width:50px;">
+              <div class="progress-bar bg-secondary"
+                   style="width:{% if row.jumlah_pengumuman > 0 %}{% widthratio row.jumlah_pengumuman 10 100 %}{% else %}0{% endif %}%"></div>
+            </div>
+          </td>
+
+          {# Kolom: Sesi Terisi #}
+          <td class="text-center">
+            {% with pct=row.persen_sesi_terisi %}
+              {% if pct >= 75 %}
+                <span class="fw-bold text-success">{{ pct }}%</span>
+              {% elif pct >= 40 %}
+                <span class="fw-bold text-warning">{{ pct }}%</span>
+              {% else %}
+                <span class="fw-bold text-danger">{{ pct }}%</span>
+              {% endif %}
+              <div class="progress mt-1" style="height:4px;min-width:50px;">
+                <div class="progress-bar {% if pct >= 75 %}bg-success{% elif pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+                     style="width:{{ pct }}%"></div>
+              </div>
+            {% endwith %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="11" class="text-center py-5 text-muted fst-italic">
+            Tidak ada data kelas yang sesuai filter.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+$(document).ready(function () {
+  $('#classReportTable').DataTable({
+    dom: '<"d-flex justify-content-between align-items-center p-3"lf>t<"d-flex justify-content-between align-items-center p-3"ip>',
+    language: {
+      search:     'Cari:',
+      lengthMenu: 'Tampilkan _MENU_',
+      info:       'Menampilkan _START_–_END_ dari _TOTAL_ kelas',
+      paginate:   { previous: '‹', next: '›' },
+      zeroRecords:'Tidak ada data kelas.'
+    },
+    columnDefs: [
+      { orderable: false, targets: [0] },
+      { type: 'num', targets: [4, 5, 6, 7, 8, 9, 10] },
+    ],
+    order: [[10, 'desc']],
+    pageLength: 25,
+  });
+});
+</script>
+
+{% endblock %}

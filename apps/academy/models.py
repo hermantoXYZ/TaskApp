@@ -3,6 +3,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+from django.utils import timezone as tz
 from django.utils import timezone
 import os
 from django.conf import settings
@@ -10,9 +11,7 @@ from django.utils.text import slugify
 ########################### TABEL USER MASTER #####################################
 User.add_to_class("__str__", lambda self: f"{self.username} - {self.first_name}")
 
-########################### MANAGE USERS #####################################
-
-########################### JURUSAN #####################################
+########################### JURUSAN PRODI #####################################
     
 class Prodi(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -35,6 +34,9 @@ def rename_photo_dsn(instance, filename):
     timestamp = timezone.now().strftime('%Y%m%d%H%M%S')  # format waktu: 20250427153520
     new_filename = f"{nip}_{timestamp}.{ext}"
     return os.path.join('img_profile/dsn/', new_filename)
+
+
+########################### MANAGE USERS #####################################
 
 class UserDosen(models.Model):
     nip = models.OneToOneField(User, on_delete=models.CASCADE, to_field="username", primary_key=True)
@@ -192,12 +194,33 @@ class Course(models.Model):
     coaches = models.ManyToManyField(UserDosen, blank=True, related_name='coached_courses' )
     group = models.CharField(max_length=50)
     credit_p = models.PositiveIntegerField()
-    duration_weeks = models.PositiveIntegerField()
-    prodi = models.ForeignKey( Prodi, on_delete=models.CASCADE, related_name='courses' )
+    prodi = models.ForeignKey( Prodi, on_delete=models.SET_NULL, null=True, blank=True, related_name='courses' )
     link_rps = models.URLField(max_length=200, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    TOTAL_SESSIONS = 16  
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None  
+        super().save(*args, **kwargs)
+        if is_new:
+            self._create_default_sessions()
+
+    def _create_default_sessions(self):
+        default_date = tz.now() 
+        sessions = [
+            CourseAgenda(
+                course=self,
+                session_number=i,
+                title=f"Pertemuan {i}",
+                agenda_type="Perkuliahan",
+                agenda_date=default_date,
+            )
+            for i in range(1, self.TOTAL_SESSIONS + 1)
+        ]
+        CourseAgenda.objects.bulk_create(sessions)
 
     def __str__(self):
         return f"{self.code} - {self.name} ({self.period})"
@@ -218,24 +241,28 @@ class CourseGroup(models.Model):
 
 class CourseAgenda(models.Model):
     course = models.ForeignKey(Course, related_name='agendas', on_delete=models.CASCADE)
+    session_number = models.PositiveSmallIntegerField(null=True, blank=True) 
     title = models.CharField(max_length=255)
-    agenda_type = models.CharField(max_length=20)
-    description = models.TextField(blank=True)
-    agenda_date = models.DateTimeField()
+    agenda_type = models.CharField(max_length=20, default="Perkuliahan")
+    agenda_date = models.DateTimeField(null=True, blank=True, help_text="Tanggal & jam pelaksanaan")
     location = models.CharField(max_length=255, blank=True)
     is_online = models.BooleanField(default=False)
     meeting_url = models.URLField(blank=True, help_text='Link Zoom/GMeet')
     learning_outcome = models.TextField(blank=True, null=True, help_text="Capaian Pembelajaran")
     teaching_method = models.CharField(max_length=100, blank=True, null=True, help_text="Metode Pengajaran")
     created_by = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_agendas', help_text="Dosen yang membuat agenda")
+    lecturer = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='teaching_agendas', help_text="Dosen pengampu sesi ini (bisa berbeda dari pembuat)")
     allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.",)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['agenda_date'] 
+        ordering = ['session_number', 'agenda_date']
+        unique_together = [('course', 'session_number')]  # Satu nomor sesi per course
 
     def __str__(self):
+        if self.session_number:
+            return f"{self.course.code} - Sesi {self.session_number}: {self.title}"
         return f"{self.course.code} - {self.title}"
 
 
@@ -260,11 +287,12 @@ class CourseAnnouncement(models.Model):
         ('high', 'High'),
         ('urgent', 'Urgent'),
     ]
-    course = models.ForeignKey( Course, related_name='announcements', on_delete=models.SET_NULL, null=True )
+    course = models.ForeignKey( Course, related_name='announcements', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     content = models.TextField()
     priority = models.CharField( max_length=20, choices=PRIORITY_CHOICES, default='normal' )
     is_pinned = models.BooleanField(default=False)
+    allow_discussion = models.BooleanField(default=False, help_text="Centang untuk membuka thread diskusi di beranda kelas.")
     created_by = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, related_name='created_announcements' )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -287,26 +315,69 @@ class CourseAttendance(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.participant.mahasiswa.nim.first_name} - {self.agenda.title}"
+        mahasiswa = self.participant.mahasiswa if self.participant else None
+        nama = mahasiswa.nim.first_name if mahasiswa else "Mahasiswa Dihapus"
+        agenda = self.agenda.title if self.agenda else "Agenda Dihapus"
+
+        return f"{nama} - {agenda}"
+
+
+def media_library_upload_path(instance, filename):
+    return f"media_library/{instance.uploaded_by.username}/{filename}"
+
+
+class MediaFile(models.Model):
+    FILE_TYPE_CHOICES = [
+        ('video_url', 'Video (URL YouTube/Vimeo)'),
+        ('pdf',       'Dokumen PDF'),
+        ('docx',      'Dokumen Word'),
+        ('pptx',      'Presentasi PowerPoint'),
+        ('image',     'Gambar'),
+        ('other',     'Berkas Lainnya'),
+    ]
+
+    id          = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name        = models.CharField(max_length=255, verbose_name="Nama Berkas")
+    file_type   = models.CharField(max_length=20, choices=FILE_TYPE_CHOICES, default='other')
+    file        = models.FileField(upload_to=media_library_upload_path, blank=True, null=True)
+    video_url   = models.URLField(blank=True, null=True, help_text="Isi jika tipe adalah Video URL (YouTube/Vimeo)")
+    file_size   = models.PositiveBigIntegerField(default=0, help_text="Ukuran file dalam bytes (diisi otomatis)")
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='media_files')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Media Library File"
+        verbose_name_plural = "Media Library Files"
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def file_size_display(self):
+        size = self.file_size
+        if size >= 1_000_000:
+            return f"{size / 1_000_000:.2f} MB"
+        elif size >= 1_000:
+            return f"{size / 1_000:.2f} KB"
+        return f"{size} B" if size else "—"
+
+    def save(self, *args, **kwargs):
+        if self.file and hasattr(self.file, 'size'):
+            self.file_size = self.file.size
+        super().save(*args, **kwargs)
 
 
 class CourseMaterial(models.Model):
-    MATERIAL_TYPES = [
-        ('video', 'Video'),
-        ('reading', 'Reading/Article'),
-    ]
     agenda = models.ForeignKey(CourseAgenda, on_delete=models.CASCADE, related_name='materials')
     title = models.CharField(max_length=255)
-    material_type = models.CharField(max_length=20, choices=MATERIAL_TYPES, default='video')
-    video_url = models.URLField(blank=True)
-    file_attachment = models.FileField(upload_to='course/materials/', blank=True)
     text_content = models.TextField(blank=True)
-    duration_seconds = models.PositiveIntegerField(default=0)
-    order = models.PositiveIntegerField(default=0) 
+    order = models.PositiveIntegerField(default=0)
     is_published = models.BooleanField(default=False)
-    allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.",)
+    allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.")
+    created_by = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_materials', verbose_name="Dibuat oleh")
     created_at = models.DateTimeField(auto_now_add=True)
-
 
     class Meta:
         ordering = ['order']
@@ -323,6 +394,22 @@ class StudentMaterialProgress(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
 
 
+class AgendaMediaItem(models.Model):
+    agenda = models.ForeignKey(CourseAgenda, on_delete=models.CASCADE, related_name='media_items')
+    media_file = models.ForeignKey(MediaFile, on_delete=models.SET_NULL, null=True, blank=True, related_name='agenda_items')
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+        verbose_name = "Agenda Media Item"
+        unique_together = [('agenda', 'media_file')]  
+
+    def __str__(self):
+        media_name = self.media_file.name if self.media_file else "Media Dihapus"
+        return f"{self.agenda} → {media_name}"
+
+
 ASSIGNMENT_TYPES = [
         ('individual', 'Individu'),
         ('group', 'Kelompok'),
@@ -330,12 +417,12 @@ ASSIGNMENT_TYPES = [
 
 class CourseAssignment(models.Model):
     assignment_type = models.CharField(max_length=20, choices=ASSIGNMENT_TYPES, default='individual',)
-    agenda = models.ForeignKey(CourseAgenda, on_delete=models.CASCADE, related_name='assignments')
+    agenda = models.ForeignKey(CourseAgenda, on_delete=models.SET_NULL, null=True, blank=True, related_name='assignments')
     title = models.CharField(max_length=255)
     description = models.TextField(help_text="Instruksi pengerjaan tugas")
     file_instruction = models.FileField(upload_to='course/assignments/instructions/', blank=True, null=True)
-    due_date = models.DateTimeField() # Batas waktu pengumpulan
-    max_score = models.IntegerField(default=100) # Nilai maksimal (biasanya 100)
+    due_date = models.DateTimeField() 
+    max_score = models.IntegerField(default=100) 
     allow_late_submission = models.BooleanField(default=False, help_text="Izinkan pengumpulan telat?")
     is_published = models.BooleanField(default=False)
     allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.",)
@@ -350,18 +437,20 @@ class CourseAssignment(models.Model):
         return f"TUGAS: {self.title} ({self.agenda.course.code})"
     
 class StudentAssignmentSubmission(models.Model):
-    assignment = models.ForeignKey(CourseAssignment, on_delete=models.CASCADE, related_name='submissions')
-    student = models.ForeignKey(UserMhs, on_delete=models.CASCADE, related_name='submissions')
+    assignment = models.ForeignKey(CourseAssignment, on_delete=models.SET_NULL, null=True, blank=True, related_name='submissions')
+    student = models.ForeignKey(UserMhs, on_delete=models.SET_NULL, null=True, blank=True, related_name='submissions')
     submitted_link = models.URLField(max_length=500, blank=False, null=False)
     submitted_text = models.TextField(blank=True, null=True, help_text="Jawaban teks/link GDrive")   
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    group = models.ForeignKey( CourseGroup, on_delete=models.CASCADE, null=True, blank=True, help_text="Menyimpan ID kelompok agar nilai & file terikat ke kelompok, bukan cuma individu" )
-    feedback = models.TextField(blank=True, null=True) # Catatan dari dosen
+    group = models.ForeignKey( CourseGroup, on_delete=models.SET_NULL, null=True, blank=True, help_text="Menyimpan ID kelompok agar nilai & file terikat ke kelompok, bukan cuma individu" )
+    feedback = models.TextField(blank=True, null=True) 
     
     def __str__(self):
-        return f"{self.student.nim} - {self.assignment.title}"
+        student = self.student.nim if self.student else "Mahasiswa Dihapus"
+        assignment = self.assignment.title if self.assignment else "Tugas Dihapus"
+        return f"{student} - {assignment}"
 
 class CourseQuiz(models.Model):
     EXAM_TYPES = [
@@ -370,7 +459,7 @@ class CourseQuiz(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='quizzes')
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     quiz_type = models.CharField(max_length=20, choices=EXAM_TYPES, default='quiz')
@@ -426,20 +515,22 @@ class QuizOption(models.Model):
 
 class StudentQuizAttempt(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    quiz = models.ForeignKey(CourseQuiz, on_delete=models.CASCADE, related_name='attempts')
-    participant = models.ForeignKey(CourseParticipant, on_delete=models.CASCADE, related_name='quiz_attempts')
+    quiz = models.ForeignKey(CourseQuiz, on_delete=models.SET_NULL, null=True, blank=True, related_name='attempts')
+    participant = models.ForeignKey(CourseParticipant, on_delete=models.SET_NULL, null=True, blank=True, related_name='quiz_attempts')
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     total_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     
     def __str__(self):
-        return f"{self.participant.mahasiswa.nim} - {self.quiz.title}"
+        student = self.participant.mahasiswa.nim if self.participant and self.participant.mahasiswa else "Mahasiswa Dihapus"
+        quiz_title = self.quiz.title if self.quiz else "Kuis Dihapus"
+        return f"{student} - {quiz_title}"
 
 
 class StudentQuizAnswer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     attempt = models.ForeignKey(StudentQuizAttempt, on_delete=models.CASCADE, related_name='answers')
-    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
+    question = models.ForeignKey(QuizQuestion, on_delete=models.SET_NULL, null=True, blank=True)
     selected_option = models.ForeignKey(QuizOption, on_delete=models.SET_NULL, null=True, blank=True)
     text_answer = models.TextField(blank=True, null=True)
     score_obtained = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -448,7 +539,7 @@ class StudentQuizAnswer(models.Model):
         unique_together = ['attempt', 'question']
 
     def __str__(self):
-        return f"Ans: {self.question.id}"
+        return f"Ans: {self.question.id if self.question else 'Question Deleted'}"
     
 
 class CourseGroupMember(models.Model):
@@ -585,9 +676,10 @@ class CourseDiscussion(models.Model):
     agenda = models.ForeignKey(CourseAgenda, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussions')
     material = models.ForeignKey(CourseMaterial, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussions')
     assignment = models.ForeignKey(CourseAssignment, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussions')
+    announcement = models.ForeignKey(CourseAnnouncement, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussions')
     discussion_type = models.CharField(max_length=20, choices=DISCUSSION_TYPES, default='general')
     title = models.CharField(max_length=255)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_discussions')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_discussions')
     is_pinned = models.BooleanField(default=False, help_text="Hanya dosen yang bisa pin")
     is_closed = models.BooleanField(default=False, help_text="Tidak bisa dibalas jika ditutup")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -608,9 +700,9 @@ class CourseDiscussion(models.Model):
 
 class CourseDiscussionReply(models.Model):
     discussion = models.ForeignKey(CourseDiscussion, on_delete=models.CASCADE, related_name='replies')
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
     body = models.TextField()
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discussion_replies')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='discussion_replies')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -618,7 +710,8 @@ class CourseDiscussionReply(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return f"Reply by {self.created_by.username} on '{self.discussion.title}'"
+        user = self.created_by.username if self.created_by else "User Deleted"
+        return f"Reply by {user} on '{self.discussion.title}'"
 
     def like_count(self):
         return self.likes.count()
@@ -648,3 +741,178 @@ class CourseDiscussionLike(models.Model):
         if self.discussion:
             return f"{self.user.username} ♥ diskusi: {self.discussion.title}"
         return f"{self.user.username} ♥ reply #{self.reply_id}"
+
+def portfolio_thumbnail_upload(instance, filename):
+    return f"portfolio/{instance.user.username}/thumbnail/{filename}"
+
+
+class CategoryPortfolio(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug: self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self): return self.name
+
+
+class StudentPortfolio(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('archived', 'Archived')
+        ]
+    ACTIVITY_TYPE_CHOICES = [
+        ('project', 'Project'),
+        ('presentation', 'Presentation'),
+        ('competition', 'Competition'),
+        ('internship', 'Internship'),
+        ('research', 'Research'),
+        ('publication', 'Publication'),
+        ('certificate', 'Certificate'),
+        ('other', 'Other'),
+    ]
+    VERIFICATION_CHOICES = [
+        ('pending',  'Menunggu Verifikasi'),
+        ('verified', 'Terverifikasi'),
+        ('rejected', 'Ditolak'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_portfolio')
+    category_portfolio = models.ForeignKey(CategoryPortfolio, on_delete=models.SET_NULL, null=True, blank=True, related_name='portfolios')
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='portfolio_projects')
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPE_CHOICES, default='project')
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=280, unique=True, blank=True)
+    description = models.TextField(blank=True, help_text="Deskripsi singkat project")
+    body = models.TextField(blank=True, help_text="Penjelasan lengkap project")
+    thumbnail = models.ImageField(upload_to=portfolio_thumbnail_upload, blank=True, null=True)
+    project_url = models.URLField(max_length=500, blank=True, null=True, help_text="Link project / presentasi / github / gdrive / youtube")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
+    is_featured = models.BooleanField(default=False)
+    view_count = models.PositiveIntegerField(default=0)
+    verification_status = models.CharField(max_length=10, choices=VERIFICATION_CHOICES, default='pending', verbose_name='Status Verifikasi')
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_portfolios', verbose_name='Diverifikasi oleh')
+    verified_at = models.DateTimeField(null=True, blank=True, verbose_name='Waktu Verifikasi')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Student Portfolio"
+        verbose_name_plural = "Student Portfolios"
+
+    def save(self, *args, **kwargs):
+        if not self.slug: self.slug = slugify(f"{self.user.username}-{self.title}")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.thumbnail:
+            self.thumbnail.delete(save=False)
+        super().delete(*args, **kwargs)
+
+    def __str__(self): return f"{self.user.username} - {self.title}"
+
+
+# ============================================================
+# KANBAN PRODUCTIVITY MODELS (Solo)
+# ============================================================
+
+class KanbanBoard(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='kanban_boards')
+    title = models.CharField(max_length=100)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+        verbose_name = "Kanban Board"
+        verbose_name_plural = "Kanban Boards"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
+def kanban_attachments_upload(instance, filename):
+    return f"kanban_attachments/{instance.board.user.username}/{filename}"
+
+class KanbanTask(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    board = models.ForeignKey(KanbanBoard, on_delete=models.CASCADE, related_name='tasks')
+    creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_kanban_tasks')
+    title = models.CharField(max_length=255)
+    due_date = models.DateField(null=True, blank=True)
+    label = models.CharField(max_length=50, blank=True, null=True)
+    label_color = models.CharField(max_length=50, blank=True, null=True, default='bg-label-primary')
+    comments = models.TextField(blank=True, null=True)
+    attachments = models.FileField(upload_to=kanban_attachments_upload, blank=True, null=True)
+    assignees = models.ManyToManyField(User, blank=True, related_name='assigned_kanban_tasks', verbose_name="Ditugaskan kepada")
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+        verbose_name = "Kanban Task"
+        verbose_name_plural = "Kanban Tasks"
+
+    def __str__(self):
+        return f"{self.board.title} - {self.title}"
+
+    def delete(self, *args, **kwargs):
+        if self.attachments: self.attachments.delete()
+        super().delete(*args, **kwargs)
+
+class KanbanActivity(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey(KanbanTask, on_delete=models.CASCADE, related_name='activities')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    text = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Kanban Activity"
+        verbose_name_plural = "Kanban Activities"
+
+    def __str__(self):
+        return self.text
+
+
+def doc_thumbnail_upload(instance, filename):
+    return f"documentation/thumbnail/{filename}"
+
+class AppDocumentation(models.Model):
+    TARGET_CHOICES = [
+        ('all', 'Semua Pengguna'),
+        ('dosen', 'Dosen'),
+        ('mahasiswa', 'Mahasiswa'),
+        ('admin', 'Admin'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=280, unique=True, blank=True)
+    body = models.TextField(blank=True, help_text="Penjelasan lengkap panduan")
+    thumbnail = models.ImageField(upload_to=doc_thumbnail_upload, blank=True, null=True)
+    video_url = models.URLField(max_length=500, blank=True, null=True, help_text="Link embed video panduan")
+    target_audience = models.CharField(max_length=20, choices=TARGET_CHOICES, default='all', help_text="Panduan ditujukan untuk siapa?")
+    view_count = models.PositiveIntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "App Documentation"
+        verbose_name_plural = "App Documentations"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.title} ({self.get_target_audience_display()})"

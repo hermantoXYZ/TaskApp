@@ -325,6 +325,14 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       bsAddEventSidebar.show();
       showDetailPanel(eventToUpdate);
+
+      if (eventToUpdate.extendedProps.is_readonly) {
+        if (btnEditEvent) btnEditEvent.style.display = 'none';
+        if (btnDeleteEventDetail) btnDeleteEventDetail.style.display = 'none';
+      } else {
+        if (btnEditEvent) btnEditEvent.style.display = '';
+        if (btnDeleteEventDetail) btnDeleteEventDetail.style.display = '';
+      }
     }
 
     // --------------------------------------------------------
@@ -366,6 +374,11 @@ document.addEventListener('DOMContentLoaded', function () {
       // Drag & drop update
       eventDrop: function (info) {
         const ev = info.event;
+        if (ev.extendedProps.is_readonly) {
+          info.revert();
+          showCalendarToast('Agenda kelas tidak dapat diubah dari sini.', 'warning');
+          return;
+        }
         updateEventAPI(ev.id, {
           title: ev.title,
           label: ev.extendedProps.calendar,
@@ -379,6 +392,11 @@ document.addEventListener('DOMContentLoaded', function () {
       },
       eventResize: function (info) {
         const ev = info.event;
+        if (ev.extendedProps.is_readonly) {
+          info.revert();
+          showCalendarToast('Agenda kelas tidak dapat diubah dari sini.', 'warning');
+          return;
+        }
         updateEventAPI(ev.id, {
           title: ev.title,
           label: ev.extendedProps.calendar,

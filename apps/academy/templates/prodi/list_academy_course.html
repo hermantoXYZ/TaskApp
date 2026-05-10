@@ -1,0 +1,181 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Daftar Mata Kuliah{% endblock %}
+
+{% block content %}
+
+<div class="card">
+  <!-- ===== CARD HEADER ===== -->
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="mb-0">Daftar Mata Kuliah</h5>
+      <small class="text-muted">
+        Menampilkan <strong>{{ courses|length }}</strong> mata kuliah
+      </small>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'setup-semester' %}" class="btn btn-outline-primary btn-sm waves-effect">
+        <i class="ri-file-excel-2-line me-1"></i> Setup Semester
+      </a>
+      <a href="{% url 'tambah-academy-course' %}" class="btn btn-primary btn-sm waves-effect waves-light">
+        <i class="ri-add-line me-1"></i> Tambah Course
+      </a>
+    </div>
+  </div>
+
+  <!-- ===== FILTER BAR ===== -->
+  <div class="card-body border-bottom pb-3 pt-3">
+    <form method="GET" class="row g-2 align-items-end" id="filter-form">
+
+      <!-- Search -->
+      <div class="col-12 col-sm-6 col-md-4">
+        <label class="form-label form-label-sm mb-1">
+          <i class="ri-search-line me-1"></i>Cari Kode / Nama MK
+        </label>
+        <input
+          type="text"
+          name="q"
+          class="form-control form-control-sm"
+          placeholder="Ketik kode atau nama…"
+          value="{{ q_search }}"
+        >
+      </div>
+
+      <!-- Filter Periode -->
+      <div class="col-12 col-sm-6 col-md-3">
+        <label class="form-label form-label-sm mb-1">
+          <i class="ri-calendar-line me-1"></i>Periode
+        </label>
+        <select name="period" class="form-select form-select-sm">
+          <option value="">-- Semua Periode --</option>
+          {% for p in all_periods %}
+            <option value="{{ p.id }}" {% if q_period == p.id|stringformat:"s" %}selected{% endif %}>
+              {{ p.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Filter Kelas / Group -->
+      <div class="col-12 col-sm-6 col-md-3">
+        <label class="form-label form-label-sm mb-1">
+          <i class="ri-group-line me-1"></i>Kelas / Group
+        </label>
+        <select name="group" class="form-select form-select-sm">
+          <option value="">-- Semua Kelas --</option>
+          {% for g in all_groups %}
+            <option value="{{ g }}" {% if q_group == g %}selected{% endif %}>{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Tombol -->
+      <div class="col-12 col-sm-6 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <i class="ri-filter-3-line me-1"></i>Filter
+        </button>
+        <a href="{% url 'list-academy-course' %}" class="btn btn-outline-secondary btn-sm w-100">
+          <i class="ri-refresh-line"></i>
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ===== TABLE ===== -->
+  <div class="table-responsive text-nowrap">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">Mata Kuliah</th>
+          <th>Kelas</th>
+          <th class="text-center">SKS T</th>
+          <th class="text-center">SKS P</th>
+          <th style="min-width:180px;">Pengampu / Pengajar</th>
+          <th>Periode</th>
+          <th class="text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody class="table-border-bottom-0">
+
+        {% for course in courses %}
+        <tr>
+
+          <td class="ps-4">
+            <div class="fw-semibold text-heading" style="font-size:.9rem;">{{ course.name }}</div>
+            <div class="text-muted small">{{ course.code }} &bull; {{ course.prodi.nama_prodi }}</div>
+          </td>
+          <td>
+            <span class="badge bg-label-primary rounded-pill">{{ course.group }}</span>
+          </td>
+
+          <!-- SKS T -->
+          <td class="text-center">
+            <span class="badge bg-label-dark">{{ course.credit_t }}</span>
+          </td>
+
+          <!-- SKS P -->
+          <td class="text-center">
+            <span class="badge bg-label-secondary">{{ course.credit_p }}</span>
+          </td>
+
+
+
+          <!-- Pengampu -->
+          <td style="max-width:180px;">
+            {% with coaches=course.coaches.all %}
+              {% if coaches %}
+                <div class="d-flex flex-wrap gap-1">
+                  {% for coach in coaches %}
+                    <span class="badge bg-label-secondary rounded-pill" style="font-size:.72rem;">
+                      {{ coach.nip.first_name|default:coach.nip.username }}
+                    </span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="text-muted fst-italic small">Belum ada pengampu</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+
+          <!-- Periode -->
+          <td>
+            <span class="badge rounded-pill bg-label-warning">
+              {{ course.period.name|default:"—" }}
+            </span>
+          </td>
+
+          <!-- Aksi -->
+          <td class="text-center">
+            <a href="{% url 'edit-academy-course' course.uuid %}"
+               class="btn btn-sm btn-primary waves-effect waves-light">
+              <i class="icon-base ri ri-edit-box-line icon-20px"></i> Edit
+            </a>
+          </td>
+        </tr>
+
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <div class="text-muted">
+              <i class="ri-inbox-line ri-36px d-block mb-2 opacity-50"></i>
+              Tidak ada mata kuliah yang sesuai dengan filter.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
+
+
+{% block page_js %}
+{{ block.super }}
+{% endblock page_js %}

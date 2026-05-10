@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, Prodi, CoursePeriod, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, CourseAssignment
+from .models import Course, Prodi, CoursePeriod, CourseParticipant, CourseAgenda, CourseAnnouncement, CourseAttendance, CourseMaterial, CourseAssignment, StudentPortfolio
 from .models import UserDosen, UserMhs, CourseQuiz, QuizQuestion, QuizOption
 from django_summernote.widgets import SummernoteWidget
 
@@ -97,7 +97,7 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = [
             'code', 'name', 'description', 'period', 'prodi',
-            'credit_t', 'credit_p', 'duration_weeks', 'is_active', 'coaches', 'group', 'link_rps'
+            'credit_t', 'credit_p', 'is_active', 'coaches', 'group', 'link_rps'
         ]
         widgets = {
             'code': forms.TextInput(attrs={
@@ -126,11 +126,6 @@ class CourseForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'SKS Praktik'
             }),
-            'duration_weeks': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': '16',
-                'value': 16
-            }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
@@ -153,36 +148,50 @@ class AddAgendaForm(forms.ModelForm):
     class Meta:
         model = CourseAgenda
         fields = [
-            'title', 
+            'title',
             'agenda_type',
-            'description', 
-            'learning_outcome', 
-            'teaching_method',  
-            'agenda_date', 
-            'location', 
-            'is_online', 
+            'learning_outcome',
+            'teaching_method',
+            'agenda_date',
+            'location',
+            'is_online',
             'meeting_url',
+            'lecturer',
             'allow_discussion',
         ]
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contoh: Prilaku Konsumen / UAS'}),
-            'agenda_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contoh: Bab 1/ Pertemuan 1/ Bagian 1'}),
-            'agenda_date': forms.DateTimeInput(attrs={'class': 'form-control flatpickr-datetime', 'placeholder': 'Pilih Tanggal & Jam'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'style': 'height: 80px;', 'placeholder': 'Deskripsi singkat...'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contoh: Pengantar Manajemen / UAS'}),
+            'agenda_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contoh: Perkuliahan / UTS / UAS'}),
+            'agenda_date': forms.DateTimeInput(
+                attrs={'class': 'form-control flatpickr-datetime', 'placeholder': 'Pilih Tanggal & Jam'}
+            ),
             'learning_outcome': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'style': 'height: 80px;', 'placeholder': 'Capaian pembelajaran mata kuliah...'}),
             'teaching_method': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contoh: Ceramah, Diskusi, Project Based'}),
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Gedung/Ruangan'}),
             'meeting_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://zoom.us/...'}),
+            'lecturer': forms.Select(attrs={'class': 'select2 form-select'}),
             'is_online': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'allow_discussion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        course = kwargs.pop('course', None)
+        super().__init__(*args, **kwargs)
+        self.fields['agenda_date'].required = False
+        self.fields['lecturer'].required = False
+        self.fields['lecturer'].empty_label = '— Pilih Dosen Pengampu —'
+        # Filter hanya coach yang terdaftar di course ini
+        if course is not None:
+            self.fields['lecturer'].queryset = course.coaches.all()
+        else:
+            self.fields['lecturer'].queryset = UserDosen.objects.all()
 
 
 
 class AddAnnouncementForm(forms.ModelForm):
     class Meta:
         model = CourseAnnouncement
-        fields = ['title', 'content', 'priority', 'is_pinned']
+        fields = ['title', 'content', 'priority', 'is_pinned', 'allow_discussion']
         widgets = {
             'priority': forms.Select(attrs={
                 'class': 'select2 form-select', 
@@ -190,6 +199,7 @@ class AddAnnouncementForm(forms.ModelForm):
             }),
             'content': forms.Textarea(attrs={'rows': 4, 'style': 'height: 120px;'}),
             'is_pinned': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'allow_discussion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 class AttendanceForm(forms.ModelForm):
@@ -205,19 +215,19 @@ class AttendanceForm(forms.ModelForm):
             })
         }
 class CourseMaterialForm(forms.ModelForm):
-    text_content = forms.CharField(widget=SummernoteWidget())
+    text_content = forms.CharField(widget=SummernoteWidget(), required=False)
 
     class Meta:
         model = CourseMaterial
-        fields = ['agenda', 'title', 'material_type', 'video_url', 'file_attachment', 'text_content', 'duration_seconds', 'order', 'is_published', 'allow_discussion']
+        fields = [
+            'agenda', 'title',
+            'text_content',
+            'order', 'is_published', 'allow_discussion'
+        ]
         widgets = {
             'agenda': forms.Select(attrs={'class': 'select2 form-select'}),
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Judul Materi'}),
-            'material_type': forms.Select(attrs={'class': 'select2 form-select'}),
-            'video_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://youtube.com/...'}),
-            'file_attachment': forms.FileInput(attrs={'class': 'form-control'}),
             'text_content': SummernoteWidget(attrs={'summernote': {'width': '100%', 'height': '400px'}}),
-            'duration_seconds': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Detik'}),
             'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'allow_discussion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Urutan'}),
@@ -262,3 +272,40 @@ class CourseAssignmentForm(forms.ModelForm):
                 self.fields['agenda'].queryset = CourseAgenda.objects.filter(
                     course__uuid=course_uuid
                 ).order_by('agenda_date')
+
+class StudentPortfolioForm(forms.ModelForm):
+    body = forms.CharField(
+        widget=SummernoteWidget(attrs={'summernote': {'width': '100%', 'height': '350px'}}),
+        required=False,
+        label='Penjelasan Lengkap',
+    )
+
+    class Meta:
+        model = StudentPortfolio
+        fields = [
+            'title', 'description', 'body',
+            'project_url', 'activity_type',
+            'status', 'is_featured',
+            'category_portfolio', 'course', 'thumbnail',
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Contoh: Aplikasi Web E-Commerce dengan Django',
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Deskripsi singkat tentang portofolio ini...',
+            }),
+            'project_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://github.com/username/repo',
+            }),
+            'activity_type': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'category_portfolio': forms.Select(attrs={'class': 'form-select'}),
+            'course': forms.Select(attrs={'class': 'form-select'}),
+            'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'thumbnail': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
