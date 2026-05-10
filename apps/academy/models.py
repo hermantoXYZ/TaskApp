@@ -407,7 +407,7 @@ class AgendaMediaItem(models.Model):
 
     def __str__(self):
         media_name = self.media_file.name if self.media_file else "Media Dihapus"
-        return f"{self.agenda} → {media_name}"
+        return f"{self.agenda} - {media_name}"
 
 
 ASSIGNMENT_TYPES = [
@@ -434,7 +434,9 @@ class CourseAssignment(models.Model):
         verbose_name = "Course Assignment"
 
     def __str__(self):
-        return f"TUGAS: {self.title} ({self.agenda.course.code})"
+        if self.agenda and self.agenda.course:
+            return f"TUGAS: {self.title} ({self.agenda.course.code})"
+        return f"TUGAS: {self.title}"
     
 class StudentAssignmentSubmission(models.Model):
     assignment = models.ForeignKey(CourseAssignment, on_delete=models.SET_NULL, null=True, blank=True, related_name='submissions')
@@ -572,8 +574,16 @@ class ChatRoom(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = "Chat Room"
+        verbose_name_plural = "Chat Rooms"
+        ordering = ['-updated_at'] 
+
     def __str__(self):
-        return f"Chat Room {self.id}"
+        if self.name:
+            return self.name
+        return f"Private Chat ({str(self.id)[:8]})" if self.room_type == 'private' else f"Group Chat ({str(self.id)[:8]})"
+
 
     def get_partner(self, user):
         return self.participants.exclude(id=user.id).first()
