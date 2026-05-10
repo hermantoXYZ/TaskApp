@@ -286,12 +286,12 @@ class EditProgramStudiCourse(ProdiRequiredMixin, AcademyView):
         return self.render_to_response(context)
 
 
-class DeleteProgramStudiCourse(DosenRequiredMixin, AcademyView):
-    def get(self, request, pk, *args, **kwargs):
-        course_obj = get_object_or_404(Prodi, id=pk)
-        course_obj.delete()
-        messages.success(request, 'Course berhasil dihapus.')
-        return redirect('program-studi-course')
+# class DeleteProgramStudiCourse(DosenRequiredMixin, AcademyView):
+#     def get(self, request, pk, *args, **kwargs):
+#         course_obj = get_object_or_404(Prodi, id=pk)
+#         course_obj.delete()
+#         messages.success(request, 'Course berhasil dihapus.')
+#         return redirect('program-studi-course')
     
 
 class AddCoursePeriod(ProdiRequiredMixin, AcademyView):
@@ -640,6 +640,80 @@ class DeleteCourseAgenda(DosenRequiredMixin, AcademyView):
         messages.success(request, f'Agenda "{agenda_title}" dan data presensinya berhasil dihapus.')
         return redirect('add-course-agenda', course_uuid=course.uuid)
     
+class AdminCourseAgendaListView(ProdiRequiredMixin, AcademyView):
+    template_name = "prodi/admin_agenda_list.html"
+
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        agendas = CourseAgenda.objects.filter(course=course).select_related('lecturer__nip').order_by('session_number', 'agenda_date')
+        
+        return self.render_to_response(self.get_context_data(
+            course=course,
+            agendas=agendas,
+        ))
+
+class AdminCourseAgendaCreateView(ProdiRequiredMixin, AcademyView):
+    template_name = "prodi/admin_agenda_form.html"
+
+    def get(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = AddAgendaForm(course=course)
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course,
+            is_edit=False
+        ))
+
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        form = AddAgendaForm(request.POST, course=course)
+
+        if form.is_valid():
+            agenda = form.save(commit=False)
+            agenda.course = course
+            # Note: created_by in CourseAgenda is UserDosen, but Prodi isn't UserDosen.
+            # We leave it null or try to find a mapping. Usually leaving null is fine for admin created.
+            agenda.save()
+            messages.success(request, f'Sesi "{agenda.title}" berhasil dibuat.')
+            return redirect('admin-course-agenda', course_uuid=course.uuid)
+
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course,
+            is_edit=False
+        ))
+
+class AdminCourseAgendaEditView(ProdiRequiredMixin, AcademyView):
+    template_name = "prodi/admin_agenda_form.html"
+
+    def get(self, request, course_uuid, agenda_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        agenda = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
+        form = AddAgendaForm(instance=agenda, course=course)
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course,
+            agenda=agenda,
+            is_edit=True
+        ))
+
+    def post(self, request, course_uuid, agenda_id, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        agenda = get_object_or_404(CourseAgenda, id=agenda_id, course=course)
+        form = AddAgendaForm(request.POST, instance=agenda, course=course)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Sesi "{agenda.title}" berhasil diperbarui.')
+            return redirect('admin-course-agenda', course_uuid=course.uuid)
+
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            course=course,
+            agenda=agenda,
+            is_edit=True
+        ))
+
 
 class CourseAnnouncementView(DosenRequiredMixin, AcademyView):
     template_name = "add_announcement.html"

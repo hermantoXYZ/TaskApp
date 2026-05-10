@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AcademyView, AcademyDashboardView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, DeleteProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView, MediaLibraryListView, MediaLibraryUploadView, MediaLibraryDeleteView, MediaLibraryAttachView, DeleteAgendaMediaItemView, ListDosenCourse
+from .views import AcademyView, AcademyDashboardView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView, MediaLibraryListView, MediaLibraryUploadView, MediaLibraryDeleteView, MediaLibraryAttachView, DeleteAgendaMediaItemView, ListDosenCourse
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
@@ -53,10 +53,16 @@ urlpatterns = [
     path('course/<uuid:course_uuid>/announcement/<int:announcement_id>/delete/', views.DeleteCourseAnnouncementView.as_view(), name='delete-course-announcement'),
     path('course/program-studi', AddProgramStudiCourse.as_view(), name='program-studi-course'),
     path('course/edit/progam-studi/<uuid:pk>/', EditProgramStudiCourse.as_view(), name='edit-program-studi-course'),
-    path('course/delete/<uuid:pk>/', DeleteProgramStudiCourse.as_view(), name='delete-program-studi-course'),
+    # path('course/delete/<uuid:pk>/', DeleteProgramStudiCourse.as_view(), name='delete-program-studi-course'),
     path('list-course-period', AddCoursePeriod.as_view(), name='list-course-period'),
     path('course/period/edit/<uuid:pk>/', EditCoursePeriod.as_view(), name='edit-course-period'),
     path('course/<uuid:course_uuid>/rekapitulasi/', CourseRecapitulationView.as_view(), name='course-rekapitulasi'),
+    
+    # === PRODI COURSE AGENDA URLS ===
+    path('prodi/course/<uuid:course_uuid>/agenda/', views.AdminCourseAgendaListView.as_view(), name='admin-course-agenda'),
+    path('prodi/course/<uuid:course_uuid>/agenda/create/', views.AdminCourseAgendaCreateView.as_view(), name='admin-course-agenda-create'),
+    path('prodi/course/<uuid:course_uuid>/agenda/<int:agenda_id>/edit/', views.AdminCourseAgendaEditView.as_view(), name='admin-course-agenda-edit'),
+
     # === DOSEN URL ===
     path('list/dosen/course/', ListDosenCourse.as_view(), name='list-dosen-course'),
 
