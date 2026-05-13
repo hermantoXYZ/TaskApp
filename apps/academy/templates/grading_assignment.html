@@ -138,9 +138,18 @@
                                 <td>
                                     {% if member.submission %}
                                         <div class="d-flex flex-column gap-1">
-                                            <small class="text-muted" style="font-size: 10px;">
-                                                {{ member.submission.updated_at|date:"d M, H:i" }}
-                                            </small>
+                                            <div class="mb-1 d-flex flex-column gap-1">
+                                                <small class="text-muted d-flex align-items-center" style="font-size: 9px;">
+                                                    <i class="ri-time-line me-1" style="font-size: 11px;"></i>
+                                                    <span class="fw-bold text-uppercase me-1">Dikirim:</span> {{ member.submission.submitted_at|date:"d M, H:i" }}
+                                                </small>
+                                                {% if member.submission.score %}
+                                                <small class="text-success d-flex align-items-center" style="font-size: 9px;">
+                                                    <i class="ri-checkbox-circle-line me-1" style="font-size: 11px;"></i>
+                                                    <span class="fw-bold text-uppercase me-1">Diperiksa:</span> {{ member.submission.updated_at|date:"d M, H:i" }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
                                             
                                             {% if member.submission.submitted_link %}
                                                 <div style="max-width: 200px;">
@@ -152,7 +161,7 @@
                                             
                                             {% if member.submission.submitted_text %}
                                       
-                                                <small class="text-muted" style="font-size: 10px;">
+                                                <small class="text-muted" style="font-size: 10px; overflow: hidden; text-overflow: ellipsis; width: 200px; display: block;">
                                                 {{ member.submission.submitted_text }}
                                             </small>
                                             
@@ -225,7 +234,18 @@
                                 <td>
                                     {% if item.submission %}
                                         <div class="d-flex flex-column gap-1">
-                                            <small class="text-muted" style="font-size: 0.75rem;">{{ item.submission.updated_at|date:"d M, H:i" }}</small>
+                                            <div class="mb-1 d-flex flex-column gap-1">
+                                                <small class="text-muted d-flex align-items-center" style="font-size: 9px;">
+                                                    <i class="ri-time-line me-1" style="font-size: 11px;"></i>
+                                                    <span class="fw-bold text-uppercase me-1">Dikirim:</span> {{ item.submission.submitted_at|date:"d M, H:i" }}
+                                                </small>
+                                                {% if item.submission.graded_at %}
+                                                <small class="text-success d-flex align-items-center" style="font-size: 9px;">
+                                                    <i class="ri-checkbox-circle-line me-1" style="font-size: 11px;"></i>
+                                                    <span class="fw-bold text-uppercase me-1">Diperiksa:</span> {{ item.submission.graded_at|date:"d M, H:i" }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
                                             {% if item.submission.submitted_link %}
                                                 <a href="{{ item.submission.submitted_link }}" target="_blank" class="fw-bold text-primary" title="{{ item.submission.submitted_link }}">
                                                     <i class="ri-link me-1"></i> Link Tugas
