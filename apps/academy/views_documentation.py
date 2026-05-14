@@ -37,13 +37,18 @@ class DocumentationDetailView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, slug, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         doc = get_object_or_404(AppDocumentation, slug=slug)
-        
-        # Increment view count
+
         doc.view_count += 1
         doc.save(update_fields=['view_count'])
         
-        # Embed URL langsung diambil dari inputan user
         embed_video_url = doc.video_url
+        if embed_video_url:
+            if 'youtube.com/watch?v=' in embed_video_url:
+                video_id = embed_video_url.split('v=')[1].split('&')[0]
+                embed_video_url = f"https://www.youtube.com/embed/{video_id}"
+            elif 'youtu.be/' in embed_video_url:
+                video_id = embed_video_url.split('youtu.be/')[1].split('?')[0]
+                embed_video_url = f"https://www.youtube.com/embed/{video_id}"
 
         context.update({
             "title": doc.title,
