@@ -815,7 +815,12 @@ class StudentPortfolio(models.Model):
         verbose_name_plural = "Student Portfolios"
 
     def save(self, *args, **kwargs):
-        if not self.slug: self.slug = slugify(f"{self.user.username}-{self.title}")
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            while StudentPortfolio.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

@@ -135,12 +135,14 @@
           <!-- Kategori -->
           <div class="mb-3">
             <label class="form-label fw-semibold" for="{{ form.category_portfolio.id_for_label }}">Kategori</label>
+            <span class="text-danger">*Optional</span>
             {{ form.category_portfolio }}
           </div>
 
           <!-- Mata Kuliah Terkait -->
           <div class="mb-3">
             <label class="form-label fw-semibold" for="{{ form.course.id_for_label }}">Mata Kuliah Terkait</label>
+            <span class="text-danger">*Optional</span>
             {{ form.course }}
           </div>
 

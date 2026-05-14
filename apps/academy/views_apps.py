@@ -25,6 +25,9 @@ from .decorators_prodi import ProdiOrAdminMixin
 from .decorators_dosen import DosenRequiredMixin
 from django.db.models import Sum, Q, Max 
 import random
+from django.db.models import F
+from django.utils import timezone
+
 class AcademyView(TemplateView):
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -703,8 +706,10 @@ class StudentPortfolioAddView(LoginRequiredMixin, AcademyView):
         if form.is_valid():
             portfolio = form.save(commit=False)
             portfolio.user = request.user
+            portfolio.verification_status = 'verified'
+            portfolio.verified_at = timezone.now()
             portfolio.save()
-            messages.success(request, "Portofolio berhasil ditambahkan!")
+            messages.success(request, "Portofolio berhasil ditambahkan dan diverifikasi otomatis!")
             return redirect('portfolio-list')
 
         context = self.get_context_data(**kwargs)
@@ -744,8 +749,13 @@ class StudentPortfolioEditView(LoginRequiredMixin, AcademyView):
         portfolio = self._get_portfolio(request, kwargs['pk'])
         form = self._build_form(request, instance=portfolio, data=request.POST, files=request.FILES)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Portofolio berhasil diperbarui!")
+            portfolio = form.save(commit=False)
+            portfolio.verification_status = 'verified'
+            if not portfolio.verified_at:
+                from django.utils import timezone
+                portfolio.verified_at = timezone.now()
+            portfolio.save()
+            messages.success(request, "Portofolio berhasil diperbarui dan diverifikasi otomatis!")
             return redirect('portfolio-list')
 
         context = self.get_context_data(**kwargs)
@@ -926,7 +936,7 @@ class PublicPortfolioView(View):
         return render(request, self.template_name, context)
 
 class PublicPortfolioDetailView(View):
-    """Halaman detail publik untuk sebuah portofolio."""
+
     template_name = "portfolio/public_portfolio_detail.html"
 
     def get(self, request, username, slug, *args, **kwargs):
@@ -940,7 +950,7 @@ class PublicPortfolioDetailView(View):
         )
 
         # Increment view_count untuk item spesifik ini
-        from django.db.models import F
+ 
         StudentPortfolio.objects.filter(id=portfolio.id).update(view_count=F('view_count') + 1)
         portfolio.refresh_from_db(fields=['view_count'])
 
