@@ -51,7 +51,13 @@
                     <td>
                         <span class="badge bg-label-primary fs-6">{{ att.total_score|floatformat:0 }}</span>
                     </td>
-                    <td><span class="badge bg-label-success">Selesai</span></td>
+                    <td>
+                        {% if att.is_graded %}
+                            <span class="badge bg-label-success">Sudah Diperiksa</span>
+                        {% else %}
+                            <span class="badge bg-label-warning">Belum Diperiksa</span>
+                        {% endif %}
+                    </td>
                     <td>
     <div class="dropdown">
         <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">

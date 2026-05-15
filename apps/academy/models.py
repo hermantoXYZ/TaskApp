@@ -522,6 +522,7 @@ class StudentQuizAttempt(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     total_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    is_graded = models.BooleanField(default=False, help_text="Tandai jika sudah diperiksa oleh dosen")
     
     def __str__(self):
         student = self.participant.mahasiswa.nim if self.participant and self.participant.mahasiswa else "Mahasiswa Dihapus"

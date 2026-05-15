@@ -1690,6 +1690,7 @@ class QuizSubmissionGradeView(DosenRequiredMixin, AcademyView):
             # --- HITUNG ULANG TOTAL SKOR ---
             new_total = attempt.answers.aggregate(total=Sum('score_obtained'))['total'] or 0
             attempt.total_score = new_total
+            attempt.is_graded = True
             attempt.save()
 
         messages.success(request, f"Nilai berhasil disimpan. Total Skor Baru: {attempt.total_score}")
