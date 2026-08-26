@@ -15,7 +15,6 @@
 
 {% block page_js %}
 {{ block.super }}
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 {% endblock page_js %}
 
@@ -39,7 +38,7 @@
             {% csrf_token %}
 
             {% for q in questions %}
-            <div class="card mb-4 shadow-sm user-select-none">
+            <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-label-secondary d-flex justify-content-between align-items-center py-2 px-3">
                     <span class="fw-bold text-dark">Soal No. {{ forloop.counter }}</span>
                     <span class="badge bg-white text-dark border">{{ q.score_weight }} Poin</span>
@@ -51,7 +50,7 @@
 
                     {% if q.image %}
                     <div class="mb-3">
-                        <img src="{{ q.image.url }}" class="img-fluid rounded border pointer-events-none" style="max-height: 300px;">
+                        <img src="{{ q.image.url }}" class="img-fluid rounded border" style="max-height: 300px;">
                     </div>
                     {% endif %}
 
@@ -274,33 +273,7 @@
     });
 
     // ════════════════════════════════════════════════
-    // 2. ANTI-CHEAT: Blokir Copy, Paste, Cut,
-    //    Klik Kanan, dan Shortcut Developer Tools
-    // ════════════════════════════════════════════════
-    document.addEventListener('contextmenu', event => event.preventDefault());
-    document.addEventListener('copy',        event => event.preventDefault());
-    document.addEventListener('cut',         event => event.preventDefault());
-    document.addEventListener('paste',       event => event.preventDefault());
-
-    document.addEventListener('keydown', function(e) {
-        // F12
-        if (e.keyCode == 123) { e.preventDefault(); return false; }
-        // Ctrl+Shift+I / J / C
-        if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { e.preventDefault(); return false; }
-        if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
-        if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { e.preventDefault(); return false; }
-        // Ctrl+U (lihat source)
-        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { e.preventDefault(); return false; }
-        // Ctrl+C / Ctrl+X
-        if (e.ctrlKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
-        if (e.ctrlKey && e.keyCode == 'X'.charCodeAt(0)) { e.preventDefault(); return false; }
-        // Meta+C / Meta+X (Mac)
-        if (e.metaKey && e.keyCode == 'C'.charCodeAt(0)) { e.preventDefault(); return false; }
-        if (e.metaKey && e.keyCode == 'X'.charCodeAt(0)) { e.preventDefault(); return false; }
-    });
-
-    // ════════════════════════════════════════════════
-    // 3. SUBMIT MANUAL
+    // 2. SUBMIT MANUAL
     // ════════════════════════════════════════════════
     const swalTheme = {
         customClass: {
@@ -350,7 +323,7 @@
     }
 
     // ════════════════════════════════════════════════
-    // 4. SUBMIT OTOMATIS (waktu habis)
+    // 3. SUBMIT OTOMATIS (waktu habis)
     // ════════════════════════════════════════════════
     function submitExam(reason) {
         if (submitLocked) return;
@@ -377,7 +350,7 @@
     }
 
     // ════════════════════════════════════════════════
-    // 5. UX: Klik Card pilih Radio + highlight
+    // 4. UX: Klik Card pilih Radio + highlight
     // ════════════════════════════════════════════════
     document.querySelectorAll('.card.hover-bg-light').forEach(function(card) {
         card.addEventListener('click', function() {
@@ -395,26 +368,11 @@
             }
         });
     });
-
-    // Mencegah tombol Back browser
-    history.pushState(null, null, location.href);
-    window.onpopstate = function() { history.go(1); };
 </script>
 
 <style>
     .hover-bg-light:hover { background-color: #f8f9fa; border-color: #666cff !important; }
     .dashed { border-top-style: dashed !important; }
-    .user-select-none {
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-    }
-    /* Pastikan teks tidak bisa di-drag/select */
-    .option-item {
-        -webkit-user-select: none;
-        user-select: none;
-    }
     /* Transisi halus saat opsi terpilih */
     label.card.border-primary {
         background-color: #f0f1ff;
