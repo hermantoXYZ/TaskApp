@@ -119,7 +119,7 @@ class AcademyDashboardView(AcademyView):
             ).select_related('period', 'prodi').prefetch_related('participants').order_by('period__name', 'code')
             for course in qs:
                 course.student_count = course.participants.filter(is_active=True).count()
-                course.agenda_count = CourseAgenda.objects.filter(course=course).count()
+                course.agenda_count = CourseAgenda.objects.filter(course=course, is_active=True).count()
             coached_courses = qs
         except UserDosen.DoesNotExist:
             pass
@@ -151,7 +151,7 @@ class AcademyDashboardView(AcademyView):
                         course.progress = round((completed / total) * 100)
                     else:
                         course.progress = 0
-                    course.agenda_count = CourseAgenda.objects.filter(course=course).count()
+                    course.agenda_count = CourseAgenda.objects.filter(course=course, is_active=True).count()
                 my_courses = qs_mhs
             except UserMhs.DoesNotExist:
                 pass

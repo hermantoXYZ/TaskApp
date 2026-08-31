@@ -132,7 +132,7 @@
       <div class="card-header border-bottom">
         <h5 class="card-title mb-0">
           <i class="ri-list-check-3 me-2 text-primary"></i>
-          Daftar 16 Sesi Pertemuan
+          Daftar Sesi Pertemuan
         </h5>
       </div>
       <div class="card-body pt-4">
@@ -179,6 +179,15 @@
                     {% else %}
                       <span class="badge bg-label-warning rounded-pill">
                         <i class="ri-time-line me-1"></i>{{ agenda.agenda_date|date:"d M Y" }}
+                      </span>
+                    {% endif %}
+                    {% if agenda.is_active %}
+                      <span class="badge bg-label-success rounded-pill">
+                        <i class="ri-checkbox-circle-line me-1"></i>Aktif
+                      </span>
+                    {% else %}
+                      <span class="badge bg-label-danger rounded-pill">
+                        <i class="ri-checkbox-circle-line me-1"></i>Tidak Aktif
                       </span>
                     {% endif %}
                     {% if agenda.is_online %}
