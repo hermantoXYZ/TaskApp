@@ -6,7 +6,7 @@ from django_summernote.widgets import SummernoteWidget
 class CourseQuizForm(forms.ModelForm):
     class Meta:
         model = CourseQuiz
-        fields = ['title', 'quiz_type', 'description', 'start_time', 'end_time', 'duration_minutes', 'passing_score', 'max_attempts', 'is_published']
+        fields = ['title', 'quiz_type', 'description', 'start_time', 'end_time', 'duration_minutes', 'passing_score', 'max_attempts', 'max_security_violations', 'is_published']
         widgets = {
             'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
@@ -15,6 +15,7 @@ class CourseQuizForm(forms.ModelForm):
             'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
             'passing_score': forms.NumberInput(attrs={'class': 'form-control'}),
             'max_attempts': forms.NumberInput(attrs={'class': 'form-control'}),
+            'max_security_violations': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 20}),
             'quiz_type': forms.Select(attrs={'class': 'form-select'}),
             'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

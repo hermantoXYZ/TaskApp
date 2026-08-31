@@ -19,6 +19,38 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/app-academy-details.css' %}" />
 <style>
+    #layout-navbar,
+    .layout-navbar,
+    .layout-menu,
+    .layout-menu-toggle,
+    .content-footer,
+    .menu-inner,
+    .menu-vertical {
+        display: none !important;
+    }
+
+    .layout-page,
+    .layout-wrapper .layout-page,
+    .layout-navbar-fixed .layout-page,
+    .layout-navbar-hidden .layout-page,
+    .content-wrapper {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    .layout-menu-fixed .layout-page,
+    .layout-menu-fixed-offcanvas .layout-page {
+        margin-left: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .container-p-y:not([class^="pb-"]):not([class*=" pb-"]),
+    .container-p-y {
+        padding-top: 1.25rem !important;
+    }
+
     /* === 1. KONTEN BODY === */
     .course-content-body {
         width: 100%;
@@ -165,6 +197,46 @@
         border: none !important;
         font-family: inherit !important;
     }
+
+    .course-item-wrapper {
+        display: flex;
+        align-items: baseline;
+        margin-bottom: 0.35rem;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        font-weight: 600;
+        border-color: rgba(105, 108, 255, 0.15);
+        transition: background-color 0.15s ease;
+    }
+    .course-item-wrapper:hover {
+        background-color: rgba(105, 108, 255, 0.08);
+    }
+    .course-item-wrapper.is-active-item {
+        background-color: rgba(105, 108, 255, 0.08);
+    }
+    .course-item-link {
+        flex: 1;
+        display: flex;
+        align-items: flex-start;
+        padding: 0.6rem 0.5rem 0.6rem 0;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        color: #566a7f;
+        min-width: 0;
+        transition: color 0.15s ease;
+    }
+    .course-item-link:hover:not(.locked) {
+        color: #696cff;
+    }
+    .course-item-link.active {
+        color: #696cff;
+        font-weight: 600;
+    }
+    .course-item-link.locked {
+        color: #a1acb8;
+        cursor: default;
+        pointer-events: none;
+    }
 </style>
 {% endblock page_css %}
 
@@ -187,85 +259,38 @@
 <div class="row g-6">
 <div class="col-lg-8">
     
-    <div class="card mb-6">
-      
-      <div class="card-header p-0">
-        <div class="nav-align-top">
-          <ul class="nav nav-tabs nav-fill" role="tablist">
-            <li class="nav-item">
-              <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-learning">
-                <i class="tf-icons ri-video-line me-2"></i> <span class="d-none d-sm-block">Learns</span>
-              </button>
-            </li>
-            <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-announcement">
-                <i class="tf-icons ri-notification-3-line me-2"></i> <span class="d-none d-sm-block">Info</span>
-                {% if course.announcements.count > 0 %}
-                    <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2">{{ course.announcements.count }}</span>
-                {% endif %}
-              </button>
-            </li>
-            <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-quizzes">
-                <i class="tf-icons ri-survey-line me-2"></i> <span class="d-none d-sm-block">Quiz</span>
-                {% if quizzes %}<span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-2">{{ quizzes.count }}</span>{% endif %}
-              </button>
-            </li>
-            <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-groups">
-                <i class="tf-icons ri-team-line me-2"></i> <span class="d-none d-sm-block">Tim</span>
-              </button>
-            </li>
-            <li class="nav-item">
-              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-attendance">
-                <i class="tf-icons ri-calendar-check-line me-2"></i> <span class="d-none d-sm-block">Kehadiran</span>
-              </button>
-            </li>
-          </ul>
+    <div class="card mb-6 shadow-none border-1">
+{% if messages %}
+  {% for message in messages %}
+       <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
+          <span class="alert-icon rounded">
+            <i class="ri-error-warning-line ri-22px"></i>
+          </span>
+          <div>
+            {{ message }}
         </div>
       </div>
+  {% endfor %}
+  {% endif %}
 
-      <div class="card-body pt-5">
-        <div class="tab-content p-0">
-          
-          <div class="tab-pane fade show active" id="navs-learning" role="tabpanel">
-            
-            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-1">
+      <div class="card-body p-4">
+
+            {% if active_type %}
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
                 <div class="me-1">
-                  <h5 class="mb-0">{{ course.name }}</h5>
-                  <p class="mb-0">Code: <span class="fw-medium text-heading"> {{ course.code }} | Group: {{ course.group }}</span></p>
+                  <h5 class="mb-0 fw-bold">{{ active_item.title }}- {{ course.name }}</h5>
+                  <p class="mb-0 text-muted small">Dosen: <span class="fw-medium text-heading">{% for coach in course.coaches.all %}{{ coach.nip.first_name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</span></p>
                 </div>
-                <div class="d-flex align-items-center">
-                  <span class="badge bg-label-danger rounded-pill me-2">{{ course.prodi.nama_prodi }}</span>
-                  <span class="badge bg-label-primary rounded-pill">Public Preview</span>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-label-primary rounded-pill"><i class="ri-eye-line me-1"></i>Publik</span>
                 </div>
             </div>
 
             <div class="card academy-content shadow-none border">
-                
                 {% if active_type == 'material' %}
-                    
                     {% if active_item.is_published %}
-                        
-                        <div class="p-2">
-                            <!-- Header materi artikel -->
-                            <div class="p-4 rounded mb-3">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span class="badge bg-success rounded-pill">Bahan Bacaan</span>
-                                </div>
-                                <h4 class="mb-1">{{ active_item.title }}</h4>
-                                {% if active_item.created_by %}
-                                    <small class="text-muted">
-                                        <i class="ri-user-line me-1"></i>
-                                        {{ active_item.created_by.nip.get_full_name|default:active_item.created_by.nip.username }}
-                                        <span class="ms-2">· {{ active_item.created_at|date:"d M Y" }}</span>
-                                    </small>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="card-body pt-3">
-                            <div class="course-content-body mb-6">
+                        <div class="card-body p-4 pt-3">
+                            <div class="course-content-body mb-4">
                                 {% if active_item.text_content %}
                                     {{ active_item.text_content|safe }}
                                 {% else %}
@@ -273,7 +298,6 @@
                                 {% endif %}
                             </div>
                         </div>
-
                     {% else %}
                         <div class="card-body py-5 my-5 text-center">
                             <div class="mb-4">
@@ -281,197 +305,232 @@
                                     <i class="ri-lock-2-fill ri-4x"></i>
                                 </span>
                             </div>
-                            <h4 class="mb-2">Materi Terkunci</h4>
+                            <h4 class="mb-2">Materi Belum Tersedia</h4>
                             <p class="text-muted w-75 mx-auto">
-                                Materi ini belum dipublikasikan untuk umum.
+                                Materi <strong>"{{ active_item.title }}"</strong> saat ini masih dalam tahap penyusunan (Draft).
                             </p>
                         </div>
                     {% endif %}
 
                 {% elif active_type == 'assignment' %}
-                    
                     {% if active_item.is_published %}
-                        
-                        <div class="p-4 bg-label-warning rounded border border-warning border-opacity-25">
+                        <div class="p-4 rounded border-bottom">
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="badge bg-label-primary rounded-pill">Tugas</span>
+                                        {% if active_item.assignment_type == 'group' %}
+                                            <span class="badge bg-label-info rounded-pill">Tugas Kelompok</span>
+                                        {% else %}
+                                            <span class="badge bg-label-primary rounded-pill">Individu</span>
+                                        {% endif %}
                                         <span class="badge bg-label-secondary rounded-pill">Max Score: {{ active_item.max_score }}</span>
                                     </div>
-                                    <h4 class="text-warning mb-1 fw-bold">{{ active_item.title }}</h4>
+                                    <h4 class="mb-1 fw-bold">{{ active_item.title }}</h4>
                                     <p class="mb-0 text-muted small">
                                         <i class="ri-time-line me-1"></i> Deadline: <strong>{{ active_item.due_date|date:"l, d F Y - H:i" }}</strong>
                                     </p>
                                 </div>
                                 {% if active_item.file_instruction %}
                                     <a href="{{ active_item.file_instruction.url }}" class="btn btn-warning text-white shadow-sm" target="_blank">
-                                        <i class="ri-download-cloud-2-line me-1"></i> Download Soal
+                                        <i class="ri-download-cloud-2-line me-1"></i> Unduh Berkas
                                     </a>
                                 {% endif %}
                             </div>
                         </div>
 
-                        <div class="card-body pt-3">
-                            <div class="course-content-body mb-6">
+                        <div class="card-body p-4 pt-3">
+                            <div class="course-content-body mb-4">
                                 {{ active_item.description|safe|linebreaks }}
-                                <hr class="my-6">
-                                
-                                <div class="alert alert-secondary d-flex align-items-center border-secondary" role="alert">
-                                    <i class="ri-information-line me-2 ri-lg"></i>
-                                    <div>
-                                        <strong>Mode Preview:</strong> Silakan login sebagai mahasiswa untuk mengumpulkan tugas ini.
-                                    </div>
+                            </div>
+                            
+                            <div class="alert alert-info d-flex align-items-center" role="alert">
+                                <i class="ri-information-line ri-20px me-2"></i>
+                                <div>
+                                    Anda berada di mode <strong>Public Preview</strong>. Untuk mengumpulkan tugas dan melihat nilai, silakan masuk dengan akun mahasiswa Anda.
                                 </div>
                             </div>
                         </div>
-
                     {% else %}
                         <div class="card-body py-5 my-5 text-center">
+                            <div class="mb-4">
+                                <span class="avatar avatar-xl rounded-circle bg-label-warning mx-auto p-4 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                                    <i class="ri-lock-2-fill ri-4x text-white"></i>
+                                </span>
+                            </div>
                             <h4 class="mb-2">Tugas Belum Dibuka</h4>
                             <p class="text-muted w-75 mx-auto">Tugas ini belum dipublikasikan.</p>
                         </div>
                     {% endif %}
-
-                {% else %}
-                    <div class="p-12 text-center bg-lighter rounded m-3">
-                        <h4>Selamat Datang di Preview Course</h4>
-                        <p class="text-muted">Silakan pilih konten di sebelah kanan untuk melihat materi.</p>
-                        <div class="course-content-body mt-3 text-start px-4">
-                            {{ course.description|safe }}
-                        </div>
-                    </div>
                 {% endif %}
             </div>
-          </div>
-
-        <div class="tab-pane fade" id="navs-announcement" role="tabpanel">
-            <div class="card shadow-none border">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <h5 class="mb-0">Papan Pengumuman</h5>
-                        <span class="badge bg-label-primary rounded-pill">{{ announcements.count }} Info</span>
+            {% else %}
+            <!-- Welcome & Course Overview Container -->
+            <div class="card academy-content shadow-none border">
+                <div class="p-3 p-md-4">
+                    <!-- Hero Banner -->
+                    <div class="card bg-label-primary border-0 mb-4 shadow-none">
+                        <div class="card-body p-4 p-md-5">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                                <div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                        <span class="badge bg-primary text-white">{{ course.code }}</span>
+                                        <span class="badge bg-label-primary bg-white"><i class="ri-eye-line me-1"></i>Public Preview</span>
+                                    </div>
+                                    <h3 class="fw-bold mb-1 text-primary">{{ course.name }}</h3>
+                                    <p class="mb-0 text-muted small">
+                                        Selamat datang di pratinjau publik mata kuliah. Silakan telusuri silabus dan materi yang tersedia melalui panel di samping.
+                                    </p>
+                                </div>
+                                {% if course.link_rps %}
+                                <div class="flex-shrink-0">
+                                    <a href="{{ course.link_rps }}" target="_blank" class="btn btn-primary shadow-sm text-nowrap">
+                                        <i class="ri-file-pdf-2-line me-1"></i> Buka Silabus RPS
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
 
-                    {% if announcements %}
-                        <div class="d-flex flex-column gap-3">
-                            {% for info in announcements %}
-                            <div class="card border {% if info.is_pinned %}border-primary shadow-sm{% else %}border-secondary border-opacity-25{% endif %}">
+                    <!-- Info Metric Grid -->
+                    <div class="row g-3 mb-4">
+                        <!-- SKS -->
+                        <div class="col-12 col-sm-6">
+                            <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
                                 <div class="card-body p-3">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            {% if info.is_pinned %}
-                                                <i class="ri-pushpin-fill text-primary ri-lg" title="Disematkan"></i>
-                                            {% endif %}
-                                            <h6 class="mb-0 fw-bold">{{ info.title }}</h6>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar avatar-md flex-shrink-0">
+                                            <span class="avatar-initial rounded-3 bg-label-primary">
+                                                <i class="ri-book-2-line ri-22px"></i>
+                                            </span>
                                         </div>
-                                        <small class="text-muted">{{ info.created_at|date:"d M, H:i" }}</small>
-                                    </div>
-                                    <div class="bg-lighter rounded p-3 text-body">
-                                        {{ info.content|linebreaks }}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center py-5">
-                            <h6 class="mb-1">Belum ada pengumuman</h6>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-          </div>
-
-          <div class="tab-pane fade" id="navs-attendance" role="tabpanel">
-            <div class="card shadow-none border">
-                <div class="card-body text-center py-5">
-                    <i class="ri-calendar-line ri-3x text-secondary mb-3"></i>
-                    <h5>Data Kehadiran</h5>
-                    <p class="text-muted">Login sebagai mahasiswa untuk melihat data kehadiran Anda.</p>
-                </div>
-            </div>
-          </div>
-        
-        <div class="tab-pane fade" id="navs-quizzes" role="tabpanel">
-        <div class="card shadow-none border-0">
-            <div class="card-body px-0 pt-0">
-                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-                    <h5 class="mb-1">Daftar Ujian & Evaluasi</h5>
-                </div>
-
-                {% if quizzes %}
-                    <div class="row g-3">
-                        {% for quiz in quizzes %}
-                        <div class="col-12">
-                            <div class="card border shadow-none h-100 bg-lighter">
-                                <div class="card-body p-3">
-                                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                                        <div class="d-flex align-items-start gap-3 w-100">
-                                            <div class="avatar avatar-lg flex-shrink-0">
-                                                <div class="avatar-initial rounded bg-label-secondary text-secondary">
-                                                    <i class="ri-file-edit-line ri-24px"></i>
-                                                </div>
-                                            </div>
-                                            <div class="w-100">
-                                                <h5 class="mb-1 text-muted">{{ quiz.title }}</h5>
-                                                <div class="d-flex flex-wrap gap-2 mt-1">
-                                                    <span class="badge bg-label-secondary fw-normal">
-                                                        <i class="ri-time-line me-1"></i> {{ quiz.duration_minutes }} Menit
-                                                    </span>
-                                                    <span class="badge bg-label-secondary fw-normal">
-                                                        <i class="ri-list-check me-1"></i> {{ quiz.questions.count }} Soal
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <button class="btn btn-outline-secondary w-100" disabled>Login..</button>
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Bobot SKS</small>
+                                            <h6 class="mb-0 fw-bold text-heading">{{ course.credit_t|add:course.credit_p }} SKS</h6>
+                                            <small class="text-muted" style="font-size: 0.75rem;">{{ course.credit_t }} SKS Teori &bull; {{ course.credit_p }} SKS Praktik</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-5 bg-lighter rounded">
-                        <h6 class="mb-1">Belum ada ujian</h6>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-        </div>
 
-        <div class="tab-pane fade" id="navs-groups" role="tabpanel">
-            <div class="card shadow-none border">
-                <div class="card-body text-center py-5">
-                    <i class="ri-team-line ri-3x text-secondary mb-3"></i>
-                    <h5>Informasi Kelompok</h5>
-                    <p class="text-muted">
-                        Anda tidak tergabung dalam kelompok manapun (Mode Public).
-                    </p>
+                        <!-- Dosen Pengampu -->
+                        <div class="col-12 col-sm-6">
+                            <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar avatar-md flex-shrink-0">
+                                            <span class="avatar-initial rounded-3 bg-label-warning">
+                                                <i class="ri-user-star-line ri-22px"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Dosen Pengampu</small>
+                                            <h6 class="mb-0 fw-bold text-heading text-truncate" title="{% for coach in course.coaches.all %}{{ coach.nip.first_name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                                                {% for coach in course.coaches.all %}
+                                                    {{ coach.nip.first_name }}{% if not forloop.last %}, {% endif %}
+                                                {% empty %}
+                                                    -
+                                                {% endfor %}
+                                            </h6>
+                                            <small class="text-muted" style="font-size: 0.75rem;">Pengajar Kelas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Sesi -->
+                        <div class="col-12 col-sm-6">
+                            <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar avatar-md flex-shrink-0">
+                                            <span class="avatar-initial rounded-3 bg-label-info">
+                                                <i class="ri-calendar-todo-line ri-22px"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Pertemuan</small>
+                                            <h6 class="mb-0 fw-bold text-heading">{{ sections.count|default:16 }} Sesi</h6>
+                                            <small class="text-muted" style="font-size: 0.75rem;">Agenda Perkuliahan</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Peserta -->
+                        <div class="col-12 col-sm-6">
+                            <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar avatar-md flex-shrink-0">
+                                            <span class="avatar-initial rounded-3 bg-label-success">
+                                                <i class="ri-group-line ri-22px"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Peserta</small>
+                                            <h6 class="mb-0 fw-bold text-heading">{{ course.participants.count }} Mahasiswa</h6>
+                                            <small class="text-muted" style="font-size: 0.75rem;">Terdaftar di Kelas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deskripsi & Silabus Card -->
+                    <div class="card border shadow-none mb-4">
+                        <div class="card-header border-bottom py-3 bg-lighter d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                                <i class="ri-article-line text-primary"></i> Deskripsi Mata Kuliah
+                            </h6>
+                            {% if course.link_rps %}
+                                <a href="{{ course.link_rps }}" target="_blank" class="btn btn-xs btn-outline-primary">
+                                    <i class="ri-external-link-line me-1"></i> RPS Lengkap
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-4">
+                            {% if course.description and course.description != '-' %}
+                                <div class="text-muted lh-base">
+                                    {{ course.description|safe|linebreaks }}
+                                </div>
+                            {% else %}
+                                <p class="text-muted fst-italic mb-0">
+                                    Belum ada deskripsi detail yang ditambahkan untuk mata kuliah ini.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
                 </div>
             </div>
-          </div>
-               <div class="card mt-4 border shadow-none bg-label-primary">
-    <div class="card-body p-3 text-center">
-        <div class="avatar avatar-md bg-white rounded-circle mx-auto mb-2 p-2 shadow-sm d-flex align-items-center justify-content-center">
-            <i class="ri-trophy-fill text-warning ri-lg"></i>
-        </div>
-        <h6 class="mb-1 text-primary fw-bold">Leaderboard Kelas</h6>
-        <p class="small mb-3 text-muted">Lihat peringkat keaktifan dan progress teman sekelas.</p>
-        <a href="{% url 'course-leaderboard' course.uuid %}" class="btn btn-sm btn-primary w-100">
-            Lihat Peringkat
-        </a>
-    </div>
-</div>
-        </div>
+            {% endif %}
       </div>
     </div>
   </div>
+
   <div class="col-lg-4">
-    <div class="accordion stick-top accordion-custom-button" id="courseContent">
+    <div class="sticky-top" style="top: 20px; z-index: 10;">
+      <!-- ===== PUBLIC PREVIEW WIDGET ===== -->
+      <div class="mb-4 p-3 rounded-3" style="background: linear-gradient(135deg, rgba(105,108,255,0.06) 0%, rgba(105,108,255,0.02) 100%); border: 1px solid rgba(105,108,255,0.15);">
+          <div class="d-flex align-items-center gap-3">
+              <div class="avatar avatar-md flex-shrink-0">
+                  <span class="avatar-initial rounded-3 bg-label-primary">
+                      <i class="ri-eye-line ri-20px"></i>
+                  </span>
+              </div>
+              <div class="flex-grow-1">
+                  <div class="fw-bold text-primary mb-0" style="font-size: 0.85rem;">Mode Public Preview</div>
+                  <small class="text-muted" style="font-size: 0.75rem;">Melihat kurikulum &amp; materi terbuka</small>
+              </div>
+          </div>
+      </div>
+
+      <div class="accordion accordion-custom-button" id="courseContent">
 
       {% for section in sections %}
       <div class="accordion-item {% if active_item.agenda.id == section.id %}active mb-0{% endif %}">
@@ -493,57 +552,120 @@
             
             {% for material in section.materials.all %}
                 {% if material.is_published %}
-                    <a href="{% url 'course-preview-public-material' course.uuid material.id %}" 
-                       class="course-item {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
-                        
-                        <div class="me-3 pt-1">
-                            <input class="form-check-input" type="checkbox" disabled />
-                        </div>
-                        <div class="w-100">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="d-flex align-items-center">
-                                    <div class="material-icon">
-                                        <i class="ri-article-line" style="font-size: 14px;"></i>
+                    <div class="course-item-wrapper {% if active_type == 'material' and active_item.id == material.id %}is-active-item{% endif %}">
+                        <a href="{% url 'course-preview-public-material' course.uuid material.id %}" 
+                           class="course-item-link ps-3 {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
+                            <div class="w-100">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex align-items-center">
+                                        <div class="material-icon me-2">
+                                            <i class="ri-folder-open-line" style="font-size: 14px;"></i>
+                                        </div>
+                                        <span class="text-wrap lh-sm">{{ material.title }}</span>
                                     </div>
-                                    <span class="text-wrap lh-sm">{{ material.title }}</span>
+                                    {% if active_type == 'material' and active_item.id == material.id %}
+                                        <span class="badge bg-primary rounded-pill ms-2" style="font-size: 0.65rem;">AKTIF</span>
+                                    {% endif %}
                                 </div>
+                                <small class="d-block mt-1 opacity-75" style="font-size: 0.75rem;">
+                                    {{ material.get_duration_display }}
+                                </small>
                             </div>
-                        </div>
-                    </a>
-                {% else %}
-                    <div class="course-item locked">
-                        <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
-                        <div class="w-100">
-                            <span class="text-wrap lh-sm text-muted">{{ material.title }} (Draft)</span>
-                        </div>
+                        </a>
                     </div>
                 {% endif %}
             {% endfor %}
 
+            {% if section.media_items.all %}
+                 <!-- ===== RESOURCES DROPDOWN ===== -->
+                 <div class="px-3 pb-2 pt-1">
+                   <div class="dropdown resources-dropdown">
+                     <button class="btn btn-sm btn-outline-primary rounded-pill d-flex align-items-center gap-2 px-3 py-1 resources-btn"
+                             type="button"
+                             data-bs-toggle="dropdown"
+                             data-bs-auto-close="outside"
+                             aria-expanded="false"
+                             style="font-size:0.8rem; font-weight:600; border-width:1.5px;">
+                       <i class="ri-folder-open-line"></i>
+                       Resources
+                       <span class="badge bg-primary rounded-pill ms-1" style="font-size:0.65rem;">{{ section.media_items.count }}</span>
+                       <i class="ri-arrow-down-s-line ms-auto" style="font-size:0.9rem;"></i>
+                     </button>
+                     <ul class="dropdown-menu shadow-sm border-0 py-1 resources-menu" style="min-width:240px; max-width:300px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12) !important;">
+                       {% for item in section.media_items.all %}
+                       <li>
+                         <a href="{% if item.media_file.file %}{{ item.media_file.file.url }}{% elif item.media_file.video_url %}{{ item.media_file.video_url }}{% else %}#{% endif %}"
+                            target="_blank"
+                            class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
+                            style="font-size:0.82rem;">
+                           <i class="ri-external-link-line text-muted" style="flex-shrink:0;font-size:1rem;"></i>
+                           <span class="text-truncate" style="max-width:200px;">{{ item.media_file.name }}</span>
+                         </a>
+                       </li>
+                       {% endfor %}
+                     </ul>
+                   </div>
+                 </div>
+            {% endif %}
+
+            {% if section.quizzes.all %}
+                {% if section.materials.all or section.media_items.all %}
+                    <div class="divider"><div class="divider-text">KUIS</div></div>
+                {% endif %}
+
+                {% for quiz in section.quizzes.all %}
+                    {% if quiz.is_published %}
+                        <div class="course-item-wrapper">
+                            <div class="course-item-link ps-3 locked" style="cursor: default; pointer-events: auto;">
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <span class="text-wrap lh-sm text-body fw-medium">{{ quiz.title }}</span>
+                                        <span class="badge bg-label-warning ms-2 px-2" style="font-size: 0.6rem;">Kuis</span>
+                                    </div>
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">{{ quiz.duration_minutes }} Menit</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="course-item locked ms-1">
+                            <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
+                            <div class="w-100">
+                                <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ quiz.title }}</span></div>
+                                <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum dipublikasikan</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
             {% if section.assignments.all %}
-                 {% if section.materials.all %}<div class="divider"><div class="divider-text">TUGAS</div></div>{% endif %}
+                 {% if section.materials.all or section.media_items.all or section.quizzes.all %}<div class="divider"><div class="divider-text">TUGAS</div></div>{% endif %}
                  
                  {% for task in section.assignments.all %}
                     {% if task.is_published %}
-                        <a href="{% url 'course-preview-public-assignment' course.uuid task.id %}" 
-                           class="course-item {% if active_type == 'assignment' and active_item.id == task.id %}active{% endif %}">
-                            <div class="me-3 pt-1">
-                                <input class="form-check-input input-warning" type="checkbox" disabled />
-                            </div>
-                            <div class="w-100">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="d-flex align-items-center">
-                                        <span class="text-wrap lh-sm">{{ task.title }}</span>
+                        <div class="course-item-wrapper {% if active_type == 'assignment' and active_item.id == task.id %}is-active-item{% endif %}">
+                            <a href="{% url 'course-preview-public-assignment' course.uuid task.id %}" 
+                               class="course-item-link ps-3 {% if active_type == 'assignment' and active_item.id == task.id %}active{% endif %}">
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-wrap lh-sm">{{ task.title }}</span>
+                                        </div>
+                                        {% if active_type == 'assignment' and active_item.id == task.id %}
+                                            <span class="badge bg-primary rounded-pill ms-2" style="font-size: 0.65rem;">AKTIF</span>
+                                        {% else %}
+                                            <span class="badge bg-label-warning ms-2 px-2" style="font-size: 0.6rem;">Tugas</span>
+                                        {% endif %}
                                     </div>
+                                    <small class="text-danger d-block mt-1" style="font-size: 0.75rem;"><i class="ri-time-line me-1"></i>Deadline: {{ task.due_date|date:"d M Y" }}</small>
                                 </div>
-                                <small class="text-danger" style="font-size: 0.75rem;">Deadline: {{ task.due_date|date:"d M" }}</small>
-                            </div>
-                        </a>
+                            </a>
+                        </div>
                     {% endif %}
                  {% endfor %}
             {% endif %}
 
-            {% if not section.materials.all and not section.assignments.all %}
+            {% if not section.materials.all and not section.quizzes.all and not section.assignments.all %}
                 <div class="text-center text-muted fst-italic small">Belum ada konten.</div>
             {% endif %}
 
@@ -552,6 +674,7 @@
       </div>
       {% endfor %}
 
+      </div>
     </div>
   </div>
 

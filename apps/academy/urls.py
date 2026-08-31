@@ -4,7 +4,7 @@ from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
 from .views_prodi_set import UserListView, reset_password, LecturerPerformanceView, LecturerPerformanceDetailView, ClassReportView
-from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView, CourseLeaderboardView, StudentCourseGradesView
+from .views_students import StudentCourseListView, CoursePlayerView, StudentQuizStartView, StudentQuizTakeView, StudentQuizSubmitView, StudentQuizResultView, StudentLibraryListView, StudentBookDetailView, CourseLeaderboardView, StudentCourseGradesView, StudentQuizSecurityViolationView, StudentQuizSecurityStatusView, StudentQuizAutosaveView
 from .views_export_data import CourseRecapitulationView
 from .views_apps import KanbanAcademyView, ChatAcademyViews, StartChatView, CalendarEventListCreateView, CalendarEventDetailView, StudentPortfolioListView, StudentPortfolioAddView, StudentPortfolioEditView, StudentPortfolioDeleteView, AdminPortfolioListView, PortfolioVerifyView, PublicPortfolioView, DosenPortfolioListView, PublicPortfolioDetailView, AdminPortfolioDeleteView, KanbanBoardListCreateView, KanbanBoardDetailView, KanbanTaskListCreateView, KanbanTaskDetailView, KanbanReorderView, KanbanUserSearchView
 from .views_dosen import DosenProfileView, AddBookView, ManageCategoryView, DeleteBookView, DeleteCategoryView, ListBookView, EditBookView
@@ -41,6 +41,7 @@ urlpatterns = [
     # path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/delete/', DeleteCourseAgenda.as_view(), name='delete-agenda'),
     path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/attendance/', views.CourseAttendanceView.as_view(), name='course-attendance'),
     path('course/<uuid:course_uuid>/curriculum/material/', AddCourseMaterialView.as_view(), name='add-course-material'),
+    path('course/<uuid:course_uuid>/curriculum/material/import/', views.ImportCourseMaterialView.as_view(), name='import-course-material'),
     path('course/<uuid:course_uuid>/curriculum/material/<int:material_id>/delete/', DeleteCourseMaterialView.as_view(), name='delete-course-material'),
     path('course/<uuid:course_uuid>/curriculum/material/<int:material_id>/edit/', EditCourseMaterialView.as_view(), name='edit-course-material'),
     path('course/<uuid:course_uuid>/learn/<int:material_id>/', CoursePlayerView.as_view(), name='course-player-detail'),
@@ -90,6 +91,7 @@ urlpatterns = [
     path('course/<uuid:course_uuid>/assessment/', views.CourseAssessmentView.as_view(), name='course-assessment'),
     path('course/<uuid:course_uuid>/quizzes/', views.CourseQuizListView.as_view(), name='course-quiz-list'),
     path('course/<uuid:course_uuid>/quizzes/create/', views.QuizCreateView.as_view(), name='course-quiz-create'),
+    path('course/<uuid:course_uuid>/quizzes/import/', views.ImportCourseQuizView.as_view(), name='course-quiz-import'),
     path('course/<uuid:course_uuid>/quiz/<uuid:quiz_id>/edit/', views.CourseQuizUpdateView.as_view(), name='course-quiz-edit'),
     path('quiz/<uuid:quiz_id>/manage/', views.QuizManageView.as_view(), name='quiz-manage'),
     path('quiz/<uuid:quiz_id>/add-question/<str:q_type>/', views.AddQuizQuestionView.as_view(), name='quiz-add-question'),
@@ -111,6 +113,9 @@ urlpatterns = [
     path('quiz/attempt/<uuid:attempt_id>/take/', StudentQuizTakeView.as_view(), name='student-quiz-take'),
     path('quiz/attempt/<uuid:attempt_id>/submit/', StudentQuizSubmitView.as_view(), name='student-quiz-submit'), 
     path('quiz/attempt/<uuid:attempt_id>/result/', StudentQuizResultView.as_view(), name='student-quiz-result'),
+    path('quiz/attempt/<uuid:attempt_id>/autosave/', StudentQuizAutosaveView.as_view(), name='student-quiz-autosave'),
+    path('quiz/attempt/<uuid:attempt_id>/security-violation/', StudentQuizSecurityViolationView.as_view(), name='student-quiz-security-violation'),
+    path('quiz/attempt/<uuid:attempt_id>/security-status/', StudentQuizSecurityStatusView.as_view(), name='student-quiz-security-status'),
 
     path('app/library/', StudentLibraryListView.as_view(), name='student-library-list'),
     path('app/library/read/<uuid:pk>/', StudentBookDetailView.as_view(), name='student-book-read'),

@@ -15,6 +15,9 @@
             <a href="{% url 'edit-all-academy-course' course.uuid %}" class="btn btn-label-secondary">
                 <i class="ri-arrow-left-line me-1"></i> Kembali
             </a>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importQuizModal">
+                <i class="ri-file-download-line me-1"></i> Impor Kuis dari Kelas Lain
+            </button>
             <a href="{% url 'course-quiz-create' course.uuid %}" class="btn btn-primary">
                 <i class="ri-add-line me-1"></i> Buat Kuis Baru
             </a>
@@ -85,6 +88,74 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Modal Impor Kuis -->
+<div class="modal fade" id="importQuizModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-file-download-line me-2"></i>Impor Kuis dari Kelas Lain</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'course-quiz-import' course.uuid %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small">Pilih kuis yang ingin diimpor ke kelas <strong>{{ course.code }} - {{ course.name }}</strong>. Seluruh soal & opsi jawaban akan terduplikasi secara mandiri.</p>
+                    
+                    {% if importable_quizzes %}
+                    <div class="table-responsive border rounded mb-3" style="max-height: 350px;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">Pilih</th>
+                                    <th>Judul Kuis</th>
+                                    <th>Mata Kuliah Asal</th>
+                                    <th>Jumlah Soal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for qz in importable_quizzes %}
+                                <tr>
+                                    <td class="text-center">
+                                        <input class="form-check-input" type="radio" name="source_quiz_id" id="quiz_{{ qz.id }}" value="{{ qz.id }}" required>
+                                    </td>
+                                    <td>
+                                        <label for="quiz_{{ qz.id }}" class="fw-medium text-body cursor-pointer d-block mb-0">
+                                            {{ qz.title }}
+                                        </label>
+                                        <small class="text-muted">{{ qz.get_quiz_type_display }} ({{ qz.duration_minutes }} Menit)</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-secondary">{{ qz.course.code }}</span>
+                                        <small class="d-block text-muted text-truncate" style="max-width: 180px;">{{ qz.course.name }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-info">{{ qz.questions.count }} Soal</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 border rounded bg-light">
+                        <i class="ri-information-line ri-2x text-muted mb-2 d-block"></i>
+                        <p class="mb-0 text-muted">Tidak ada kuis dari kelas lain yang dapat diimpor.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                    {% if importable_quizzes %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ri-file-download-line me-1"></i> Impor Kuis Ini
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

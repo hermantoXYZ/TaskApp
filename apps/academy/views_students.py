@@ -11,6 +11,29 @@ from .decorators_students import StudentsRequiredMixin
 from django.utils import timezone
 from django.db.models import Sum
 from django.db.models import Q, F, Count
+import json
+from django.views import View
+from django.http import JsonResponse
+from django.db import transaction
+
+SECURITY_VIOLATION_LABELS = {
+    "app_hidden": "Keluar dari tab/aplikasi ujian",
+    "page_hidden": "Halaman ujian ditutup/disembunyikan",
+    "window_blur": "Indikasi screenshot / pindah jendela ujian",
+    "possible_screenshot": "Indikasi screenshot / pindah jendela ujian",
+    "possible_mobile_screenshot": "Indikasi screenshot / keluar aplikasi mobile",
+    "mobile_app_hidden": "Aplikasi ujian disembunyikan di perangkat mobile",
+    "mobile_page_hidden": "Halaman ujian ditutup/disembunyikan di perangkat mobile",
+    "print_screen_key": "Percobaan screenshot (Print Screen)",
+    "screenshot_shortcut": "Percobaan screenshot",
+    "screenshot_attempt": "Percobaan screenshot",
+    "print_shortcut": "Percobaan print halaman",
+    "print_dialog": "Percobaan print halaman",
+}
+
+
+def get_security_violation_label(reason):
+    return SECURITY_VIOLATION_LABELS.get(reason, reason or "-")
 
 class AcademyView(TemplateView):
     # Predefined function
@@ -342,8 +365,6 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
         return redirect('course-player', course_uuid=course.uuid)
 
 
-
-# --- VIEW: HALAMAN COVER / PERSIAPAN UJIAN ---
 class StudentQuizStartView(StudentsRequiredMixin, AcademyView):
     template_name = "students/quiz_start.html"
 
@@ -437,12 +458,185 @@ class StudentQuizTakeView(StudentsRequiredMixin, AcademyView):
             # Kita redirect ke view submit untuk memproses penutupan
             return redirect('student-quiz-submit', attempt_id=attempt.id)
 
+        saved_answers = {}
+        answers_qs = StudentQuizAnswer.objects.filter(
+            attempt=attempt
+        ).select_related('question', 'selected_option')
+        for answer in answers_qs:
+            if not answer.question:
+                continue
+            input_name = f"question_{answer.question.id}"
+            if answer.question.question_type == 'multiple_choice' and answer.selected_option:
+                saved_answers[input_name] = str(answer.selected_option_id)
+            elif answer.question.question_type == 'essay':
+                saved_answers[input_name] = answer.text_answer or ''
+
         return self.render_to_response(self.get_context_data(
             attempt=attempt,
             quiz=quiz,
             questions=questions,
-            remaining_seconds=int(remaining_seconds)
+            remaining_seconds=int(remaining_seconds),
+            saved_answers=saved_answers,
+            security_violation_count=attempt.security_violation_count,
+            max_security_violations=quiz.max_security_violations,
         ))
+
+
+class StudentQuizAutosaveView(StudentsRequiredMixin, View):
+    def post(self, request, attempt_id, *args, **kwargs):
+        attempt = get_object_or_404(
+            StudentQuizAttempt,
+            id=attempt_id,
+            participant__mahasiswa__nim=request.user
+        )
+
+        if attempt.finished_at:
+            return JsonResponse({'ok': False, 'finished': True}, status=409)
+
+        if request.content_type and request.content_type.startswith('application/json'):
+            try:
+                payload = json.loads(request.body.decode('utf-8') or '{}')
+            except json.JSONDecodeError:
+                return JsonResponse({'ok': False, 'error': 'Payload tidak valid.'}, status=400)
+        else:
+            raw_answers = request.POST.get('answers', '{}')
+            try:
+                payload = {'answers': json.loads(raw_answers)}
+            except json.JSONDecodeError:
+                return JsonResponse({'ok': False, 'error': 'Payload tidak valid.'}, status=400)
+
+        answers = payload.get('answers', {})
+        if not isinstance(answers, dict):
+            return JsonResponse({'ok': False, 'error': 'Format jawaban tidak valid.'}, status=400)
+
+        quiz = attempt.quiz
+        question_map = {
+            f"question_{question.id}": question
+            for question in quiz.questions.all()
+        }
+
+        saved_count = 0
+        with transaction.atomic():
+            for input_name, value in answers.items():
+                question = question_map.get(input_name)
+                if not question:
+                    continue
+
+                if question.question_type == 'multiple_choice':
+                    option = QuizOption.objects.filter(id=value, question=question).first()
+                    if not option:
+                        continue
+                    StudentQuizAnswer.objects.update_or_create(
+                        attempt=attempt,
+                        question=question,
+                        defaults={'selected_option': option, 'text_answer': None}
+                    )
+                    saved_count += 1
+
+                elif question.question_type == 'essay':
+                    StudentQuizAnswer.objects.update_or_create(
+                        attempt=attempt,
+                        question=question,
+                        defaults={'selected_option': None, 'text_answer': value or ''}
+                    )
+                    saved_count += 1
+
+        return JsonResponse({
+            'ok': True,
+            'saved_count': saved_count,
+            'saved_at': timezone.now().isoformat(),
+        })
+
+
+class StudentQuizSecurityViolationView(StudentsRequiredMixin, View):
+    def post(self, request, attempt_id, *args, **kwargs):
+        attempt = get_object_or_404(
+            StudentQuizAttempt,
+            id=attempt_id,
+            participant__mahasiswa__nim=request.user
+        )
+
+        if request.content_type and request.content_type.startswith('application/json'):
+            try:
+                payload = json.loads(request.body.decode('utf-8') or '{}')
+            except json.JSONDecodeError:
+                payload = {}
+        else:
+            payload = request.POST.dict()
+
+        reason = payload.get('reason') or 'app_hidden'
+        now = timezone.now()
+        event_time = timezone.localtime(now)
+        max_violations = attempt.quiz.max_security_violations if attempt.quiz else 3
+
+        if not attempt.finished_at:
+            events = attempt.security_events or []
+            events.append({
+                'reason': reason,
+                'reason_label': get_security_violation_label(reason),
+                'at': event_time.isoformat(),
+                'user_agent': request.META.get('HTTP_USER_AGENT', '')[:255],
+            })
+            attempt.security_events = events[-50:]
+            attempt.security_violation_count = len(attempt.security_events)
+
+            if attempt.security_violation_count >= max_violations:
+                finalize_quiz_attempt(attempt, finished_at=now)
+            else:
+                attempt.save(update_fields=['security_violation_count', 'security_events'])
+
+        return JsonResponse({
+            'ok': True,
+            'violation_count': attempt.security_violation_count,
+            'max_violations': max_violations,
+            'finished': bool(attempt.finished_at),
+        })
+
+
+class StudentQuizSecurityStatusView(StudentsRequiredMixin, View):
+    def get(self, request, attempt_id, *args, **kwargs):
+        attempt = get_object_or_404(
+            StudentQuizAttempt,
+            id=attempt_id,
+            participant__mahasiswa__nim=request.user
+        )
+        max_violations = attempt.quiz.max_security_violations if attempt.quiz else 3
+
+        if not attempt.finished_at and attempt.security_violation_count >= max_violations:
+            finalize_quiz_attempt(attempt)
+
+        return JsonResponse({
+            'ok': True,
+            'violation_count': attempt.security_violation_count,
+            'max_violations': max_violations,
+            'finished': bool(attempt.finished_at),
+        })
+
+
+def finalize_quiz_attempt(attempt, finished_at=None):
+    if attempt.finished_at:
+        return
+
+    attempt.finished_at = finished_at or timezone.now()
+    total_score = 0
+    answers = StudentQuizAnswer.objects.filter(
+        attempt=attempt
+    ).select_related('question', 'selected_option')
+
+    for answer in answers:
+        if not answer.question:
+            continue
+
+        if answer.question.question_type == 'multiple_choice':
+            if answer.selected_option and answer.selected_option.is_correct:
+                answer.score_obtained = answer.question.score_weight
+            else:
+                answer.score_obtained = 0
+            answer.save()
+            total_score += answer.score_obtained
+
+    attempt.total_score = total_score
+    attempt.save()
 
 
 # --- VIEW: PROSES SUBMIT JAWABAN (Logic Penilaian) ---
@@ -455,10 +649,7 @@ class StudentQuizSubmitView(StudentsRequiredMixin, AcademyView):
             id=attempt_id, 
             participant__mahasiswa__nim=request.user
         )
-        if not attempt.finished_at:
-             # Auto close mechanism (misal waktu habis)
-             attempt.finished_at = timezone.now()
-             attempt.save()
+        finalize_quiz_attempt(attempt)
         return redirect('student-quiz-result', attempt_id=attempt.id)
 
     def post(self, request, attempt_id, *args, **kwargs):
@@ -503,26 +694,7 @@ class StudentQuizSubmitView(StudentsRequiredMixin, AcademyView):
                     )
 
         # --- 2. Auto Grading (Khusus PG) & Finalisasi ---
-        attempt.finished_at = timezone.now()
-        
-        total_score = 0
-        # Ambil semua jawaban di attempt ini
-        answers = StudentQuizAnswer.objects.filter(attempt=attempt).select_related('question', 'selected_option')
-        
-        for ans in answers:
-            # Logic Nilai: Jika PG dan Benar, ambil bobot soal
-            if ans.question.question_type == 'multiple_choice':
-                if ans.selected_option and ans.selected_option.is_correct:
-                    ans.score_obtained = ans.question.score_weight
-                else:
-                    ans.score_obtained = 0
-                ans.save() # Simpan nilai per soal
-                total_score += ans.score_obtained
-            
-            # Essay score_obtained default 0, menunggu penilaian dosen
-        
-        attempt.total_score = total_score
-        attempt.save()
+        finalize_quiz_attempt(attempt)
 
         messages.success(request, "Jawaban berhasil dikirim. Terima kasih!")
         return redirect('student-quiz-result', attempt_id=attempt.id)
@@ -625,6 +797,7 @@ class StudentQuizResultView(StudentsRequiredMixin, AcademyView):
             }
         })
         return context
+
 
 class StudentCourseGradesView(StudentsRequiredMixin, AcademyView):
     template_name = "students/student_course_grades.html"

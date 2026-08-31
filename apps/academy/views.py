@@ -16,8 +16,7 @@ from .decorators_dosen import DosenRequiredMixin
 from .decorators_prodi import ProdiRequiredMixin
 from django.utils import timezone as tz
 from django.db import transaction
-from django.db.models import Q
-from django.db.models import Sum
+from django.db.models import Q, Sum, Max
 import random
 
 from django.contrib.auth.views import PasswordChangeView
@@ -507,9 +506,19 @@ class AddCourseAgenda(DosenRequiredMixin, AcademyView):
         )
         agendas = self._get_agendas(course)
         self._calculate_attendance(course, agendas)
+
+        try:
+            dosen = UserDosen.objects.get(nip=request.user)
+            importable_materials = CourseMaterial.objects.filter(
+                agenda__course__coaches=dosen
+            ).select_related('agenda', 'agenda__course').order_by('-created_at')
+        except UserDosen.DoesNotExist:
+            importable_materials = CourseMaterial.objects.all().select_related('agenda', 'agenda__course').order_by('-created_at')
+
         return render(request, self.template_name, self.get_context_data(
             course=course,
             agendas=agendas,
+            importable_materials=importable_materials,
         ))
 
     def _calculate_attendance(self, course, agendas):
@@ -847,10 +856,22 @@ class AddCourseMaterialView(DosenRequiredMixin, AcademyView):
             except (ValueError, TypeError):
                 pass
 
+        try:
+            dosen = UserDosen.objects.get(nip=request.user)
+            importable_materials = CourseMaterial.objects.filter(
+                agenda__course__coaches=dosen
+            ).select_related('agenda', 'agenda__course').order_by('-created_at')
+        except UserDosen.DoesNotExist:
+            importable_materials = CourseMaterial.objects.all().select_related('agenda', 'agenda__course').order_by('-created_at')
+
+        agendas = course.agendas.all().order_by('session_number')
+
         return self.render_to_response(self.get_context_data(
             form=form,
             course=course,
-            preselected_agenda_id=agenda_id
+            agendas=agendas,
+            preselected_agenda_id=agenda_id,
+            importable_materials=importable_materials,
         ))
 
     def post(self, request, course_uuid, *args, **kwargs):
@@ -867,7 +888,41 @@ class AddCourseMaterialView(DosenRequiredMixin, AcademyView):
             messages.success(request, f'Materi "{material.title}" berhasil disimpan.')
             return redirect('add-course-agenda', course_uuid=course.uuid)
         
-        return self.render_to_response(self.get_context_data(form=form, course=course))   
+        return self.render_to_response(self.get_context_data(form=form, course=course))
+
+
+class ImportCourseMaterialView(DosenRequiredMixin, AcademyView):
+    def post(self, request, course_uuid, *args, **kwargs):
+        course = get_object_or_404(Course, uuid=course_uuid)
+        target_agenda_id = request.POST.get('target_agenda_id')
+        source_material_id = request.POST.get('source_material_id')
+
+        if not target_agenda_id or not source_material_id:
+            messages.error(request, "Silakan pilih pertemuan tujuan dan materi yang ingin diimpor.")
+            return redirect('add-course-agenda', course_uuid=course.uuid)
+
+        target_agenda = get_object_or_404(CourseAgenda, id=target_agenda_id, course=course)
+        source_material = get_object_or_404(CourseMaterial, id=source_material_id)
+
+        last_order = CourseMaterial.objects.filter(agenda=target_agenda).aggregate(Max('order'))['order__max'] or 0
+
+        try:
+            dosen = UserDosen.objects.get(nip=request.user)
+        except UserDosen.DoesNotExist:
+            dosen = None
+
+        new_material = CourseMaterial.objects.create(
+            agenda=target_agenda,
+            title=f"{source_material.title} (Salinan)",
+            text_content=source_material.text_content,
+            order=last_order + 1,
+            is_published=False,
+            allow_discussion=source_material.allow_discussion,
+            created_by=dosen
+        )
+
+        messages.success(request, f'Berhasil mengimpor materi "{source_material.title}" ke {target_agenda.title}.')
+        return redirect('edit-course-material', course_uuid=course.uuid, material_id=new_material.id)   
     
 class EditCourseMaterialView(DosenRequiredMixin, AcademyView):
     template_name = "add_material.html"
@@ -1355,10 +1410,65 @@ class CourseQuizListView(DosenRequiredMixin, AcademyView):
         course = get_object_or_404(Course, uuid=course_uuid)
         quizzes = CourseQuiz.objects.filter(course=course).order_by('start_time')
         
+        try:
+            dosen = UserDosen.objects.get(nip=request.user)
+            importable_quizzes = CourseQuiz.objects.filter(
+                course__coaches=dosen
+            ).exclude(course=course).select_related('course').order_by('-created_at')
+        except UserDosen.DoesNotExist:
+            importable_quizzes = CourseQuiz.objects.exclude(course=course).select_related('course').order_by('-created_at')
+
         return self.render_to_response(self.get_context_data(
             course=course,
-            quizzes=quizzes
+            quizzes=quizzes,
+            importable_quizzes=importable_quizzes
         ))
+
+
+class ImportCourseQuizView(DosenRequiredMixin, AcademyView):
+    def post(self, request, course_uuid, *args, **kwargs):
+        target_course = get_object_or_404(Course, uuid=course_uuid)
+        source_quiz_id = request.POST.get('source_quiz_id')
+
+        if not source_quiz_id:
+            messages.error(request, "Silakan pilih kuis yang ingin diimpor.")
+            return redirect('course-quiz-list', course_uuid=target_course.uuid)
+
+        source_quiz = get_object_or_404(CourseQuiz, id=source_quiz_id)
+
+        with transaction.atomic():
+            new_quiz = CourseQuiz.objects.create(
+                course=target_course,
+                title=f"{source_quiz.title} (Salinan)",
+                description=source_quiz.description,
+                quiz_type=source_quiz.quiz_type,
+                start_time=timezone.now(),
+                end_time=timezone.now() + timezone.timedelta(days=7),
+                duration_minutes=source_quiz.duration_minutes,
+                passing_score=source_quiz.passing_score,
+                max_attempts=source_quiz.max_attempts,
+                is_published=False
+            )
+
+            for q in source_quiz.questions.all().prefetch_related('options'):
+                new_q = QuizQuestion.objects.create(
+                    quiz=new_quiz,
+                    text=q.text,
+                    image=q.image,
+                    question_type=q.question_type,
+                    score_weight=q.score_weight,
+                    order=q.order
+                )
+                for opt in q.options.all():
+                    QuizOption.objects.create(
+                        question=new_q,
+                        text=opt.text,
+                        is_correct=opt.is_correct,
+                        order=opt.order
+                    )
+
+        messages.success(request, f'Berhasil mengimpor kuis "{source_quiz.title}". Silakan sesuaikan jadwal pelaksanaan kuis.')
+        return redirect('course-quiz-edit', course_uuid=target_course.uuid, quiz_id=new_quiz.id)
 
 
 class QuizCreateView(DosenRequiredMixin, AcademyView):
@@ -1877,39 +1987,20 @@ class CoursePreviewPublicView(AcademyView):
             from django.http import Http404
             raise Http404("Course ini tidak aktif.")
 
-        sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials', 'assignments')
+        sections = CourseAgenda.objects.filter(course=course, is_active=True).prefetch_related('materials', 'assignments')
 
         active_item = None
         active_type = None
 
         if material_id:
-            active_item = get_object_or_404(CourseMaterial, id=material_id)
+            active_item = get_object_or_404(CourseMaterial, id=material_id, agenda__course=course)
             active_type = 'material'
         elif assignment_id:
-            active_item = get_object_or_404(CourseAssignment, id=assignment_id)
+            active_item = get_object_or_404(CourseAssignment, id=assignment_id, agenda__course=course)
             active_type = 'assignment'
         else:
-            first_material = CourseMaterial.objects.filter(
-                agenda__course=course
-            ).order_by('agenda__agenda_date', 'order').first()
-
-            first_assignment = CourseAssignment.objects.filter(
-                agenda__course=course
-            ).order_by('agenda__agenda_date').first()
-
-            if first_material and first_assignment:
-                if first_material.agenda.agenda_date <= first_assignment.agenda.agenda_date:
-                    active_item = first_material
-                    active_type = 'material'
-                else:
-                    active_item = first_assignment
-                    active_type = 'assignment'
-            elif first_material:
-                active_item = first_material
-                active_type = 'material'
-            elif first_assignment:
-                active_item = first_assignment
-                active_type = 'assignment'
+            active_item = None
+            active_type = None
 
         announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
         quizzes = CourseQuiz.objects.filter(course=course, is_published=True).order_by('start_time')

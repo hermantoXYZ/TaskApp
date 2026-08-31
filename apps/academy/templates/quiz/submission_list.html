@@ -2,93 +2,193 @@
 {% block title %}Hasil Ujian - {{ quiz.title }}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+<div class="card shadow-sm border-0">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h5 class="mb-0">Hasil Ujian: {{ quiz.title }}</h5>
-            <small class="text-muted">{{ quiz.course.name }}</small>
+            <h5 class="mb-0 fw-bold"><i class="ri-file-list-3-line me-2 text-primary"></i>Hasil Ujian: {{ quiz.title }}</h5>
+            <small class="text-muted">{{ quiz.course.name }} ({{ quiz.course.code }})</small>
         </div>
-        <a href="{% url 'course-quiz-list' quiz.course.uuid %}" class="btn btn-outline-secondary">
+        <a href="{% url 'course-quiz-list' quiz.course.uuid %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
             <i class="ri-arrow-left-line me-1"></i> Kembali
         </a>
     </div>
     <div class="table-responsive text-nowrap">
-        <table class="table table-hover">
-            <thead>
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
                 <tr>
                     <th>Mahasiswa</th>
                     <th>NIM</th>
                     <th>Waktu Submit</th>
                     <th>Total Skor</th>
+                    <th>Keamanan</th>
                     <th>Status</th>
-                    <th>Aksi</th>
+                    <th class="text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% for att in attempts %}
                 <tr>
                     <td>
-                            <div class="d-flex justify-content-start align-items-center user-name">
-                                <div class="avatar-wrapper">
-                                    <div class="avatar me-3">
-                                        {% if att.participant.mahasiswa.photo %}
-                                            <img src="{{ att.participant.mahasiswa.photo.url }}" alt="Avatar" class="rounded-circle object-fit-cover">
-                                        {% else %}
-                                            <span class="avatar-initial rounded-circle bg-label-primary">
-                                                {{ att.participant.mahasiswa.nim.first_name|slice:":2"|upper }}
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="d-flex flex-column">
-                                    <span class="fw-medium text-heading">{{ att.participant.mahasiswa.nim.first_name }}</span>
-                                    <small class="text-muted">{{ att.participant.mahasiswa.nim.email }}</small>
+                        <div class="d-flex justify-content-start align-items-center user-name">
+                            <div class="avatar-wrapper">
+                                <div class="avatar me-3">
+                                    {% if att.participant.mahasiswa.photo %}
+                                        <img src="{{ att.participant.mahasiswa.photo.url }}" alt="Avatar" class="rounded-circle object-fit-cover">
+                                    {% else %}
+                                        <span class="avatar-initial rounded-circle bg-label-primary">
+                                            {{ att.participant.mahasiswa.nim.first_name|slice:":2"|upper }}
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </div>
-                        </td>
+                            <div class="d-flex flex-column">
+                                <span class="fw-medium text-heading">{{ att.participant.mahasiswa.nim.first_name }}</span>
+                                <small class="text-muted">{{ att.participant.mahasiswa.nim.email }}</small>
+                            </div>
+                        </div>
+                    </td>
                     <td>{{ att.participant.mahasiswa.nim.username }}</td>
-                    <td>{{ att.finished_at|date:"d M Y, H:i" }}</td>
+                    <td>{{ att.finished_at|date:"d M Y, H:i" }} WITA</td>
                     <td>
-                        <span class="badge bg-label-primary fs-6">{{ att.total_score|floatformat:0 }}</span>
+                        <span class="badge bg-label-primary fs-6 fw-bold">{{ att.total_score|floatformat:0 }}</span>
                     </td>
                     <td>
-                        {% if att.is_graded %}
-                            <span class="badge bg-label-success">Sudah Diperiksa</span>
+                        {% if att.security_violation_count > 0 %}
+                            <button type="button" class="btn btn-xs btn-label-danger rounded-pill px-2 fw-semibold" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#violationModal-{{ att.id }}" 
+                                    title="Klik untuk melihat detail aktivitas mencurigakan">
+                                <i class="ri-shield-alert-line me-1"></i> {{ att.security_violation_count }} Pelanggaran
+                            </button>
                         {% else %}
-                            <span class="badge bg-label-warning">Belum Diperiksa</span>
+                            <span class="badge bg-label-success rounded-pill px-2 py-1">
+                                <i class="ri-shield-check-line me-1"></i> 0 (Aman)
+                            </span>
                         {% endif %}
                     </td>
                     <td>
-    <div class="dropdown">
-        <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-            <i class="ri-more-2-line"></i>
-        </button>
-        <div class="dropdown-menu">
-            <a class="dropdown-item" href="{% url 'quiz-grade-submission' att.id %}">
-                <i class="ri-file-search-line me-1"></i> Periksa / Nilai
-            </a>
-            
-            <div class="dropdown-divider"></div>
+                        {% if att.is_graded %}
+                            <span class="badge bg-label-success rounded-pill">Sudah Diperiksa</span>
+                        {% else %}
+                            <span class="badge bg-label-warning rounded-pill">Belum Diperiksa</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="dropdown">
+                            <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                <i class="ri-more-2-line"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a class="dropdown-item" href="{% url 'quiz-grade-submission' att.id %}">
+                                    <i class="ri-file-search-line me-1 text-primary"></i> Periksa / Nilai
+                                </a>
+                                
+                                {% if att.security_violation_count > 0 %}
+                                    <a class="dropdown-item text-danger" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#violationModal-{{ att.id }}">
+                                        <i class="ri-shield-alert-line me-1"></i> Log Pelanggaran
+                                    </a>
+                                {% endif %}
 
-            <form method="POST" action="" onsubmit="return confirm('Yakin ingin mereset ujian {{ att.participant.mahasiswa.nim.first_name }}? Data akan hilang permanen.');">
-                {% csrf_token %}
-                <input type="hidden" name="attempt_id" value="{{ att.id }}">
-                
-                <button type="submit" class="dropdown-item text-danger">
-                    <i class="ri-refresh-line me-1"></i> Reset / Ulangi
-                </button>
-            </form>
-        </div>
-    </div>
-</td>
+                                <div class="dropdown-divider"></div>
+
+                                <form method="POST" action="" onsubmit="return confirm('Yakin ingin mereset ujian {{ att.participant.mahasiswa.nim.first_name }}? Data pengerjaan akan hilang permanen.');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="attempt_id" value="{{ att.id }}">
+                                    
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="ri-refresh-line me-1"></i> Reset / Ulangi
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center py-5 text-muted">Belum ada mahasiswa yang mengumpulkan.</td>
+                    <td colspan="7" class="text-center py-5 text-muted">Belum ada mahasiswa yang mengumpulkan.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Modal Detail Pelanggaran Keamanan -->
+{% for att in attempts %}
+    {% if att.security_violation_count > 0 %}
+    <div class="modal fade" id="violationModal-{{ att.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-label-danger py-3">
+                    <h5 class="modal-title text-danger fw-bold d-flex align-items-center">
+                        <i class="ri-shield-alert-fill me-2 fs-4"></i> Log Pelanggaran Keamanan Ujian
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-lighter rounded mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <div class="fw-bold text-dark fs-6">{{ att.participant.mahasiswa.nim.first_name }}</div>
+                            <small class="text-muted">NIM: {{ att.participant.mahasiswa.nim.username }} | Email: {{ att.participant.mahasiswa.nim.email }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-danger rounded-pill px-3 py-2">
+                                Total: {{ att.security_violation_count }} Pelanggaran (Batas: {{ quiz.max_security_violations|default:3 }})
+                            </span>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-secondary mb-2 small text-uppercase ls-1">Riwayat Aktivitas Terdeteksi:</h6>
+                    <div class="table-responsive border rounded">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">No</th>
+                                    <th>Waktu Kejadian</th>
+                                    <th>Jenis Pelanggaran</th>
+                                    <th>Keterangan / Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if att.security_events %}
+                                    {% for event in att.security_events %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>
+                                            <span class="badge bg-label-secondary small">
+                                                <i class="ri-time-line me-1"></i>{{ event.at|slice:":10" }} {{ event.at|slice:"11:19" }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-label-danger">
+                                                {{ event.reason_label|default:event.reason }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;" title="{{ event.user_agent|default:'Aktivitas terdeteksi oleh browser guard' }}">
+                                                {{ event.user_agent|default:"Aktivitas terdeteksi oleh browser guard" }}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3">
+                                            Jumlah pelanggaran tercatat {{ att.security_violation_count }} kali. (Detail log lawas belum tersimpan format JSON).
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
 {% endblock %}

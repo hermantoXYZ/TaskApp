@@ -65,6 +65,14 @@
                         </div>
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Maksimal Pelanggaran</label>
+                            {{ form.max_security_violations }}
+                            <small class="text-muted">Jika jumlah pelanggaran mencapai angka ini, jawaban otomatis dikirim.</small>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Instruksi / Deskripsi</label>
                         {{ form.description }}

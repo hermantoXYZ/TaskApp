@@ -473,6 +473,7 @@ class CourseQuiz(models.Model):
     duration_minutes = models.PositiveIntegerField(default=90)
     passing_score = models.IntegerField(default=60)
     max_attempts = models.PositiveIntegerField(default=1)
+    max_security_violations = models.PositiveSmallIntegerField(default=3)
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -481,6 +482,7 @@ class CourseQuiz(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.course.code})"
+
 
 
 class QuizQuestion(models.Model):
@@ -526,6 +528,8 @@ class StudentQuizAttempt(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
     total_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     is_graded = models.BooleanField(default=False, help_text="Tandai jika sudah diperiksa oleh dosen")
+    security_violation_count = models.PositiveSmallIntegerField(default=0)
+    security_events = models.JSONField(default=list, blank=True)
     
     def __str__(self):
         student = self.participant.mahasiswa.nim if self.participant and self.participant.mahasiswa else "Mahasiswa Dihapus"

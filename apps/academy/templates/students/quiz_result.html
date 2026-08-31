@@ -3,63 +3,88 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
-    <div class="row justify-content-center mb-4">
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 overflow-hidden">
-                <div class="card-header bg-primary text-white text-center py-4">
-                    <h4 class="text-white mb-0 fw-bold"><i class="ri-file-list-3-line me-2"></i>Laporan Hasil Ujian</h4>
-                    <p class="mb-0 opacity-75">{{ quiz.title }}</p>
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-11 col-lg-10 col-xl-9">
+            
+            <!-- Result Summary Card -->
+            <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+                <div class="card-header bg-primary text-white py-3 px-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h5 class="text-white mb-0 fw-bold">
+                                <i class="ri-file-list-3-line me-2"></i>Laporan Hasil Ujian
+                            </h5>
+                            <p class="mb-0 opacity-75 small">{{ quiz.title }}</p>
+                        </div>
+                        <span class="badge bg-white text-primary fw-semibold px-3 py-2 rounded-pill">
+                            <i class="ri-book-open-line me-1"></i>{{ quiz.course.name|default:"Kuis" }}
+                        </span>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <div class="row align-items-center">
-                        <div class="col-md-5 text-center border-end border-light">
-                            <div class="d-inline-block position-relative mb-2">
-                                <div class="avatar avatar-xl bg-label-primary rounded-circle p-5 d-flex align-items-center justify-content-center mb-3 mx-auto">
-                                    <span class="display-4 fw-bold text-primary">{{ attempt.total_score|floatformat:0 }}</span>
+
+                <div class="card-body p-3 p-md-4">
+                    <div class="row g-4 align-items-center">
+                        <!-- Score Display -->
+                        <div class="col-12 col-md-5 text-center border-end-md border-light pb-3 pb-md-0">
+                            <div class="d-inline-flex flex-column align-items-center justify-content-center bg-label-primary rounded-4 p-3 p-md-4 mb-2 shadow-xs" style="min-width: 140px; min-height: 120px;">
+                                <span class="display-5 fw-bold text-primary mb-0 lh-1">{{ attempt.total_score|floatformat:0 }}</span>
+                                <small class="text-muted text-uppercase fw-semibold mt-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Nilai Akhir</small>
+                            </div>
+
+                            <div class="progress mt-2 mx-auto" style="height: 8px; width: 75%; background-color: #e9ecef;">
+                                <div class="progress-bar {% if attempt.total_score >= quiz.passing_score %}bg-success{% else %}bg-primary{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ attempt.total_score }}%;" 
+                                     aria-valuenow="{{ attempt.total_score }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
                                 </div>
                             </div>
-                            <h6 class="text-muted text-uppercase small ls-1">Nilai Akhir</h6>
                             
-                            <div class="progress mt-3 mx-auto" style="height: 10px; width: 80%; background-color: #e9ecef;">
-                                <div class="progress-bar bg-primary" role="progressbar" 
-                                     style="width: {{ attempt.total_score }}%;" 
-                                     aria-valuenow="{{ attempt.total_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            <div class="mt-2">
+                                {% if attempt.total_score >= quiz.passing_score %}
+                                    <span class="badge bg-label-success rounded-pill px-3 py-1">
+                                        <i class="ri-checkbox-circle-line me-1"></i> Lulus (Passing: {{ quiz.passing_score }})
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-label-warning rounded-pill px-3 py-1">
+                                        <i class="ri-information-line me-1"></i> Passing Score: {{ quiz.passing_score }}
+                                    </span>
+                                {% endif %}
                             </div>
                         </div>
 
-                        <div class="col-md-7 ps-md-5 mt-4 mt-md-0">
-                            <div class="row g-4">
+                        <!-- Stats Grid -->
+                        <div class="col-12 col-md-7 ps-md-4">
+                            <div class="row g-3">
                                 <div class="col-6">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar flex-shrink-0 me-3">
-                                            <span class="avatar-initial rounded bg-label-success"><i class="ri-check-line ri-24px"></i></span>
-                                        </div>
-                                        <div>
-                                            <h5 class="mb-0 text-success">{{ stats.correct }}</h5>
-                                            <small class="text-muted">Jawaban Benar</small>
+                                    <div class="d-flex align-items-center p-3 rounded bg-lighter">
+                                        <div class="overflow-hidden">
+                                            <h5 class="mb-0 text-success fw-bold">{{ stats.correct }}</h5>
+                                            <small class="text-muted text-truncate d-block">Jawaban Benar</small>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar flex-shrink-0 me-3">
-                                            <span class="avatar-initial rounded bg-label-secondary"><i class="ri-question-line ri-24px"></i></span>
-                                        </div>
-                                        <div>
-                                            <h5 class="mb-0 text-dark">{{ stats.total }}</h5>
-                                            <small class="text-muted">Total Soal</small>
+                                    <div class="d-flex align-items-center p-3 rounded bg-lighter">
+                                        <div class="overflow-hidden">
+                                            <h5 class="mb-0 text-dark fw-bold">{{ stats.total }}</h5>
+                                            <small class="text-muted text-truncate d-block">Total Soal</small>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <div class="p-3 bg-lighter rounded d-flex justify-content-between align-items-center">
-                                        <span class="text-muted small"><i class="ri-time-line me-1"></i> Waktu Submit:</span>
-                                        <span class="fw-medium text-dark">{{ attempt.finished_at|date:"d M Y, H:i" }} WIB</span>
+                                    <div class="p-3 rounded d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                        <span class="text-muted small d-flex align-items-center">
+                                            <i class="ri-time-line me-1 text-primary"></i> Waktu Submit:
+                                        </span>
+                                        <span class="fw-semibold text-dark small">
+                                            {{ attempt.finished_at|date:"d M Y, H:i" }} WITA
+                                        </span>
                                     </div>
-                                    <div class="mt-2 text-center">
-                                        <small class="text-muted fst-italic" style="font-size: 0.75rem;">
-                                            *Nilai Essay mungkin menunggu penilaian manual Dosen.
+                                    <div class="mt-2 text-center text-md-start">
+                                        <small class="text-muted fst-italic" style="font-size: 0.72rem;">
+                                            *Nilai Essay (jika ada) menunggu penilaian manual dari Dosen.
                                         </small>
                                     </div>
                                 </div>
@@ -68,77 +93,71 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
+            <!-- Discussion Section / Locked Notice -->
             {% if show_discussion %}
-            <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-                <h5 class="mb-0 fw-bold text-secondary text-uppercase ls-1">Detail Pembahasan</h5>
-                <a href="{% url 'course-player' quiz.course.uuid %}" class="btn btn-outline-primary btn-sm">
-                    <i class="ri-arrow-left-line me-1"></i> Kembali ke Materi
-                </a>
-            </div>
-            
-            {% for item in detailed_results %}
-            <div class="card mb-4 border-0 shadow-sm position-relative overflow-hidden">
-                <div class="position-absolute top-0 start-0 bottom-0" 
-                     style="width: 6px; background-color: {% if item.is_correct %}#71dd37{% else %}#ff3e1d{% endif %};">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <h5 class="mb-0 fw-bold text-secondary text-uppercase ls-1">
+                        <i class="ri-discuss-line me-1 text-primary"></i> Detail Pembahasan
+                    </h5>
+                    <a href="{% url 'course-player' quiz.course.uuid %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <i class="ri-arrow-left-line me-1"></i> Kembali ke Materi
+                    </a>
                 </div>
+                
+                {% for item in detailed_results %}
+                <div class="card mb-3 border-0 shadow-sm position-relative overflow-hidden">
+                    <div class="position-absolute top-0 start-0 bottom-0" 
+                         style="width: 5px; background-color: {% if item.is_correct %}#71dd37{% else %}#ff3e1d{% endif %};">
+                    </div>
 
-                <div class="card-body ps-4">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div class="d-flex gap-3">
-                            <div class="flex-shrink-0">
+                    <div class="card-body p-3 p-md-4 ps-4">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
                                 <span class="badge rounded-pill {% if item.is_correct %}bg-label-success{% else %}bg-label-danger{% endif %} px-3">
                                     No. {{ forloop.counter }}
                                 </span>
                             </div>
-                            <div class="flex-grow-1">
-                                <div class="fw-medium text-dark fs-5" style="line-height: 1.6;">
-                                    {{ item.question.text|safe }}
-                                </div>
-                                {% if item.question.image %}
-                                    <div class="mt-3">
-                                        <img src="{{ item.question.image.url }}" class="img-fluid rounded border" style="max-height: 300px;">
-                                    </div>
+                            <div class="flex-shrink-0">
+                                {% if item.is_correct %}
+                                    <span class="badge bg-success rounded-pill shadow-xs">
+                                        <i class="ri-check-double-line me-1"></i>+{{ item.score }} Poin
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger rounded-pill shadow-xs">
+                                        <i class="ri-close-line me-1"></i>0 Poin
+                                    </span>
                                 {% endif %}
                             </div>
                         </div>
-                        <div class="text-end ms-2 flex-shrink-0">
-                            {% if item.is_correct %}
-                                <div class="badge bg-success rounded-pill shadow-sm">
-                                    <i class="ri-check-double-line me-1"></i> +{{ item.score }}
-                                </div>
-                            {% else %}
-                                <div class="badge bg-danger rounded-pill shadow-sm">
-                                    <i class="ri-close-line me-1"></i> 0 Poin
+
+                        <div class="mb-3">
+                            <div class="fw-medium text-dark lh-base" style="font-size: 1.05rem;">
+                                {{ item.question.text|safe }}
+                            </div>
+                            {% if item.question.image %}
+                                <div class="mt-2">
+                                    <img src="{{ item.question.image.url }}" class="img-fluid rounded border" style="max-height: 260px;">
                                 </div>
                             {% endif %}
                         </div>
-                    </div>
 
-                    <div class="ms-md-4 ps-md-2">
-                        
-                        {% if item.question.question_type == 'multiple_choice' %}
-                            <div class="d-flex flex-column gap-2">
-                                
-                                {% for option in item.question.options.all %} 
-                                    {% with is_selected=False is_key=False %}
-                                        
+                        <div>
+                            {% if item.question.question_type == 'multiple_choice' %}
+                                <div class="d-flex flex-column gap-2">
+                                    {% for option in item.question.options.all %} 
                                         {% if option == item.user_selected_option %}
                                             {% if option.is_correct %}
-                                                <div class="p-3 rounded border border-success bg-label-success d-flex align-items-center">
-                                                    <i class="ri-checkbox-circle-fill text-success fs-4 me-3"></i>
+                                                <div class="p-3 rounded border border-success bg-label-success d-flex align-items-center gap-2">
+                                                    <i class="ri-checkbox-circle-fill text-success fs-5 flex-shrink-0"></i>
                                                     <div class="flex-grow-1">
                                                         <span class="text-dark fw-medium">{{ option.text }}</span>
                                                         <span class="badge bg-success ms-2">Jawaban Anda</span>
                                                     </div>
                                                 </div>
                                             {% else %}
-                                                <div class="p-3 rounded border border-danger bg-label-danger d-flex align-items-center">
-                                                    <i class="ri-close-circle-fill text-danger fs-4 me-3"></i>
+                                                <div class="p-3 rounded border border-danger bg-label-danger d-flex align-items-center gap-2">
+                                                    <i class="ri-close-circle-fill text-danger fs-5 flex-shrink-0"></i>
                                                     <div class="flex-grow-1">
                                                         <span class="text-dark fw-medium">{{ option.text }}</span>
                                                         <span class="badge bg-danger ms-2">Jawaban Anda</span>
@@ -147,8 +166,8 @@
                                             {% endif %}
                                         
                                         {% elif option.is_correct %}
-                                            <div class="p-3 rounded border border-info bg-label-info d-flex align-items-center opacity-75">
-                                                <i class="ri-checkbox-circle-line text-info fs-4 me-3"></i>
+                                            <div class="p-3 rounded border border-info bg-label-info d-flex align-items-center gap-2 opacity-85">
+                                                <i class="ri-checkbox-circle-line text-info fs-5 flex-shrink-0"></i>
                                                 <div class="flex-grow-1">
                                                     <span class="text-dark fw-medium">{{ option.text }}</span>
                                                     <span class="badge bg-info ms-2">Jawaban Benar</span>
@@ -156,75 +175,73 @@
                                             </div>
                                         
                                         {% else %}
-                                            <div class="p-3 rounded border bg-white d-flex align-items-center text-muted">
-                                                <i class="ri-checkbox-blank-circle-line fs-4 me-3 text-light"></i>
+                                            <div class="p-3 rounded border bg-lighter d-flex align-items-center gap-2 text-muted">
+                                                <i class="ri-checkbox-blank-circle-line fs-5 flex-shrink-0 text-light"></i>
                                                 <div>{{ option.text }}</div>
                                             </div>
                                         {% endif %}
-                                        
-                                    {% endwith %}
-                                {% endfor %}
-                            </div>
+                                    {% endfor %}
+                                </div>
 
-                        {% elif item.question.question_type == 'essay' %}
-                            <div class="card bg-lighter border-0">
-                                <div class="card-body">
-                                    <h6 class="text-muted text-uppercase small mb-2">Jawaban Anda:</h6>
-                                    <p class="mb-0 text-dark fst-italic border-start border-3 border-primary ps-3">
-                                        "{{ item.user_text_answer|default:'-' }}"
-                                    </p>
+                            {% elif item.question.question_type == 'essay' %}
+                                <div class="card bg-lighter border-0 mb-2 shadow-none">
+                                    <div class="card-body p-3">
+                                        <h6 class="text-muted text-uppercase small mb-2">Jawaban Anda:</h6>
+                                        <p class="mb-0 text-dark fst-italic border-start border-3 border-primary ps-3">
+                                            "{{ item.user_text_answer|default:'-' }}"
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="mt-2 d-flex align-items-center text-warning small">
-                                <i class="ri-time-line me-1"></i> Menunggu penilaian instruktur.
-                            </div>
-                        {% endif %}
+                                <div class="d-flex align-items-center text-warning small">
+                                    <i class="ri-time-line me-1"></i> Menunggu penilaian instruktur.
+                                </div>
+                            {% endif %}
 
-                        {% if item.question.explanation %}
-                        <div class="mt-4 pt-3 border-top border-light">
-                            <div class="d-flex gap-3 bg-white p-3 rounded border border-dashed">
-                                <div class="flex-shrink-0 text-primary">
-                                    <i class="ri-lightbulb-flash-fill fs-4"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold text-dark mb-1">Pembahasan</h6>
-                                    <p class="mb-0 text-secondary small" style="line-height: 1.6;">
-                                        {{ item.question.explanation|safe }}
-                                    </p>
+                            {% if item.question.explanation %}
+                            <div class="mt-3 pt-3 border-top border-light">
+                                <div class="d-flex gap-3 bg-lighter p-3 rounded border border-dashed">
+                                    <div class="flex-shrink-0 text-primary">
+                                        <i class="ri-lightbulb-flash-fill fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1 small">Pembahasan</h6>
+                                        <p class="mb-0 text-secondary small lh-base">
+                                            {{ item.question.explanation|safe }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
-
                     </div>
                 </div>
-            </div>
-            {% endfor %}
+                {% endfor %}
             {% else %}
-
-            <div class="card bg-label-secondary border-0 text-center py-5">
-                    <div class="card-body">
-                        <div class="avatar avatar-xl bg-white rounded-circle mx-auto mb-4 d-flex align-items-center justify-content-center shadow-sm">
-                            <i class="ri-lock-2-line text-secondary" style="font-size: 40px;"></i>
+                <!-- Locked Discussion Card -->
+                <div class="card bg-label-secondary border-0 text-center py-4 px-3 shadow-none">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="avatar avatar-lg rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center shadow-xs">
+                            <i class="ri-lock-2-line text-secondary ri-28px"></i>
                         </div>
-                        <h4 class="mb-2 text-dark">Pembahasan Belum Tersedia</h4>
-                        <p class="text-muted mb-4 px-4">
-                            Demi menjaga integritas ujian, detail jawaban benar dan pembahasan baru dapat dilihat setelah ujian ditutup untuk semua peserta.
+                        <h5 class="mb-2 text-dark fw-bold">Pembahasan Belum Tersedia</h5>
+                        <p class="text-muted mb-3 mx-auto" style="max-width: 520px; font-size: 0.9rem;">
+                            Demi menjaga integritas ujian, detail jawaban benar dan pembahasan baru dapat dilihat setelah jadwal ujian ditutup untuk seluruh peserta.
                         </p>
-                        <div class="bg-white d-inline-block px-4 py-2 rounded-pill shadow-sm border">
-                            <small class="text-uppercase fw-bold text-muted me-2">Jadwal Penutupan:</small>
-                            <span class="text-primary fw-bold">
-                                <i class="ri-calendar-event-line me-1"></i> {{ quiz.end_time|date:"d M Y, H:i" }} WIB
+                        <div class="bg-white d-inline-flex align-items-center px-3 py-2 rounded-pill shadow-xs border mb-4">
+                            <small class="text-uppercase fw-bold text-muted me-2" style="font-size: 0.75rem;">Jadwal Penutupan:</small>
+                            <span class="text-primary fw-bold small">
+                                <i class="ri-calendar-event-line me-1"></i>{{ quiz.end_time|date:"d M Y, H:i" }} WITA
                             </span>
                         </div>
-                        <div class="mt-5">
-                            <a href="{% url 'course-player' quiz.course.uuid %}" class="btn btn-primary px-4">
-                                <i class="ri-arrow-left-line me-2"></i> Kembali ke Materi
+                        <div>
+                            <a href="{% url 'course-player' quiz.course.uuid %}" class="btn btn-primary px-4 rounded-pill">
+                                <i class="ri-arrow-left-line me-2"></i>Kembali ke Materi
                             </a>
                         </div>
                     </div>
                 </div>
             {% endif %}
+
         </div>
     </div>
 </div>

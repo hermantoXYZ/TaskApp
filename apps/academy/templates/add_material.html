@@ -103,9 +103,16 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">{% if is_edit %}Edit{% else %}Tambah{% endif %} Materi Pembelajaran</h5>
-         <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary btn-sm">
-            <i class="ri-arrow-go-back-line me-1"></i> Kembali
-         </a> 
+        <div class="d-flex gap-2">
+           {% if not is_edit %}
+           <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importMaterialModal">
+              <i class="ri-file-download-line me-1"></i> Impor Materi dari Agenda/Kelas Lain
+           </button>
+           {% endif %}
+           <a href="{% url 'add-course-agenda' course.uuid %}" class="btn btn-outline-secondary btn-sm">
+              <i class="ri-arrow-go-back-line me-1"></i> Kembali
+           </a> 
+        </div>
       </div>
 
       <div class="card-body">
@@ -150,29 +157,6 @@
             <hr class="mt-0" />
           </div>
 
-          <!-- <div class="col-md-12">
-            <div class="form-floating form-floating-outline">
-              {{ form.material_type }}
-              <label for="{{ form.material_type.id_for_label }}">Tipe Materi</label>
-            </div>
-          </div>
-
-          <div class="col-md-12" id="field-video-container" style="display:none;">
-            <div class="form-floating form-floating-outline">
-              {{ form.video_url }}
-              <label for="{{ form.video_url.id_for_label }}">Link Video (Youtube/Vimeo)</label>
-            </div>
-            <small class="text-muted">Contoh: <code>https://www.youtube.com/watch?v=xxxxx</code></small>
-          </div>
-
-          <div class="col-md-12" id="field-file-container" style="display:none;">
-            <div class="form-floating form-floating-outline">
-              {{ form.file_attachment }}
-              <label for="{{ form.file_attachment.id_for_label }}">Upload File</label>
-            </div>
-            <small class="text-muted">PDF, DOCX, PPTX (Max 10MB)</small>
-          </div> -->
-
           <div class="col-md-12">
             <label class="form-label mb-2">Deskripsi / Teks Bacaan</label>
             {{ form.text_content }}
@@ -215,6 +199,83 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Modal Impor Materi -->
+<div class="modal fade" id="importMaterialModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-file-download-line me-2"></i>Impor Materi Pembelajaran</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'import-course-material' course.uuid %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Pilih Pertemuan Tujuan (Target Agenda)</label>
+                        <select name="target_agenda_id" id="target_agenda_id_select" class="form-select" required>
+                            <option value="">-- Pilih Sesi Pertemuan --</option>
+                            {% for ag in agendas %}
+                            <option value="{{ ag.id }}" {% if preselected_agenda_id and preselected_agenda_id|add:"0" == ag.id|add:"0" %}selected{% endif %}>
+                                {{ ag.title }} (Pertemuan {{ ag.session_number|default:"-" }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <label class="form-label fw-medium mb-1">Pilih Materi yang Ingin Diimpor</label>
+                    <p class="text-muted small">Materi akan terduplikasi secara mandiri ke pertemuan tujuan.</p>
+                    
+                    {% if importable_materials %}
+                    <div class="table-responsive border rounded mb-3" style="max-height: 350px;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">Pilih</th>
+                                    <th>Judul Materi</th>
+                                    <th>Mata Kuliah Asal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mat in importable_materials %}
+                                <tr>
+                                    <td class="text-center">
+                                        <input class="form-check-input" type="radio" name="source_material_id" id="mat_{{ mat.id }}" value="{{ mat.id }}" required>
+                                    </td>
+                                    <td>
+                                        <label for="mat_{{ mat.id }}" class="fw-medium text-body cursor-pointer d-block mb-0">
+                                            {{ mat.title }}
+                                        </label>
+                                        <small class="text-muted">{{ mat.created_at|date:"d M Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-secondary">{{ mat.agenda.course.code }}</span>
+                                        <small class="d-block text-muted text-truncate" style="max-width: 180px;">{{ mat.agenda.course.name }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 border rounded bg-light">
+                        <i class="ri-information-line ri-2x text-muted mb-2 d-block"></i>
+                        <p class="mb-0 text-muted">Belum ada materi dari kelas/agenda lain yang dapat diimpor.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                    {% if importable_materials %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ri-file-download-line me-1"></i> Impor Materi Ini
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
