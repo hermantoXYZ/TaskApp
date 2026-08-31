@@ -45,8 +45,8 @@
         <!-- /Logo -->
 
         <div class="card-body mt-1">
-          <h4 class="mb-1">Welcome to {% get_theme_variables 'template_name' %}! 👋</h4>
-          <p class="mb-5">Please sign-in to your account and start the adventure</p>
+          <h4 class="mb-1">Welcome to {% get_theme_variables 'template_name' %}!</h4>
+          <p class="mb-5">Please sign-in to your account..</p>
   {% if messages %}
   {% for message in messages %}
        <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
@@ -77,12 +77,6 @@
               </div>
             </div>
             <div class="mb-5 d-flex justify-content-between mt-5">
-              <div class="form-check mt-2">
-                <input class="form-check-input" type="checkbox" id="remember-me">
-                <label class="form-check-label" for="remember-me">
-                  Remember Me
-                </label>
-              </div>
               <a href="/" class="float-end mb-1 mt-2">
                 <span>Forgot Password?</span>
               </a>

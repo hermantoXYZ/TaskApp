@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AcademyView, AcademyDashboardView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, ManageCurriculumView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView, MediaLibraryListView, MediaLibraryUploadView, MediaLibraryDeleteView, MediaLibraryAttachView, DeleteAgendaMediaItemView, ListDosenCourse
+from .views import AcademyView, AcademyDashboardView, AddCourse, EditCourse, ListCourse, AddCourseParticipant, AddCourseAgenda, CourseAnnouncementView, CourseAttendanceView, AddCourseMaterialView, DeleteCourseMaterialView, EditCourseMaterialView, ViewsAllCourse, AddProgramStudiCourse, EditProgramStudiCourse, AddCoursePeriod, EditCoursePeriod, AddCourseAssignmentView, DeleteCourseAgenda, AppPasswordChangeView, CoursePreviewPublicView, MediaLibraryListView, MediaLibraryUploadView, MediaLibraryDeleteView, MediaLibraryAttachView, DeleteAgendaMediaItemView, ListDosenCourse
 from .views_students import UserProfileView
 from django.contrib.auth.decorators import login_required
 from . import views
@@ -40,7 +40,6 @@ urlpatterns = [
     path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/edit/', views.EditCourseAgenda.as_view(), name='edit-course-agenda'),
     # path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/delete/', DeleteCourseAgenda.as_view(), name='delete-agenda'),
     path('course/<uuid:course_uuid>/agenda/<int:agenda_id>/attendance/', views.CourseAttendanceView.as_view(), name='course-attendance'),
-    path('course/<uuid:course_uuid>/curriculum/', ManageCurriculumView.as_view(), name='manage-curriculum'),
     path('course/<uuid:course_uuid>/curriculum/material/', AddCourseMaterialView.as_view(), name='add-course-material'),
     path('course/<uuid:course_uuid>/curriculum/material/<int:material_id>/delete/', DeleteCourseMaterialView.as_view(), name='delete-course-material'),
     path('course/<uuid:course_uuid>/curriculum/material/<int:material_id>/edit/', EditCourseMaterialView.as_view(), name='edit-course-material'),

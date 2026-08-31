@@ -832,22 +832,6 @@ class CourseAttendanceView(DosenRequiredMixin, AcademyView):
         return redirect('course-attendance', course_uuid=course.uuid, agenda_id=agenda.id)
     
 
-
-class ManageCurriculumView(DosenRequiredMixin, AcademyView):
-    template_name = "manage_curriculum.html"
-
-    def get(self, request, course_uuid, *args, **kwargs):
-        course = get_object_or_404(Course, uuid=course_uuid)
-        sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials')
-        
-        context = self.get_context_data(
-            course=course,
-            sections=sections
-        )
-        return self.render_to_response(context)
-
-
-
 class AddCourseMaterialView(DosenRequiredMixin, AcademyView):
     template_name = "add_material.html"
 
@@ -1104,11 +1088,11 @@ class AddCourseAssignmentView(DosenRequiredMixin, AcademyView):
             assignment = form.save(commit=False)
             if assignment.agenda.course != course:
                 messages.error(request, "Agenda tidak valid.")
-                return redirect('add-agenda-course', course_uuid=course.uuid)
+                return redirect('add-course-agenda', course_uuid=course.uuid)
             
             assignment.save()
             messages.success(request, f'Tugas "{assignment.title}" berhasil ditambahkan.')
-            return redirect('add-agenda-course', course_uuid=course.uuid)
+            return redirect('add-course-agenda', course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(
             form=form, 
@@ -1139,14 +1123,14 @@ class EditCourseAssignmentView(DosenRequiredMixin, AcademyView):
         assignment = get_object_or_404(CourseAssignment, id=assignment_id)
 
         if assignment.agenda.course != course:
-            return redirect('add-agenda-course', course_uuid=course.uuid)
+            return redirect('add-course-agenda', course_uuid=course.uuid)
 
         form = CourseAssignmentForm(request.POST, request.FILES, instance=assignment, course_uuid=course.uuid)
 
         if form.is_valid():
             form.save()
             messages.success(request, f'Tugas "{assignment.title}" berhasil diperbarui.')
-            return redirect('add-agenda-course', course_uuid=course.uuid)
+            return redirect('add-course-agenda', course_uuid=course.uuid)
         
         return self.render_to_response(self.get_context_data(
             form=form, 

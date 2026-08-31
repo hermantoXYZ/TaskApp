@@ -253,6 +253,9 @@ class CourseAgenda(models.Model):
     created_by = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_agendas', help_text="Dosen yang membuat agenda")
     lecturer = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='teaching_agendas', help_text="Dosen pengampu sesi ini (bisa berbeda dari pembuat)")
     allow_discussion = models.BooleanField(default=False, help_text="Centang untuk menampilkan ke beranda diskusi.",)
+    is_active = models.BooleanField(
+        default=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

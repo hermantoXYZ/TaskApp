@@ -232,6 +232,18 @@
           </div>
 
           {# === PENGATURAN === #}
+          <div class="form-check form-switch mb-3">
+            <input type="checkbox"
+              name="{{ form.is_active.html_name }}"
+              class="form-check-input"
+              id="{{ form.is_active.id_for_label }}"
+              {% if form.is_active.value or form.is_active.value is None %}checked{% endif %}>
+            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+              <strong>Aktifkan Pertemuan / Sesi Ini</strong>
+              <small class="text-muted d-block">Jika dinonaktifkan, sesi beserta materi dan tugas di dalamnya tidak akan tampil pada mahasiswa.</small>
+            </label>
+          </div>
+
           <div class="form-check form-switch mb-6">
             <input type="checkbox"
               name="{{ form.allow_discussion.html_name }}"

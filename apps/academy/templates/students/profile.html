@@ -158,7 +158,7 @@
                 <div class="card shadow-none bg-label-primary border border-primary mb-3">
                     <div class="card-body">
                         <h6 class="mb-1"><i class="ri-upload-2-line me-2"></i>Gunakan Real Pictures</h6>
-                        <small class="d-block mb-3">Format JPG, GIF atau PNG. Maksimal 800K.</small>
+                        <small class="d-block mb-3">Format JPG, GIF atau PNG. Maksimal 100kb</small>
                         {{ form.photo }}
                     </div>
                 </div>
@@ -188,5 +188,14 @@
             allowInput: true
         });
     });
+</script>
+<script>
+document.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (e.target.type === 'file' && file && file.size > 102400) {
+        alert(`Ukuran file "${file.name}" maksimal 100 KB.`);
+        e.target.value = '';
+    }
+});
 </script>
 {% endblock page_js %}

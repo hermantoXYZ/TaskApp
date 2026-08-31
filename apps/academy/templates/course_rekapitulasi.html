@@ -172,14 +172,12 @@
           {% if quizzes %}
             <th colspan="{{ quizzes.count }}" class="text-center bg-label-danger text-danger">Evaluasi & Ujian</th>
           {% endif %}
-
-          <th rowspan="2" class="bg-label-primary text-primary">Avg</th>
         </tr>
         
         <tr>
             {% for ag in agendas %}
-                <th class="small col-absen" title="{{ ag.title }} - {{ ag.agenda_date|date:'d M' }}">
-                    P{{ forloop.counter }}
+                <th class="small col-absen" title="Sesi {{ ag.session_number|default:forloop.counter }}: {{ ag.title }}{% if ag.agenda_date %} - {{ ag.agenda_date|date:'d M' }}{% endif %}">
+                    P{{ ag.session_number|default:forloop.counter }}
                 </th>
             {% endfor %}
 
@@ -331,10 +329,6 @@
                 </div>
             </td>
             {% endfor %}
-
-            <td class="text-center fw-bold text-primary bg-label-primary-subtle">
-                {{ item.final_avg }}
-            </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -372,8 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
         info: false,
         searching: true,
         fixedColumns: {
-            left: 2,  
-            right: 1 
+            left: 2
         },
         columnDefs: [
             { width: '200px', targets: 1 } 

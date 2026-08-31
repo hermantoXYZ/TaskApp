@@ -158,6 +158,7 @@ class AddAgendaForm(forms.ModelForm):
             'meeting_url',
             'lecturer',
             'allow_discussion',
+            'is_active',
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contoh: Pengantar Manajemen / UAS'}),
@@ -172,6 +173,7 @@ class AddAgendaForm(forms.ModelForm):
             'lecturer': forms.Select(attrs={'class': 'select2 form-select'}),
             'is_online': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'allow_discussion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):

@@ -1,0 +1,604 @@
+<div class="sticky-top" style="top: 20px; z-index: 10;">
+  <!-- Tombol Informasi Kelas / Opening -->
+  <a href="{% url 'course-player' course.uuid %}" class="course-item py-3 mb-4 {% if not active_item %}active{% endif %}" style="border: 1px solid rgba(105, 108, 255, 0.2); background-color: {% if not active_item %}rgba(105, 108, 255, 0.08){% else %}#fff{% endif %};">
+      <div class="w-100">
+          <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Opening / Beranda Kelas</span>
+              {% if not active_item %}
+                  <span class="badge bg-primary rounded-pill" style="font-size: 0.65rem;">AKTIF</span>
+              {% endif %}
+          </div>
+          <small class="d-block mt-1 text-muted" style="font-size: 0.75rem; font-weight: normal;">Informasi Program, Jadwal &amp; Sertifikat</small>
+      </div>
+  </a>
+
+  <!-- ===== YOUR PROGRESS WIDGET ===== -->
+  {% if total_materials > 0 %}
+  <div class="your-progress-widget mb-4 p-3 rounded-3" style="background: linear-gradient(135deg, rgba(105,108,255,0.06) 0%, rgba(105,108,255,0.02) 100%); border: 1px solid rgba(105,108,255,0.15);">
+    <div class="d-flex align-items-center gap-3">
+
+      <!-- Circular Progress SVG -->
+      <div class="progress-circle-wrap flex-shrink-0" style="position: relative; width: 54px; height: 54px;">
+        <svg width="54" height="54" viewBox="0 0 54 54">
+          <!-- Track -->
+          <circle cx="27" cy="27" r="22"
+                  fill="none" stroke="#e0e2ff" stroke-width="5"/>
+          <!-- Progress arc — dashoffset diset via JS -->
+          <circle cx="27" cy="27" r="22"
+                  fill="none"
+                  stroke="{% if course_progress == 100 %}#71dd37{% elif course_progress >= 50 %}#696cff{% else %}#ffab00{% endif %}"
+                  stroke-width="5"
+                  stroke-linecap="round"
+                  stroke-dasharray="138.23"
+                  stroke-dashoffset="138.23"
+                  transform="rotate(-90 27 27)"
+                  class="progress-arc"
+                  data-progress="{{ course_progress }}"/>
+        </svg>
+        <!-- Percentage text in center -->
+        <span class="progress-pct-text"
+              style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.7rem;font-weight:700;color:{% if course_progress == 100 %}#71dd37{% elif course_progress >= 50 %}#696cff{% else %}#ffab00{% endif %};">
+          {{ course_progress }}%
+        </span>
+      </div>
+
+
+      <!-- Text info -->
+      <div class="flex-grow-1">
+        <div class="fw-bold mb-1" style="font-size: 0.85rem; color: #566a7f;">Your progress</div>
+        <div class="progress rounded-pill mb-1" style="height: 6px; background: #e0e2ff;">
+          <div class="progress-bar rounded-pill
+              {% if course_progress == 100 %}bg-success
+              {% elif course_progress >= 50 %}bg-primary
+              {% else %}bg-warning{% endif %}"
+               role="progressbar"
+               style="width: {{ course_progress }}%; transition: width 0.8s ease;"
+               aria-valuenow="{{ course_progress }}" aria-valuemin="0" aria-valuemax="100">
+          </div>
+        </div>
+        <small class="text-muted" style="font-size: 0.72rem;">
+          <span class="fw-semibold {% if course_progress == 100 %}text-success{% elif course_progress >= 50 %}text-primary{% else %}text-warning{% endif %}">
+            {{ completed_count }}
+          </span> / {{ total_materials }} materi selesai
+          {% if course_progress == 100 %}
+            &nbsp;<i class="ri-award-fill text-success" title="Kelas selesai!"></i>
+          {% endif %}
+        </small>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <!-- ===== END YOUR PROGRESS WIDGET ===== -->
+
+  <div class="accordion accordion-custom-button" id="courseContent">
+
+  {% for section in sections %}
+  <div class="accordion-item {% if active_item.agenda.id == section.id %}active mb-0{% endif %} {% if section.is_locked %}section-locked{% endif %}">
+    
+    <div class="accordion-header border-bottom-0" id="heading-{{ section.id }}">
+      {% if section.is_locked %}
+        <!-- Section Terkunci -->
+        <button type="button" class="accordion-button collapsed section-locked-btn" disabled
+                title="Selesaikan semua materi dan kuis pada section sebelumnya terlebih dahulu.">
+          <span class="d-flex flex-column flex-grow-1">
+            <span class="h5 mb-0 d-flex align-items-center gap-2">
+              <i class="ri-lock-2-fill text-secondary opacity-50" style="font-size: 1rem;"></i>
+              {{ section.title }}
+            </span>
+            <span class="text-body fw-normal small opacity-50">
+                {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi
+            </span>
+          </span>
+          <span class="badge bg-label-warning ms-2 px-2" style="font-size: 0.6rem; white-space: nowrap;">Terkunci</span>
+        </button>
+      {% else %}
+        <button type="button" class="accordion-button {% if active_item.agenda.id != section.id %}collapsed{% endif %}" 
+                data-bs-toggle="collapse" data-bs-target="#chapter-{{ section.id }}" aria-expanded="{% if active_item.agenda.id == section.id %}true{% else %}false{% endif %}">
+          <span class="d-flex flex-column">
+            <span class="h5 mb-0">{{ section.title }}</span>
+            <span class="text-body fw-normal small">
+                {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi
+            </span>
+          </span>
+        </button>
+      {% endif %}
+    </div>
+
+    {% if section.is_locked %}
+      <!-- Section terkunci: tampilkan preview isi tapi disabled -->
+      <div id="chapter-{{ section.id }}" class="accordion-collapse collapse">
+        <div class="accordion-body py-3 border-top">
+          <div class="d-flex align-items-center gap-2 p-3 rounded-3"
+               style="background: rgba(255,171,0,0.06); border: 1px dashed rgba(255,171,0,0.4);">
+            <i class="ri-lock-2-fill text-warning ri-lg flex-shrink-0"></i>
+            <div>
+              <div class="fw-semibold" style="font-size: 0.82rem; color: #566a7f;">Section ini terkunci</div>
+              <small class="text-muted" style="font-size: 0.75rem;">
+                Selesaikan semua materi dan capai passing grade kuis pada section sebelumnya.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+    <div id="chapter-{{ section.id }}" class="accordion-collapse collapse {% if active_item.agenda.id == section.id %}show{% endif %}" data-bs-parent="#courseContent">
+      <div class="accordion-body py-4 border-top">
+        
+        {% for material in section.materials.all %}
+            {% if material.is_published or is_dosen %}
+                <div class="course-item-wrapper {% if active_type == 'material' and active_item.id == material.id %}is-active-item{% endif %}"
+                     data-material-id="{{ material.id }}">
+                    <!-- Checkbox clickable ala Udemy -->
+                    <button type="button"
+                            class="sidebar-checkbox-btn {% if material.id in completed_material_ids %}is-checked{% endif %}"
+                            data-material-id="{{ material.id }}"
+                            title="{% if material.id in completed_material_ids %}Tandai belum selesai{% else %}Tandai selesai{% endif %}"
+                            onclick="toggleMaterialProgress(event, {{ material.id }}, this)">
+                        <span class="checkbox-box">
+                            <i class="ri-check-line check-icon"></i>
+                        </span>
+                    </button>
+
+                    <a href="{% url 'course-player-material' course.uuid material.id %}"
+                       class="course-item-link {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
+                        <div class="w-100">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex align-items-center">
+                                    <span class="text-wrap lh-sm material-title {% if material.id in completed_material_ids %}text-completed{% endif %}">{{ material.title }}</span>
+                                </div>
+                                {% if not material.is_published %}
+                                    <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
+                                {% endif %}
+                            </div>
+                            <small class="d-block mt-1 opacity-75" style="font-size: 0.75rem;">
+                                {{ material.get_duration_display }}
+                            </small>
+                        </div>
+                    </a>
+                </div>
+            {% else %}
+                <div class="course-item-wrapper">
+                    <div class="sidebar-checkbox-btn disabled-check" title="Belum tersedia">
+                        <span class="checkbox-box locked-box">
+                            <i class="ri-lock-2-line lock-icon"></i>
+                        </span>
+                    </div>
+                    <div class="course-item-link locked">
+                        <div class="w-100">
+                            <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ material.title }}</span></div>
+                            <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum tersedia</small>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        {% if section.media_items.all %}
+             {# ===== RESOURCES DROPDOWN (Udemy-style) ===== #}
+             <div class="px-3 pb-2 pt-1">
+               <div class="dropdown resources-dropdown">
+                 <button class="btn btn-sm btn-outline-primary rounded-pill d-flex align-items-center gap-2 px-3 py-1 resources-btn"
+                         type="button"
+                         data-bs-toggle="dropdown"
+                         data-bs-auto-close="outside"
+                         aria-expanded="false"
+                         style="font-size:0.8rem; font-weight:600; border-width:1.5px;">
+                   <i class="ri-folder-open-line"></i>
+                   Resources
+                   <span class="badge bg-primary rounded-pill ms-1" style="font-size:0.65rem;">{{ section.media_items.count }}</span>
+                   <i class="ri-arrow-down-s-line ms-auto" style="font-size:0.9rem;"></i>
+                 </button>
+                 <ul class="dropdown-menu shadow-sm border-0 py-1 resources-menu" style="min-width:240px; max-width:300px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12) !important;">
+                   {% for item in section.media_items.all %}
+                   <li>
+                     <a href="{% if item.media_file.file %}{{ item.media_file.file.url }}{% elif item.media_file.video_url %}{{ item.media_file.video_url }}{% else %}#{% endif %}"
+                        target="_blank"
+                        class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
+                        style="font-size:0.82rem;">
+                       {% if item.media_file.file_type == 'pdf' %}
+                         <i class="ri-external-link-line text-muted" style="flex-shrink:0;font-size:1rem;"></i>
+                       {% elif item.media_file.file_type == 'video_url' %}
+                         <i class="ri-external-link-line text-muted" style="flex-shrink:0;font-size:1rem;"></i>
+                       {% else %}
+                         <i class="ri-external-link-line text-muted" style="flex-shrink:0;font-size:1rem;"></i>
+                       {% endif %}
+                       <span class="text-truncate" style="max-width:200px;">{{ item.media_file.name }}</span>
+                     </a>
+                   </li>
+                   {% endfor %}
+                 </ul>
+               </div>
+             </div>
+        {% endif %}
+
+
+
+        {% if section.quizzes.all %}
+            {% if section.materials.all or section.media_items.all %}
+                <div class="divider"><div class="divider-text">KUIS</div></div>
+            {% endif %}
+
+            {% for quiz in section.quizzes.all %}
+                {% if quiz.is_published or is_dosen %}
+                    <div class="course-item-wrapper {% if active_type == 'quiz' and active_item.id == quiz.id %}is-active-item{% endif %}">
+                        <a href="{% url 'course-player-quiz-start' course.uuid quiz.id %}"
+                           class="course-item-link ps-3 {% if active_type == 'quiz' and active_item.id == quiz.id %}active{% endif %}">
+                            <div class="w-100">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <span class="text-wrap lh-sm">{{ quiz.title }}</span>
+                                    {% if quiz.user_is_done %}
+                                        {% if quiz.user_is_passed %}
+                                            <span class="badge bg-label-success ms-2 px-2" style="font-size: 0.6rem;">Lulus</span>
+                                        {% else %}
+                                            <span class="badge bg-label-danger ms-2 px-2" style="font-size: 0.6rem;">Belum Lulus</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-label-warning ms-2 px-2" style="font-size: 0.6rem;">Kuis</span>
+                                    {% endif %}
+                                </div>
+                                {% if quiz.user_is_done %}
+                                    <small class="{% if quiz.user_is_passed %}text-success{% else %}text-danger{% endif %} d-block mt-1" style="font-size: 0.75rem;">Nilai: {{ quiz.user_score|floatformat:0 }} (KKM: {{ quiz.passing_score }})</small>
+                                {% else %}
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">{{ quiz.duration_minutes }} Menit</small>
+                                {% endif %}
+                            </div>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="course-item locked">
+                        <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
+                        <div class="w-100">
+                            <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ quiz.title }}</span></div>
+                            <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum dipublikasikan</small>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {% if section.assignments.all %}
+            {% if section.materials.all or section.media_items.all or section.quizzes.all %}
+                <div class="divider"><div class="divider-text">TUGAS</div></div>
+            {% endif %}
+
+            {% for task in section.assignments.all %}
+                {% if task.is_published or is_dosen %}
+                    <div class="course-item-wrapper {% if active_type == 'assignment' and active_item.id == task.id %}is-active-item{% endif %}">
+                        <a href="{% url 'course-player-assignment' course.uuid task.id %}"
+                           class="course-item-link ps-3 {% if active_type == 'assignment' and active_item.id == task.id %}active{% endif %}">
+                            <div class="w-100">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <span class="text-wrap lh-sm">{{ task.title }}</span>
+                                    {% if active_type == 'assignment' and active_item.id == task.id %}
+                                        <span class="badge bg-primary rounded-pill ms-2" style="font-size: 0.65rem;">AKTIF</span>
+                                    {% elif task.id in completed_assignment_ids %}
+                                        <span class="badge bg-label-success ms-2 px-2" style="font-size: 0.6rem;">Selesai</span>
+                                    {% elif not task.is_published %}
+                                        <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
+                                    {% else %}
+                                        <span class="badge bg-label-warning ms-2 px-2" style="font-size: 0.6rem;">Tugas</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">
+                                    <i class="ri-time-line me-1"></i>Deadline: {{ task.due_date|date:"d M Y" }}
+                                </small>
+                            </div>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="course-item locked">
+                        <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
+                        <div class="w-100">
+                            <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ task.title }}</span></div>
+                            <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum dibuka</small>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {% if not section.materials.all and not section.quizzes.all and not section.assignments.all %}
+            <div class="text-center text-muted fst-italic small">Belum ada konten.</div>
+        {% endif %}
+
+      </div>
+    </div>
+    {% endif %}{# end is_locked else #}
+  </div>
+  {% endfor %}
+
+  </div>
+
+</div>
+
+<!-- ===== STYLE SIDEBAR CHECKBOX ala UDEMY ===== -->
+<style>
+/* Wrapper item materi (row flex: checkbox + link) */
+.course-item-wrapper {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 0.35rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-weight: 600;
+    border-color: rgba(105, 108, 255, 0.15);
+    transition: background-color 0.15s ease;
+}
+.course-item-wrapper:hover {
+    background-color: rgba(105, 108, 255, 0.08);
+}
+.course-item-wrapper.is-active-item {
+    background-color: rgba(105, 108, 255, 0.08);
+}
+
+/* ===== Section Terkunci ===== */
+.accordion-item.section-locked {
+    opacity: 0.75;
+}
+.accordion-item.section-locked .accordion-header {
+    background-color: rgba(67, 89, 113, 0.03);
+}
+.section-locked-btn {
+    cursor: not-allowed !important;
+    pointer-events: auto !important; /* biar tooltip muncul */
+    background-color: rgba(67, 89, 113, 0.03) !important;
+}
+.section-locked-btn:hover {
+    background-color: rgba(255, 171, 0, 0.06) !important;
+}
+.section-locked-btn::after {
+    /* Sembunyikan chevron bawaan Bootstrap */
+    display: none !important;
+}
+
+/* Checkbox button ala Udemy */
+.sidebar-checkbox-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    margin-top: 0.65rem;
+    margin-right: 0.5rem;
+    margin-left: 0.25rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: transform 0.1s ease;
+}
+.sidebar-checkbox-btn:active {
+    transform: scale(0.88);
+}
+.sidebar-checkbox-btn.disabled-check {
+    cursor: default;
+    pointer-events: none;
+}
+
+/* Kotak checkbox */
+.checkbox-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    border: 2px solid #c2c8d0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.sidebar-checkbox-btn.is-checked .checkbox-box {
+    background: #696cff;
+    border-color: #696cff;
+}
+.sidebar-checkbox-btn:hover:not(.disabled-check) .checkbox-box {
+    border-color: #696cff;
+}
+
+/* Ikon centang di dalam kotak */
+.check-icon {
+    font-size: 13px;
+    color: #fff;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.sidebar-checkbox-btn.is-checked .check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Kotak terkunci */
+.locked-box {
+    border-color: #d9dee3;
+    background: #f8f9fa;
+}
+.lock-icon {
+    font-size: 11px;
+    color: #a1acb8;
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Link area materi (kanan checkbox) */
+.course-item-link {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    padding: 0.6rem 0.5rem 0.6rem 0;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: #566a7f;
+    min-width: 0;
+    transition: color 0.15s ease;
+}
+.course-item-link:hover:not(.locked) {
+    color: #696cff;
+}
+.course-item-link.active {
+    color: #696cff;
+    font-weight: 600;
+}
+.course-item-link.locked {
+    color: #a1acb8;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* Judul materi yang sudah selesai — strikethrough halus ala Udemy */
+.material-title {
+    transition: all 0.25s ease;
+}
+.material-title.text-completed {
+    color: #a1acb8;
+}
+
+/* Spinner loading saat AJAX */
+.sidebar-checkbox-btn.loading .checkbox-box {
+    animation: spinBox 0.6s linear infinite;
+    border-color: #696cff;
+    border-top-color: transparent;
+    border-radius: 50%;
+}
+@keyframes spinBox {
+    to { transform: rotate(360deg); }
+}
+
+/* Pop animation saat berhasil */
+@keyframes popCheck {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+.sidebar-checkbox-btn.pop-anim .checkbox-box {
+    animation: popCheck 0.3s ease;
+}
+</style>
+
+<!-- ===== JAVASCRIPT TOGGLE PROGRESS ===== -->
+<script>
+// ---- CSRF ----
+function getCsrfToken() {
+    const name = 'csrftoken';
+    let cookieValue = '';
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(function(c) {
+            const cookie = c.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            }
+        });
+    }
+    return cookieValue;
+}
+
+// ---- Animasi SVG circular progress ----
+(function initProgressArcs() {
+    const circumference = 138.23; // 2 * π * 22
+    document.querySelectorAll('.progress-arc').forEach(function(arc) {
+        const pct = parseFloat(arc.getAttribute('data-progress')) || 0;
+        const offset = circumference - (pct / 100) * circumference;
+        // Animasi dari penuh (138.23) ke nilai target
+        arc.style.transition = 'stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1)';
+        // Trigger reflow agar transisi berjalan
+        arc.getBoundingClientRect();
+        arc.style.strokeDashoffset = offset;
+    });
+})();
+
+// ---- Update widget progress secara real-time ----
+function updateProgressWidget(delta) {
+    // delta: +1 jika selesai, -1 jika dibatalkan
+    const widget = document.querySelector('.your-progress-widget');
+    if (!widget) return;
+
+    const arc = widget.querySelector('.progress-arc');
+    const pctText = widget.querySelector('.progress-pct-text');
+    const bar = widget.querySelector('.progress-bar');
+    const countEl = widget.querySelector('.fw-semibold');
+    const circumference = 138.23;
+
+    if (!arc || !countEl) return;
+
+    // Ambil nilai saat ini
+    const totalEl = widget.querySelector('small.text-muted');
+    const totalMatch = totalEl ? totalEl.textContent.match(/\/\s*(\d+)/) : null;
+    const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+    if (total === 0) return;
+
+    let completed = parseInt(countEl.textContent.trim()) + delta;
+    completed = Math.max(0, Math.min(total, completed));
+    const pct = Math.round((completed / total) * 100);
+
+    // Update teks
+    countEl.textContent = completed;
+    if (pctText) pctText.textContent = pct + '%';
+
+    // Update warna berdasarkan persentase
+    const color = pct === 100 ? '#71dd37' : pct >= 50 ? '#696cff' : '#ffab00';
+    arc.style.stroke = color;
+    if (pctText) pctText.style.color = color;
+
+    // Update SVG arc
+    const offset = circumference - (pct / 100) * circumference;
+    arc.style.strokeDashoffset = offset;
+
+    // Update progress bar
+    if (bar) {
+        bar.style.width = pct + '%';
+        bar.setAttribute('aria-valuenow', pct);
+        bar.className = bar.className.replace(/bg-(success|primary|warning|secondary)/g, '');
+        bar.classList.add(pct === 100 ? 'bg-success' : pct >= 50 ? 'bg-primary' : 'bg-warning');
+    }
+
+    // Update countEl color
+    countEl.className = countEl.className.replace(/text-(success|primary|warning)/g, '');
+    countEl.classList.add(pct === 100 ? 'text-success' : pct >= 50 ? 'text-primary' : 'text-warning');
+}
+
+// ---- Toggle Material Progress (AJAX) ----
+function toggleMaterialProgress(event, materialId, btn) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (btn.classList.contains('loading')) return;
+
+    const titleEl = btn.closest('.course-item-wrapper')?.querySelector('.material-title');
+
+    btn.classList.add('loading');
+
+    fetch(`/api/material/${materialId}/toggle-progress/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.classList.remove('loading');
+        if (data.status === 'ok') {
+            if (data.is_completed) {
+                btn.classList.add('is-checked');
+                btn.title = 'Tandai belum selesai';
+                if (titleEl) titleEl.classList.add('text-completed');
+                updateProgressWidget(+1);
+            } else {
+                btn.classList.remove('is-checked');
+                btn.title = 'Tandai selesai';
+                if (titleEl) titleEl.classList.remove('text-completed');
+                updateProgressWidget(-1);
+            }
+            // Pop animation
+            btn.classList.add('pop-anim');
+            setTimeout(() => btn.classList.remove('pop-anim'), 350);
+        }
+    })
+    .catch(() => {
+        btn.classList.remove('loading');
+        console.warn('Gagal toggle progress materi');
+    });
+}
+</script>

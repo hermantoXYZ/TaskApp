@@ -150,6 +150,9 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
     def get(self, request, course_uuid, material_id=None, assignment_id=None, *args, **kwargs):
         course = get_object_or_404(Course, uuid=course_uuid)
         sections = CourseAgenda.objects.filter(course=course).prefetch_related('materials', 'assignments', 'media_items__media_file')
+        is_dosen = UserDosen.objects.filter(nip=request.user).exists() if request.user.is_authenticated else False
+        if not is_dosen:
+            sections = sections.filter(is_active=True)
 
         # === 1. LOGIK ACTIVE ITEM (BAWAAN ANDA) ===
         active_item = None
@@ -163,27 +166,8 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
             active_item = get_object_or_404(CourseAssignment, id=assignment_id, agenda__course=course)
             active_type = 'assignment'
         else:
-            first_material = CourseMaterial.objects.filter(
-                agenda__course=course
-            ).order_by('agenda__agenda_date', 'order').first()
-
-            first_assignment = CourseAssignment.objects.filter(
-                agenda__course=course
-            ).order_by('agenda__agenda_date').first()
-
-            if first_material and first_assignment:
-                if first_material.agenda.agenda_date <= first_assignment.agenda.agenda_date:
-                    active_item = first_material
-                    active_type = 'material'
-                else:
-                    active_item = first_assignment
-                    active_type = 'assignment'
-            elif first_material:
-                active_item = first_material
-                active_type = 'material'
-            elif first_assignment:
-                active_item = first_assignment
-                active_type = 'assignment'
+            active_item = None
+            active_type = None
 
         # === 2. AMBIL DATA PENDUKUNG LAINNYA ===
         announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
@@ -296,7 +280,8 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
             total_hadir=total_hadir,
             quizzes=quizzes,  # <--- JANGAN LUPA TAMBAHKAN INI
             my_group=my_group,          # Variabel ini sekarang aman karena sudah di-init di atas
-            group_members=group_members
+            group_members=group_members,
+            is_dosen=is_dosen
         )
         return self.render_to_response(context)
 
@@ -751,9 +736,9 @@ class CourseLeaderboardView(LoginRequiredMixin, AcademyView):
         course = get_object_or_404(Course, uuid=course_uuid)
         
         # 1. Hitung Total Items (Denominator)
-        total_materials = CourseMaterial.objects.filter(agenda__course=course, is_published=True).count()
-        total_assignments = CourseAssignment.objects.filter(agenda__course=course, is_published=True).count()
-        total_agendas = CourseAgenda.objects.filter(course=course).count() 
+        total_materials = CourseMaterial.objects.filter(agenda__course=course, agenda__is_active=True, is_published=True).count()
+        total_assignments = CourseAssignment.objects.filter(agenda__course=course, agenda__is_active=True, is_published=True).count()
+        total_agendas = CourseAgenda.objects.filter(course=course, is_active=True).count() 
         total_quizzes = CourseQuiz.objects.filter(course=course, is_published=True).count()
         total_items = total_materials + total_assignments + total_agendas + total_quizzes
 

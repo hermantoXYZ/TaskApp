@@ -252,6 +252,7 @@
           
           <div class="tab-pane fade show active" id="navs-learning" role="tabpanel">
             
+            {% if active_type %}
             <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-1">
                 <div class="me-1">
                   <h5 class="mb-0">{{ course.name }}</h5>
@@ -261,7 +262,7 @@
                   <span class="badge bg-label-danger rounded-pill me-3">{{ course.prodi.nama_prodi }}</span>
                   
                 {% if active_type == 'material' and active_item %}
-                      {% if active_item.is_published or request.user == course.instructor %}
+                      {% if active_item.is_published or is_dosen %}
                       <form method="post" action="{% url 'course-player-material' course.uuid active_item.id %}">
                           {% csrf_token %}
                           <button type="submit" class="btn btn-sm btn-primary" title="Tandai Selesai">
@@ -272,12 +273,13 @@
                   {% endif %}
                 </div>
             </div>
+            {% endif %}
 
             <div class="card academy-content shadow-none border">
                 
                 {% if active_type == 'material' %}
                     
-                    {% if active_item.is_published or request.user == course.instructor %}
+                    {% if active_item.is_published or is_dosen %}
                         
                         <div class="p-2">
                             {% if not active_item.is_published %}
@@ -331,7 +333,7 @@
 
                 {% elif active_type == 'assignment' %}
                     
-                    {% if active_item.is_published or request.user == course.instructor %}
+                    {% if active_item.is_published or is_dosen %}
                         
                         <div class="p-4 rounded border border-1 border-opacity-25">
                             {% if not active_item.is_published %}
@@ -429,12 +431,154 @@
                     {% endif %}
 
                 {% else %}
-                    <div class="p-12 text-center bg-lighter rounded m-3">
-                        <h4>Selamat Datang!</h4>
-                        <p class="text-muted">Silakan pilih konten di sebelah kanan untuk memulai.</p>
-                        <div class="course-content-body mt-3 text-start px-4">
-                            {{ course.description|safe }}
+                    <!-- Welcome & Course Overview Container -->
+                    <div class="p-3 p-md-4">
+                        
+                        <!-- Hero Banner -->
+                        <div class="card bg-label-primary border-0 mb-4 shadow-none">
+                            <div class="card-body p-4 p-md-5">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                                    <div>
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                            <span class="badge bg-primary text-white">{{ course.code }}</span>
+                                            <span class="badge bg-white text-primary fw-semibold">Kelas {{ course.group }}</span>
+                                            {% if course.prodi %}
+                                                <span class="badge bg-label-secondary bg-white text-dark">{{ course.prodi.nama_prodi }}</span>
+                                            {% endif %}
+                                            {% if course.period %}
+                                                <span class="badge bg-label-secondary bg-white text-dark">{{ course.period }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <h3 class="fw-bold mb-1 text-primary">{{ course.name }}</h3>
+                                        <p class="mb-0 text-muted small">
+                                            Selamat datang di ruang perkuliahan digital. Silakan akses materi, tugas, dan evaluasi melalui bilah sesi di samping.
+                                        </p>
+                                    </div>
+                                    {% if course.link_rps %}
+                                    <div class="flex-shrink-0">
+                                        <a href="{{ course.link_rps }}" target="_blank" class="btn btn-primary shadow-sm text-nowrap">
+                                            <i class="ri-file-pdf-2-line me-1"></i> Buka Silabus RPS
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Info Metric Grid (Responsive 2x2 layout inside col-lg-8) -->
+                        <div class="row g-3 mb-4">
+                            <!-- SKS -->
+                            <div class="col-12 col-sm-6">
+                                <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar avatar-md flex-shrink-0">
+                                                <span class="avatar-initial rounded-3 bg-label-primary">
+                                                    <i class="ri-book-2-line ri-22px"></i>
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Bobot SKS</small>
+                                                <h6 class="mb-0 fw-bold text-heading">{{ course.credit_t|add:course.credit_p }} SKS</h6>
+                                                <small class="text-muted" style="font-size: 0.75rem;">{{ course.credit_t }} SKS Teori &bull; {{ course.credit_p }} SKS Praktik</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dosen Pengampu -->
+                            <div class="col-12 col-sm-6">
+                                <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar avatar-md flex-shrink-0">
+                                                <span class="avatar-initial rounded-3 bg-label-warning">
+                                                    <i class="ri-user-star-line ri-22px"></i>
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Dosen Pengampu</small>
+                                                <h6 class="mb-0 fw-bold text-heading text-truncate" title="{% for coach in course.coaches.all %}{{ coach.nip.first_name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                                                    {% for coach in course.coaches.all %}
+                                                        {{ coach.nip.first_name }}{% if not forloop.last %}, {% endif %}
+                                                    {% empty %}
+                                                        -
+                                                    {% endfor %}
+                                                </h6>
+                                                <small class="text-muted" style="font-size: 0.75rem;">Pengajar Kelas</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Sesi -->
+                            <div class="col-12 col-sm-6">
+                                <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar avatar-md flex-shrink-0">
+                                                <span class="avatar-initial rounded-3 bg-label-info">
+                                                    <i class="ri-calendar-todo-line ri-22px"></i>
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Pertemuan</small>
+                                                <h6 class="mb-0 fw-bold text-heading">{{ sections.count|default:16 }} Sesi</h6>
+                                                <small class="text-muted" style="font-size: 0.75rem;">Agenda Perkuliahan</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Peserta -->
+                            <div class="col-12 col-sm-6">
+                                <div class="card border shadow-none h-100 bg-lighter bg-opacity-25">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar avatar-md flex-shrink-0">
+                                                <span class="avatar-initial rounded-3 bg-label-success">
+                                                    <i class="ri-group-line ri-22px"></i>
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Peserta</small>
+                                                <h6 class="mb-0 fw-bold text-heading">{{ course.participants.count }} Mahasiswa</h6>
+                                                <small class="text-muted" style="font-size: 0.75rem;">Terdaftar di Kelas</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Deskripsi & Silabus Card -->
+                        <div class="card border shadow-none mb-4">
+                            <div class="card-header border-bottom py-3 bg-lighter d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                                    <i class="ri-article-line text-primary"></i> Deskripsi Mata Kuliah
+                                </h6>
+                                {% if course.link_rps %}
+                                    <a href="{{ course.link_rps }}" target="_blank" class="btn btn-xs btn-outline-primary">
+                                        <i class="ri-external-link-line me-1"></i> RPS Lengkap
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div class="card-body p-4">
+                                {% if course.description and course.description != '-' %}
+                                    <div class="text-muted lh-base">
+                                        {{ course.description|safe|linebreaks }}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted fst-italic mb-0">
+                                        Belum ada deskripsi detail yang ditambahkan untuk mata kuliah ini.
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
                     </div>
                 {% endif %}
             </div>
@@ -713,7 +857,7 @@
                             </div>
                             <div class="row g-2">
                                 {% for task in section.assignments.all %}
-                                    {% if task.is_published or request.user == course.instructor %}
+                                    {% if task.is_published or is_dosen %}
                                     <div class="col-12">
                                         <div class="card border shadow-none">
                                             <div class="card-body p-3">
@@ -898,135 +1042,10 @@
     </div>
   </div>
 
+  
+
   <div class="col-lg-4">
-    <div class="accordion stick-top accordion-custom-button" id="courseContent">
-
-      {% for section in sections %}
-      <div class="accordion-item {% if active_item.agenda.id == section.id %}active mb-0{% endif %}">
-        
-        <div class="accordion-header border-bottom-0" id="heading-{{ section.id }}">
-          <button type="button" class="accordion-button {% if active_item.agenda.id != section.id %}collapsed{% endif %}" 
-                  data-bs-toggle="collapse" data-bs-target="#chapter-{{ section.id }}" aria-expanded="{% if active_item.agenda.id == section.id %}true{% else %}false{% endif %}">
-            <span class="d-flex flex-column">
-              <span class="h5 mb-0">{{ section.title }}</span>
-              <span class="text-body fw-normal small">
-                  {{ section.agenda_date|date:"d M Y" }} • {{ section.materials.count }} Materi • {{ section.assignments.count }} Tugas
-              </span>
-            </span>
-          </button>
-        </div>
-
-        <div id="chapter-{{ section.id }}" class="accordion-collapse collapse {% if active_item.agenda.id == section.id %}show{% endif %}" data-bs-parent="#courseContent">
-          <div class="accordion-body py-4 border-top">
-            
-            {% for material in section.materials.all %}
-                {% if material.is_published or request.user == course.instructor %}
-                    <a href="{% url 'course-player-material' course.uuid material.id %}" 
-                       class="course-item {% if active_type == 'material' and active_item.id == material.id %}active{% endif %}">
-                        
-                        <div class="me-3 pt-1">
-                            <input class="form-check-input" type="checkbox" {% if material.id in completed_material_ids %}checked{% endif %} disabled />
-                        </div>
-                        <div class="w-100">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="d-flex align-items-center">
-                                    <span class="text-wrap lh-sm">{{ material.title }}</span>
-                                </div>
-                                {% if not material.is_published %}
-                                    <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
-                                {% endif %}
-                            </div>
-                            <small class="d-block mt-1 ms-5 opacity-75" style="font-size: 0.75rem;">
-                                {{ material.get_duration_display }}
-                            </small>
-                        </div>
-                    </a>
-                {% else %}
-                    <div class="course-item locked">
-                        <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
-                        <div class="w-100">
-                            <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ material.title }}</span></div>
-                            <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum tersedia</small>
-                        </div>
-                    </div>
-                {% endif %}
-            {% endfor %}
-            {% if section.media_items.all %}
-                 {% if section.materials.all %}<div class="divider"><div class="divider-text">MEDIA ASSETS</div></div>{% endif %}
-                 
-                 {% for item in section.media_items.all %}
-                    <a href="{% if item.media_file.file %}{{ item.media_file.file.url }}{% elif item.media_file.video_url %}{{ item.media_file.video_url }}{% else %}#{% endif %}" target="_blank" class="course-item">
-                        <div class="me-3 pt-1 text-center" style="width: 1.2em;">
-                            {% if item.media_file.file_type == 'pdf' %}
-                              <i class="ri-file-pdf-line text-danger ri-lg"></i>
-                            {% elif item.media_file.file_type == 'docx' %}
-                              <i class="ri-file-word-line text-primary ri-lg"></i>
-                            {% elif item.media_file.file_type == 'pptx' %}
-                              <i class="ri-file-ppt-line text-warning ri-lg"></i>
-                            {% elif item.media_file.file_type == 'video_url' %}
-                              <i class="ri-youtube-line text-danger ri-lg"></i>
-                            {% elif item.media_file.file_type == 'image' %}
-                              <i class="ri-image-line text-success ri-lg"></i>
-                            {% else %}
-                              <i class="ri-file-line text-secondary ri-lg"></i>
-                            {% endif %}
-                        </div>
-                        <div class="w-100">
-                            <div class="d-flex align-items-center">
-                                <span class="text-wrap lh-sm">{{ item.media_file.name }}</span>
-                            </div>
-                            <small class="d-block mt-1 opacity-75" style="font-size: 0.75rem;">
-                                {{ item.media_file.file_size_display }}
-                            </small>
-                        </div>
-                    </a>
-                 {% endfor %}
-            {% endif %}
-
-            {% if section.assignments.all %}
-                 {% if section.materials.all or section.media_items.all %}<div class="divider"><div class="divider-text">TUGAS</div></div>{% endif %}
-                 
-                 {% for task in section.assignments.all %}
-                    {% if task.is_published or request.user == course.instructor %}
-                        <a href="{% url 'course-player-assignment' course.uuid task.id %}" 
-                           class="course-item {% if active_type == 'assignment' and active_item.id == task.id %}active{% endif %}">
-                            <div class="me-3 pt-1">
-                                <input class="form-check-input input-warning" type="checkbox" {% if task.id in completed_assignment_ids %}checked{% endif %} disabled />
-                            </div>
-                            <div class="w-100">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="d-flex align-items-center">
-                                        <span class="text-wrap lh-sm">{{ task.title }}</span>
-                                    </div>
-                                    {% if not task.is_published %}
-                                        <span class="badge bg-label-secondary ms-2 px-2" style="font-size: 0.6rem;">DRAFT</span>
-                                    {% endif %}
-                                </div>
-                                <small class="text-danger" style="font-size: 0.75rem;">Deadline: {{ task.due_date|date:"d M" }}</small>
-                            </div>
-                        </a>
-                    {% else %}
-                        <div class="course-item locked">
-                            <div class="me-3 pt-1 text-center" style="width: 1.2em;"><i class="ri-lock-2-fill text-secondary opacity-50"></i></div>
-                            <div class="w-100">
-                                <div class="d-flex align-items-center"><span class="text-wrap lh-sm">{{ task.title }}</span></div>
-                                <small class="d-block mt-1 text-muted fst-italic" style="font-size: 0.75rem;">Belum dibuka</small>
-                            </div>
-                        </div>
-                    {% endif %}
-                 {% endfor %}
-            {% endif %}
-
-            {% if not section.materials.all and not section.assignments.all %}
-                <div class="text-center text-muted fst-italic small">Belum ada konten.</div>
-            {% endif %}
-
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-
-    </div>
+    {% include "course_player_sidebar.html" %}
   </div>
 
   

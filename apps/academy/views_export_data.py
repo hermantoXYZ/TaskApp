@@ -29,26 +29,18 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             .prefetch_related('group_memberships__group')\
             .order_by('mahasiswa__nim')
 
-        agendas = CourseAgenda.objects.filter(course=course).order_by('agenda_date')
-        all_assignments = CourseAssignment.objects.filter(agenda__course=course).order_by('due_date')
+        agendas = CourseAgenda.objects.filter(course=course, is_active=True).order_by('session_number', 'agenda_date')
+        all_assignments = CourseAssignment.objects.filter(agenda__course=course, agenda__is_active=True).order_by('due_date')
         assignments_individu = [t for t in all_assignments if t.assignment_type != 'group']
         assignments_group = [t for t in all_assignments if t.assignment_type == 'group']
 
         quizzes = CourseQuiz.objects.filter(course=course).order_by('created_at') 
         total_agendas = agendas.count()
         POINTS_MAP = {'present': 100, 'late': 75, 'sick': 60, 'excused': 50, 'absent': 0, '-': 0}
-        all_attendances = CourseAttendance.objects.filter(agenda__course=course)
+        all_attendances = CourseAttendance.objects.filter(agenda__course=course, agenda__is_active=True)
         attendance_map = {(att.participant_id, att.agenda_id): att.status for att in all_attendances}
-        all_submissions = StudentAssignmentSubmission.objects.filter(assignment__agenda__course=course)
+        all_submissions = StudentAssignmentSubmission.objects.filter(assignment__agenda__course=course, assignment__agenda__is_active=True)
         submission_map = {(sub.assignment.id, sub.student.nim): sub for sub in all_submissions}
-        WEIGHTS = {
-            'attendance': 15, # 15%
-            'task_ind': 20,   # 20%
-            'task_grp': 15,   # 15%
-            'quiz': 25,       # 25% (Kuis Harian)
-            'exam': 25        # 25% (Ujian/UTS/UAS digabung)
-        }
-
         rekap_data = [] 
 
         for p in participants:
@@ -64,10 +56,9 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             if total_agendas > 0:
                 max_possible_points = total_agendas * 100
                 attendance_score = round((current_total_points / max_possible_points) * 100, 1)
+
             def get_grades_list(task_list, student_obj):
                 grades_result = []
-                total_score = 0
-                count_graded = 0 
                 for task in task_list:
                     sub = submission_map.get((task.id, student_obj.nim))
                     
@@ -85,7 +76,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                         if sub.score is not None:
                             score = sub.score
                             status = 'graded'
-                            count_graded += 1
                         else:
                             status = 'submitted'
                     
@@ -97,37 +87,17 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                         'link': sub_link,
                         'time': sub_time
                     })
-                    if status == 'graded':
-                        total_score += score
                 
-                avg_val = 0
-                if len(task_list) > 0:
-                    avg_val = total_score / len(task_list)
-                
-                return grades_result, avg_val
-            grades_individu, avg_tugas_ind = get_grades_list(assignments_individu, p.mahasiswa)
-            grades_group, avg_tugas_grp = get_grades_list(assignments_group, p.mahasiswa)
+                return grades_result
+
+            grades_individu = get_grades_list(assignments_individu, p.mahasiswa)
+            grades_group = get_grades_list(assignments_group, p.mahasiswa)
 
             student_quiz_grades = []
-            
-            val_quiz_total = 0
-            count_quiz = 0
-            val_exam_total = 0
-            count_exam = 0
-
             for quiz in quizzes:
                 attempt = StudentQuizAttempt.objects.filter(
                     quiz=quiz, participant=p, finished_at__isnull=False
                 ).order_by('-total_score').first()
-                
-                score_val = attempt.total_score if attempt else 0
-                
-                if quiz.quiz_type == 'exam':
-                    val_exam_total += score_val
-                    count_exam += 1
-                else:
-                    val_quiz_total += score_val
-                    count_quiz += 1
 
                 student_quiz_grades.append({
                     'id': quiz.id,
@@ -135,32 +105,12 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                     'is_finished': True if attempt else False
                 })
 
-            avg_quiz = 0
-            if count_quiz > 0:
-                avg_quiz = val_quiz_total / count_quiz
-
-            # Hitung Rata-rata Ujian
-            avg_exam = 0
-            if count_exam > 0:
-                avg_exam = val_exam_total / count_exam
-
-            final_avg = (
-                (float(attendance_score) * (WEIGHTS['attendance'] / 100)) +
-                (float(avg_tugas_ind) * (WEIGHTS['task_ind'] / 100)) +
-                (float(avg_tugas_grp) * (WEIGHTS['task_grp'] / 100)) +
-                (float(avg_quiz) * (WEIGHTS['quiz'] / 100)) +
-                (float(avg_exam) * (WEIGHTS['exam'] / 100))
-            )
-
-            final_avg = round(final_avg, 2)
-
             rekap_data.append({
                 'participant': p,
                 'agenda_statuses': student_agenda_statuses,
                 'attendance_score': attendance_score, 
                 'grades_individu': grades_individu, 
                 'grades_group': grades_group,
-                'final_avg': final_avg,
                 'quiz_grades': student_quiz_grades,
             })
 
@@ -176,7 +126,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             quizzes=quizzes,
             rekap_data=rekap_data, 
             total_agendas=total_agendas,
-            weights=WEIGHTS 
         ))
 
     def export_to_excel(self, request, course, agendas, assignments_ind, assignments_grp, quizzes, data):
@@ -201,7 +150,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         
         # Absensi
         for i, ag in enumerate(agendas):
-            headers.append(f"P-{i+1}")
+            headers.append(f"P-{ag.session_number if ag.session_number is not None else i+1}")
         headers.append("Skor Absen")
 
         # Tugas Individu
@@ -218,7 +167,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
         for i, quiz in enumerate(quizzes):
             q_type = getattr(quiz, 'quiz_type', 'Quiz')
             headers.append(str(q_type).upper())
-        headers.append("Rata-rata Nilai")
 
         ws.append(headers)
 
@@ -256,6 +204,7 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             first_assignment = ag.assignments.filter(is_published=True).order_by('due_date').first()
 
             relative_path = ""
+            p_label = f"P-{ag.session_number if ag.session_number is not None else i+1}"
 
             try:
                 if first_material:
@@ -280,10 +229,10 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
                 # Set Hyperlink di Excel
                 cell.hyperlink = full_link
                 cell.font = link_font  
-                cell.value = f"P-{i+1}" 
+                cell.value = p_label 
                 
             except Exception as e:
-                cell.value = f"P-{i+1}"
+                cell.value = p_label
 
 
         # --- ISI DATA ---
@@ -318,7 +267,6 @@ class CourseRecapitulationView(DosenRequiredMixin, AcademyView):
             for q_grade in item['quiz_grades']:
                 row.append(q_grade['score'] or 0)
 
-            row.append(item['final_avg'])
             ws.append(row)
             
             # --- HYPERLINK LINK TUGAS ---
