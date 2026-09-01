@@ -575,14 +575,14 @@ class CalendarEventListCreateView(LoginRequiredMixin, View):
         if hasattr(request.user, 'usermhs'):
             course_agendas = CourseAgenda.objects.filter(
                 course__participants__mahasiswa__nim=request.user,
-                agenda_date__isnull=False
+                agenda_date__isnull=False, is_active=True
             ).distinct()
         elif hasattr(request.user, 'userdosen'):
             course_agendas = CourseAgenda.objects.filter(
                 Q(course__coaches__nip=request.user) |
                 Q(lecturer__nip=request.user) |
                 Q(created_by__nip=request.user),
-                agenda_date__isnull=False
+                agenda_date__isnull=False, is_active=True
             ).distinct()
 
         from django.utils import timezone
