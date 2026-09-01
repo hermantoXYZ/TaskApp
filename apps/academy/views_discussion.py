@@ -303,11 +303,11 @@ def _build_activity_feed(request, course, is_dosen, filter_type=''):
             for item in agenda.media_items.select_related('media_file').all():
                 mf = item.media_file
                 media_items.append({
-                    'name':       mf.name,
-                    'file_type':  mf.file_type,
-                    'file_url':   mf.file.url if mf.file else None,
-                    'video_url':  mf.video_url or None,
-                    'size':       mf.file_size_display,
+                    'name': mf.name if mf else '',
+                    'file_type':  mf.file_type if mf else '',
+                    'file_url':   mf.file.url if mf and mf.file else None,
+                    'video_url':  mf.video_url or None if mf else None,
+                    'size':       mf.file_size_display if mf else None,
                 })
 
             feed_items.append({

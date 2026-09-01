@@ -169,8 +169,14 @@ def loginView(request):
         user = authenticate(request, username=username_in, password=password_in)        
         if user is not None:
             login(request, user)
-            print(user)
             messages.success(request, 'Selamat Datang!')
+            
+            PASSWORD_SISTEM = 'mahasiswa'
+            if password_in == PASSWORD_SISTEM:
+                request.session['must_change_password'] = True
+            else:
+                request.session['must_change_password'] = False
+
             if user.is_superuser:
                 request.session['su'] = '557799'
             else:

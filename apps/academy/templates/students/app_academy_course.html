@@ -28,6 +28,7 @@
 {% endblock page_js %}
 
 {% block content %}
+
 <div class="app-academy">
   <div class="card mb-6">
     <div class="card-header d-flex flex-wrap justify-content-between gap-4">
@@ -144,44 +145,64 @@
     </div>
   </div>
 
-  <!-- <div class="row gy-4 mb-6">
-    <div class="col-lg-6">
-      <div class="card shadow-none bg-label-info h-100">
-        <div class="card-body d-flex justify-content-between flex-wrap-reverse">
-          <div class="mb-0 w-100 app-academy-sm-60 d-flex flex-column justify-content-between text-center text-sm-start">
-            <div class="card-title">
-              <h5 class="text-info mb-2">Panduan </h5>
-              <p class="text-heading w-sm-80 app-academy-xl-100">
-                Unduh panduan akademik dan peraturan kemahasiswaan terbaru disini.
-              </p>
+
+{% if request.session.must_change_password %}
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="mb-4">
+                    <span class="avatar avatar-xl rounded-circle bg-label-warning">
+                        <span class="avatar-initial">
+                            <i class="ri-lock-password-line ri-32px"></i>
+                        </span>
+                    </span>
+                </div>
+                <h5 class="mb-2">
+                    Anda Masih Menggunakan Password Sistem
+                </h5>
+                <p class="text-muted mb-4">
+                    Demi keamanan akun, tugas dan aktivitas anda, silahkan ganti password sistem
+                    dengan password baru yang lebih aman.
+                </p>
+                <div class="alert alert-warning text-start">
+                    <i class="ri-information-line me-2"></i>
+                    Jangan gunakan password sistem untuk aktivitas
+                    selanjutnya.
+                </div>
             </div>
-            <div class="mb-0"><button class="btn btn-sm btn-info">Lihat Panduan</button></div>
-          </div>
-          <div class="w-100 app-academy-sm-40 d-flex justify-content-center justify-content-sm-end h-px-150 mb-4 mb-sm-0">
-            <img class="img-fluid scaleX-n1-rtl" src="{% static 'img/illustrations/boy-app-academy.png' %}" alt="boy illustration" />
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card shadow-none bg-label-danger h-100">
-        <div class="card-body d-flex justify-content-between flex-wrap-reverse">
-          <div class="mb-0 w-100 app-academy-sm-60 d-flex flex-column justify-content-between text-center text-sm-start">
-            <div class="card-title">
-              <h5 class="text-danger mb-2">Jadwal Agenda</h5>
-              <p class="text-heading app-academy-sm-60 app-academy-xl-100">
-                Cek jadwal ujian tengah semester dan akhir semester Anda.
-              </p>
+            <div class="modal-footer justify-content-center">
+                <button type="button"
+                        class="btn btn-label-secondary"
+                        data-bs-dismiss="modal">
+                    Nanti
+                </button>
+                <a href="{% url 'password_change' %}"
+                   class="btn btn-warning">
+                    <i class="ri-lock-password-line me-1"></i>
+                    Ganti Password
+                </a>
+
             </div>
-            <div class="mb-0"><button class="btn btn-sm btn-danger">Lihat Jadwal</button></div>
-          </div>
-          <div class="w-100 app-academy-sm-40 d-flex justify-content-center justify-content-sm-end h-px-150 mb-4 mb-sm-0">
-            <img class="img-fluid scaleX-n1-rtl" src="{% static 'img/illustrations/girl-app-academy.png' %}" alt="girl illustration" />
-          </div>
+
         </div>
-      </div>
     </div>
-  </div> -->
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalElement = document.getElementById('changePasswordModal');
+    if (modalElement) {
+        const changePasswordModal =
+            new bootstrap.Modal(modalElement, {
+                backdrop: 'static',
+                keyboard: false
+            });
+        changePasswordModal.show();
+    }
+});
+</script>
+
+{% endif %}
 
   
 </div>
