@@ -200,6 +200,14 @@
       </a>
     </li>
 
+    <li class="menu-item {% if request.resolver_match.url_name == 'change-role' %}active{% endif %}">
+      <a href="{% url 'change-role' %}" class="menu-link">
+        <i class="menu-icon tf-icons ri-user-shared-2-line"></i>
+        <div>Change Role</div>
+        <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">Admin</div>
+      </a>
+    </li>
+
     {% endif %}
 
 

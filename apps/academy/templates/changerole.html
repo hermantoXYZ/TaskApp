@@ -1,0 +1,454 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Change Role - {{ web_name }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<style>
+  .role-card {
+    transition: all 0.25s ease-in-out;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+  }
+  .role-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--bs-primary);
+  }
+  .choices__inner {
+    background-color: var(--bs-body-bg) !important;
+    border: 1px solid var(--bs-border-color) !important;
+    border-radius: 0.375rem !important;
+    min-height: 48px;
+    padding: 0.35rem 0.75rem;
+  }
+  .choices__input {
+    background-color: transparent !important;
+    color: var(--bs-body-color) !important;
+  }
+  .choices__list--dropdown {
+    background-color: var(--bs-body-bg) !important;
+    border: 1px solid var(--bs-border-color) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    z-index: 1050 !important;
+  }
+  .choices__list--dropdown .choices__item--selectable {
+    color: var(--bs-body-color) !important;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+  }
+  .choices__list--dropdown .choices__item--selectable.is-highlighted {
+    background-color: var(--bs-primary) !important;
+    color: #fff !important;
+  }
+  .user-badge-role {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+  }
+  .avatar-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-weight: 600;
+  }
+</style>
+{% endblock vendor_css %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+  
+  {# ── Header Title & Breadcrumb ── #}
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-label-danger text-uppercase fw-bold px-2 py-1">
+          <i class="ri-shield-keyhole-line me-1"></i> Superuser Privilege
+        </span>
+        {% if is_impersonating %}
+          <span class="badge bg-warning text-dark fw-bold px-2 py-1">
+            <i class="ri-user-shared-line me-1"></i> Impersonation Active
+          </span>
+        {% endif %}
+      </div>
+      <h4 class="fw-bold mb-0">Change Role / Switch User</h4>
+      <p class="text-muted mb-0">Beralih peran secara instan ke Dosen, Mahasiswa, atau Admin Prodi untuk keperluan testing dan asistensi.</p>
+    </div>
+    
+    {% if is_impersonating %}
+      <div>
+        <a href="{% url 'revert-role' %}" class="btn btn-danger shadow-sm">
+          <i class="ri-arrow-go-back-line me-1"></i> Kembali ke Superuser
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Alert Messages ── #}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-none" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="ri-information-line ri-20px me-2"></i>
+          <div>{{ message }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {# ── Impersonation Notice Banner ── #}
+  {% if is_impersonating %}
+    <div class="card shadow-none border bg-label-warning mb-4">
+      <div class="card-body py-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avatar avatar-md bg-warning text-white rounded-circle d-flex align-items-center justify-content-center">
+            <i class="ri-spy-line ri-24px"></i>
+          </div>
+          <div>
+            <h6 class="mb-0 text-warning-emphasis fw-bold">Saat ini Anda sedang menyamar sebagai:</h6>
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+              <span class="fw-semibold text-dark">{{ request.user.first_name|default:request.user.username }}</span>
+              <span class="badge bg-dark">{{ impersonated_target_role }}</span>
+              <span class="text-muted small">(Username: <code>{{ request.user.username }}</code>)</span>
+              <span class="text-muted small ms-md-2">• Akun Asli: <strong>{{ original_admin_name }}</strong></span>
+            </div>
+          </div>
+        </div>
+        <a href="{% url 'revert-role' %}" class="btn btn-warning btn-sm text-dark fw-bold px-3">
+          <i class="ri-logout-box-r-line me-1"></i> Pulihkan Akun Admin
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ── Stat Overview Cards ── #}
+  <div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-4">
+      <div class="card shadow-none border">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div>
+            <p class="mb-0 text-muted small fw-medium">Role Tersedia</p>
+            <h4 class="mb-0 fw-bold">{{ total_dosen }} <span class="fs-6 fw-normal text-muted">Dosen</span></h4>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+      <div class="card shadow-none border">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div>
+            <p class="mb-0 text-muted small fw-medium">Role Tersedia</p>
+            <h4 class="mb-0 fw-bold">{{ total_mhs }} <span class="fs-6 fw-normal text-muted">Mahasiswa</span></h4>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+      <div class="card shadow-none border">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div>
+            <p class="mb-0 text-muted small fw-medium">Role Tersedia</p>
+            <h4 class="mb-0 fw-bold">{{ total_prodi }} <span class="fs-6 fw-normal text-muted">Admin Prodi</span></h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Main Switch Role Section ── #}
+  <div class="card shadow-none border mb-4">
+    <div class="card-header border-bottom py-3">
+      <ul class="nav nav-pills card-header-pills" id="roleTabs" role="tablist">
+        <li class="nav-item">
+          <button class="nav-link active d-flex align-items-center gap-2" id="quick-tab" data-bs-toggle="tab" data-bs-target="#quick-panel" type="button" role="tab">
+            <i class="ri-flashlight-line"></i> Quick Switch
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link d-flex align-items-center gap-2" id="dosen-tab" data-bs-toggle="tab" data-bs-target="#dosen-panel" type="button" role="tab">
+            <i class="ri-user-star-line"></i> Dosen ({{ total_dosen }})
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link d-flex align-items-center gap-2" id="mhs-tab" data-bs-toggle="tab" data-bs-target="#mhs-panel" type="button" role="tab">
+            <i class="ri-graduation-cap-line"></i> Mahasiswa ({{ total_mhs }})
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link d-flex align-items-center gap-2" id="prodi-tab" data-bs-toggle="tab" data-bs-target="#prodi-panel" type="button" role="tab">
+            <i class="ri-building-line"></i> Admin Prodi ({{ total_prodi }})
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body p-4">
+      <div class="tab-content p-0" id="roleTabsContent">
+
+        {# ── TAB 1: QUICK SWITCH (SEMUA ROLE) ── #}
+        <div class="tab-pane fade show active" id="quick-panel" role="tabpanel">
+          <div class="row justify-content-center py-3">
+
+              <form method="POST" action="{% url 'change-role' %}" class="layanan-form-role">
+                {% csrf_token %}
+                <div class="mb-4">
+                  <label for="id_user_target_quick" class="form-label fw-semibold">Pilih Pengguna Tujuan (Ketik untuk mencari):</label>
+                  <select name="user_target" id="id_user_target_quick" class="form-select" required>
+                    <option value="">-- Cari Nama, NIP, NIM, atau Prodi --</option>
+                    <optgroup label="🎓 Dosen">
+                      {% for d in dosen_list %}
+                        <option value="{{ d.nip.username }}">
+                          {{ d.nip.first_name|default:d.nip.username }} ({{ d.nip.username }}) - Dosen {% if d.prodi %}[{{ d.prodi.nama_prodi }}]{% endif %}
+                        </option>
+                      {% endfor %}
+                    </optgroup>
+                    <optgroup label="👨‍🎓 Mahasiswa">
+                      {% for m in mhs_list %}
+                        <option value="{{ m.nim.username }}">
+                          {{ m.nim.first_name|default:m.nim.username }} ({{ m.nim.username }}) - Mahasiswa {% if m.prodi %}[{{ m.prodi.nama_prodi }}]{% endif %}
+                        </option>
+                      {% endfor %}
+                    </optgroup>
+                    <optgroup label="🏢 Admin Prodi">
+                      {% for p in prodi_list %}
+                        <option value="{{ p.username.username }}">
+                          {{ p.username.first_name|default:p.username.username }} ({{ p.username.username }}) - Admin Prodi {% if p.prodi %}[{{ p.prodi.nama_prodi }}]{% endif %}
+                        </option>
+                      {% endfor %}
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="ri-login-box-line me-2"></i> Beralih ke Pengguna Terpilih
+                  </button>
+                </div>
+              </form>
+
+          </div>
+        </div>
+
+        {# ── TAB 2: DOSEN ── #}
+        <div class="tab-pane fade" id="dosen-panel" role="tabpanel">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+            <div>
+              <h5 class="fw-bold mb-0">Daftar Pengguna Dosen</h5>
+              <small class="text-muted">Pilih dosen yang ingin Anda impersonate</small>
+            </div>
+            <div class="w-auto">
+              <input type="text" id="searchDosenInput" class="form-control form-control-sm" placeholder="Filter Dosen...">
+            </div>
+          </div>
+
+          <div class="row g-3" id="dosenListContainer">
+            {% for d in dosen_list %}
+              <div class="col-md-6 col-lg-4 dosen-item-card" data-search="{{ d.nip.first_name|lower }} {{ d.nip.username|lower }} {{ d.prodi.nama_prodi|default:''|lower }}">
+                <div class="card role-card h-100 p-3 shadow-none border">
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="avatar avatar-md flex-shrink-0">
+                      {% if d.photo %}
+                        <img src="{{ d.photo.url }}" alt="{{ d.nip.first_name }}" class="rounded-circle object-fit-cover w-100 h-100">
+                      {% else %}
+                        <span class="avatar-initial rounded-circle bg-label-primary avatar-text">
+                          {{ d.nip.first_name|slice:":2"|upper|default:"DS" }}
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                      <h6 class="mb-1 text-truncate fw-semibold">{{ d.nip.first_name|default:d.nip.username }}</h6>
+                      <span class="badge bg-label-primary user-badge-role text-truncate d-inline-block max-w-100">
+                        {{ d.prodi.nama_prodi|default:"Dosen Akademik" }}
+                      </span>
+                    </div>
+                  </div>
+                  <form method="POST" action="{% url 'change-role' %}" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_target" value="{{ d.nip.username }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                      <i class="ri-user-follow-line me-1"></i> Masuk sebagai Dosen
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% empty %}
+              <div class="col-12 text-center py-5 text-muted">
+                <i class="ri-user-unfollow-line ri-48px mb-2"></i>
+                <p>Belum ada data Dosen yang terdaftar.</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# ── TAB 3: MAHASISWA ── #}
+        <div class="tab-pane fade" id="mhs-panel" role="tabpanel">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+            <div>
+              <h5 class="fw-bold mb-0">Daftar Pengguna Mahasiswa</h5>
+              <small class="text-muted">Pilih mahasiswa yang ingin Anda impersonate</small>
+            </div>
+            <div class="w-auto">
+              <input type="text" id="searchMhsInput" class="form-control form-control-sm" placeholder="Filter Mahasiswa...">
+            </div>
+          </div>
+
+          <div class="row g-3" id="mhsListContainer">
+            {% for m in mhs_list %}
+              <div class="col-md-6 col-lg-4 mhs-item-card" data-search="{{ m.nim.first_name|lower }} {{ m.nim.username|lower }} {{ m.prodi.nama_prodi|default:''|lower }}">
+                <div class="card role-card h-100 p-3 shadow-none border">
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="avatar avatar-md flex-shrink-0">
+                      {% if m.photo %}
+                        <img src="{{ m.photo.url }}" alt="{{ m.nim.first_name }}" class="rounded-circle object-fit-cover w-100 h-100">
+                      {% else %}
+                        <span class="avatar-initial rounded-circle bg-label-success avatar-text">
+                          {{ m.nim.first_name|slice:":2"|upper|default:"MH" }}
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                      <h6 class="mb-1 text-truncate fw-semibold">{{ m.nim.first_name|default:m.nim.username }}</h6>
+                      <span class="badge bg-label-success user-badge-role text-truncate d-inline-block max-w-100">
+                        {{ m.prodi.nama_prodi|default:"Mahasiswa" }}
+                      </span>
+                    </div>
+                  </div>
+                  <form method="POST" action="{% url 'change-role' %}" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_target" value="{{ m.nim.username }}">
+                    <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                      <i class="ri-user-follow-line me-1"></i> Masuk sebagai Mahasiswa
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% empty %}
+              <div class="col-12 text-center py-5 text-muted">
+                <i class="ri-user-unfollow-line ri-48px mb-2"></i>
+                <p>Belum ada data Mahasiswa yang terdaftar.</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# ── TAB 4: ADMIN PRODI ── #}
+        <div class="tab-pane fade" id="prodi-panel" role="tabpanel">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+            <div>
+              <h5 class="fw-bold mb-0">Daftar Pengguna Admin Prodi</h5>
+              <small class="text-muted">Pilih Admin Program Studi yang ingin Anda impersonate</small>
+            </div>
+            <div class="w-auto">
+              <input type="text" id="searchProdiInput" class="form-control form-control-sm" placeholder="Filter Admin Prodi...">
+            </div>
+          </div>
+
+          <div class="row g-3" id="prodiListContainer">
+            {% for p in prodi_list %}
+              <div class="col-md-6 col-lg-4 prodi-item-card" data-search="{{ p.username.first_name|lower }} {{ p.username.username|lower }} {{ p.prodi.nama_prodi|default:''|lower }}">
+                <div class="card role-card h-100 p-3 shadow-none border">
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="avatar avatar-md flex-shrink-0">
+                      <span class="avatar-initial rounded-circle bg-label-info avatar-text">
+                        {{ p.username.first_name|slice:":2"|upper|default:"AP" }}
+                      </span>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                      <h6 class="mb-1 text-truncate fw-semibold">{{ p.username.first_name|default:p.username.username }}</h6>
+                      <div class="text-muted small mb-1">User: <code>{{ p.username.username }}</code></div>
+                      <span class="badge bg-label-info user-badge-role text-truncate d-inline-block max-w-100">
+                        {{ p.prodi.nama_prodi|default:"Admin Prodi" }}
+                      </span>
+                    </div>
+                  </div>
+                  <form method="POST" action="{% url 'change-role' %}" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_target" value="{{ p.username.username }}">
+                    <button type="submit" class="btn btn-outline-info btn-sm w-100">
+                      <i class="ri-user-follow-line me-1"></i> Masuk sebagai Admin Prodi
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% empty %}
+              <div class="col-12 text-center py-5 text-muted">
+                <i class="ri-user-unfollow-line ri-48px mb-2"></i>
+                <p>Belum ada data Admin Prodi yang terdaftar.</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 1. Inisialisasi Choices.js pada Quick Select
+    var quickSelect = document.getElementById('id_user_target_quick');
+    if (quickSelect) {
+      new Choices(quickSelect, {
+        searchEnabled: true,
+        itemSelectText: '',
+        shouldSort: false,
+        removeItemButton: false,
+        searchResultLimit: 25,
+        searchFields: ['label', 'value'],
+        position: 'bottom',
+        searchPlaceholderValue: 'Ketik nama / NIP / NIM / Prodi...',
+        noResultsText: 'Tidak ditemukan user yang cocok',
+        noChoicesText: 'Tidak ada pilihan user',
+      });
+    }
+
+    // 2. Filter Realtime untuk Tab Dosen
+    var searchDosen = document.getElementById('searchDosenInput');
+    if (searchDosen) {
+      searchDosen.addEventListener('input', function (e) {
+        var query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('.dosen-item-card').forEach(function (card) {
+          var text = card.getAttribute('data-search') || '';
+          card.style.display = text.includes(query) ? '' : 'none';
+        });
+      });
+    }
+
+    // 3. Filter Realtime untuk Tab Mahasiswa
+    var searchMhs = document.getElementById('searchMhsInput');
+    if (searchMhs) {
+      searchMhs.addEventListener('input', function (e) {
+        var query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('.mhs-item-card').forEach(function (card) {
+          var text = card.getAttribute('data-search') || '';
+          card.style.display = text.includes(query) ? '' : 'none';
+        });
+      });
+    }
+
+    // 4. Filter Realtime untuk Tab Admin Prodi
+    var searchProdi = document.getElementById('searchProdiInput');
+    if (searchProdi) {
+      searchProdi.addEventListener('input', function (e) {
+        var query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('.prodi-item-card').forEach(function (card) {
+          var text = card.getAttribute('data-search') || '';
+          card.style.display = text.includes(query) ? '' : 'none';
+        });
+      });
+    }
+  });
+</script>
+{% endblock page_js %}

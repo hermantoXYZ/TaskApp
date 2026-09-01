@@ -312,3 +312,57 @@ class StudentPortfolioForm(forms.ModelForm):
             'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'thumbnail': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
+
+
+class ChangeRoleForm(forms.Form):
+    ROLE_CHOICES = [
+        ('all', 'Semua Role'),
+        ('dosen', 'Dosen'),
+        ('mahasiswa', 'Mahasiswa'),
+        ('prodi', 'Admin Prodi'),
+    ]
+    role_type = forms.ChoiceField(
+        choices=ROLE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_role_type'}),
+        label='Filter Role'
+    )
+    user_target = forms.ChoiceField(
+        choices=[],
+        widget=forms.Select(attrs={'class': 'form-select select2', 'id': 'id_user_target'}),
+        label='Pilih Target User'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import UserProdi
+        flat_choices = [('', '-- Pilih User Tujuan --')]
+
+        # Dosen
+        dosen_users = UserDosen.objects.select_related('nip', 'prodi').all().order_by('nip__first_name')
+        dosen_choices = [
+            (d.nip.username, f"{d.nip.first_name or d.nip.username} ({d.nip.username}) - Dosen {f'[{d.prodi.nama_prodi}]' if d.prodi else ''}")
+            for d in dosen_users if d.nip
+        ]
+        if dosen_choices:
+            flat_choices.append(('Dosen', tuple(dosen_choices)))
+
+        # Mahasiswa
+        mhs_users = UserMhs.objects.select_related('nim', 'prodi').all().order_by('nim__first_name')
+        mhs_choices = [
+            (m.nim.username, f"{m.nim.first_name or m.nim.username} ({m.nim.username}) - Mahasiswa {f'[{m.prodi.nama_prodi}]' if m.prodi else ''}")
+            for m in mhs_users if m.nim
+        ]
+        if mhs_choices:
+            flat_choices.append(('Mahasiswa', tuple(mhs_choices)))
+
+        # Admin Prodi
+        prodi_users = UserProdi.objects.select_related('username', 'prodi').all().order_by('username__first_name')
+        prodi_choices = [
+            (p.username.username, f"{p.username.first_name or p.username.username} ({p.username.username}) - Admin Prodi {f'[{p.prodi.nama_prodi}]' if p.prodi else ''}")
+            for p in prodi_users if p.username
+        ]
+        if prodi_choices:
+            flat_choices.append(('Admin Prodi', tuple(prodi_choices)))
+
+        self.fields['user_target'].choices = flat_choices

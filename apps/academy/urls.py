@@ -70,13 +70,12 @@ urlpatterns = [
     path('course/<uuid:course_uuid>/preview/public/', CoursePreviewPublicView.as_view(), name='course-preview-public'),   
     path('course/<uuid:course_uuid>/preview/public/material/<int:material_id>/', CoursePreviewPublicView.as_view(), name='course-preview-public-material'),
     path('course/<uuid:course_uuid>/preview/public/assignment/<int:assignment_id>/', CoursePreviewPublicView.as_view(), name='course-preview-public-assignment'), 
-
-    # path('course/submission/<int:submission_id>/update-grade/', views.update_grade_submission, name='update-grade-submission'),
-    # # user
     path('profile/mahasiswa', UserProfileView.as_view(), name='profile'),
     path('dosen/profile/', DosenProfileView.as_view(), name='dosen-profile'),
     path('login/', views.loginView, name='login'),
     path("logout/",LogoutView.as_view(),name="logout",),
+    path('change-role/', views.ChangeRoleView.as_view(), name='change-role'),
+    path('change-role/revert/', views.RevertRoleView.as_view(), name='revert-role'),
     path("app/user/listss/", UserListView.as_view(), name="app-user-lists"),
     path("app/user/<str:id>/reset-password/", reset_password, name="app-user-reset-password"),
     path("reports/lps/",LecturerPerformanceView.as_view(),name="lps-report"),

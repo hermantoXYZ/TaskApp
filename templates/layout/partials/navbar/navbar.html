@@ -89,6 +89,17 @@
           </li>
           <!-- / Style Switcher-->
           {% endif %}
+
+          {% if request.session.impersonate_admin_id %}
+          <!-- Active Impersonation Revert Button -->
+          <li class="nav-item me-2">
+            <a href="{% url 'revert-role' %}" class="btn btn-xs btn-label-warning d-flex align-items-center gap-1 py-1 px-2 text-warning-emphasis fw-bold" title="Kembali ke Superuser ({{ request.session.original_admin_name }})">
+              <i class="ri-spy-line ri-18px"></i>
+              <span class="d-none d-md-inline">Role: {{ request.session.impersonated_target_role|default:"User" }} (Revert)</span>
+            </a>
+          </li>
+          {% endif %}
+
           <!-- Notification -->
           <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-4 me-xl-1">
             <a class="nav-link btn btn-text-secondary rounded-pill btn-icon dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
@@ -343,37 +354,30 @@
                 </a>
               </li>
               {% endif %}
+
+              {% if user.is_superuser or request.session.su == '557799' or request.session.impersonate_admin_id %}
               <li>
-                <a class="dropdown-item" href="/">
-                  <i class="ri-settings-4-line ri-22px me-2"></i>
-                  <span class="align-middle">Settings</span>
+                <a class="dropdown-item text-primary" href="{% url 'change-role' %}">
+                  <i class="ri-user-shared-2-line ri-22px me-2"></i>
+                  <span class="align-middle fw-medium">Change Role</span>
+                  <span class="badge bg-label-primary rounded-pill ms-auto" style="font-size: 0.65rem;">Admin</span>
                 </a>
               </li>
-    
+              {% endif %}
+
+              {% if request.session.impersonate_admin_id %}
+              <li>
+                <a class="dropdown-item text-danger" href="{% url 'revert-role' %}">
+                  <i class="ri-arrow-go-back-line ri-22px me-2"></i>
+                  <span class="align-middle fw-semibold">Kembali ke Superuser</span>
+                </a>
+              </li>
+              {% endif %}    
               <li>
                 <div class="dropdown-divider"></div>
               </li>
               <li>
                 <div class="dropdown-divider my-1"></div>
-              </li>
-              <li>
-                {% if request.user.is_authenticated and request.user.profile.is_verified %}
-                <span class="dropdown-item d-flex justify-content-between align-content-center">
-                  <span>
-                    <i class='ri-user-line ri-22px me-2'></i>
-                    <span class="align-middle">Verified</span>
-                  </span>
-                  <span class="text-success"><i class='ri-checkbox-circle-line ri-22px'></i></span>
-                </span>
-                {% else %}
-                <a class="dropdown-item d-flex justify-content-between align-content-center" href="/">
-                  <span>
-                    <i class='ri-user-line ri-22px me-2'></i>
-                    <span class="align-middle">Not Verified</span>
-                  </span>
-                  <span class="text-danger"><i class='ri-close-circle-line ri-22px'></i></span>
-                </a>
-                {% endif %}
               </li>
               <li>
                 <form action="{% url 'logout' %}" method="post" class="d-grid px-4 pt-2 pb-1">

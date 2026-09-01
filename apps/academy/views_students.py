@@ -191,11 +191,7 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
         else:
             active_item = None
             active_type = None
-
-        # === 2. AMBIL DATA PENDUKUNG LAINNYA ===
         announcements = CourseAnnouncement.objects.filter(course=course).order_by('-is_pinned', '-created_at')
-        
-        # [BARU] Ambil Data Kuis
         quizzes = CourseQuiz.objects.filter(course=course, is_published=True).order_by('start_time')
 
         completed_material_ids = []
