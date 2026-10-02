@@ -203,6 +203,25 @@
                 {% endif %}
               </div>
             </div>
+
+            {# Link Dokumentasi / Bukti Kehadiran #}
+            <div class="col-12">
+              <div class="form-floating form-floating-outline">
+                <input type="url"
+                  name="{{ form.documentation_url.html_name }}"
+                  id="{{ form.documentation_url.id_for_label }}"
+                  value="{{ form.documentation_url.value|default_if_none:'' }}"
+                  class="form-control {% if form.documentation_url.errors %}is-invalid{% endif %}"
+                  placeholder="https://drive.google.com/...">
+                <label for="{{ form.documentation_url.id_for_label }}">
+                 URL Dokumentasi / Bukti Kehadiran
+                </label>
+                {% if form.documentation_url.errors %}
+                  <div class="invalid-feedback">{% for e in form.documentation_url.errors %}{{ e }}{% endfor %}</div>
+                {% endif %}
+                <div class="form-text">Opsional. Isi dengan link foto/dokumentasi kegiatan (Google Drive, Dropbox, dsb.)</div>
+              </div>
+            </div>
           </div>
 
           {# === DOSEN PENGAMPU SESI === #}

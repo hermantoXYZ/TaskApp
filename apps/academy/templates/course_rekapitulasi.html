@@ -176,8 +176,25 @@
         
         <tr>
             {% for ag in agendas %}
-                <th class="small col-absen" title="Sesi {{ ag.session_number|default:forloop.counter }}: {{ ag.title }}{% if ag.agenda_date %} - {{ ag.agenda_date|date:'d M' }}{% endif %}">
-                    P{{ ag.session_number|default:forloop.counter }}
+                <th class="small col-absen"
+                    title="Sesi {{ ag.session_number|default:forloop.counter }}: {{ ag.title }}{% if ag.agenda_date %} | {{ ag.agenda_date|date:'d M Y, H:i' }}{% endif %} | {% if ag.is_online %}Online{% else %}Offline{% endif %}{% if ag.documentation_url %} | Ada dokumentasi{% endif %}">
+                    <div class="d-flex flex-column align-items-center gap-1">
+                        <span>P{{ ag.session_number|default:forloop.counter }}</span>
+                        {% if ag.agenda_date %}
+                            <span style="font-size:0.6rem; font-weight:normal; color:#888;">{{ ag.agenda_date|date:"d/m" }}</span>
+                        {% endif %}
+                        {% if ag.is_online %}
+                            <span class="badge bg-label-info" style="font-size:0.55rem; padding:1px 4px;">Online</span>
+                        {% else %}
+                            <span class="badge bg-label-secondary" style="font-size:0.55rem; padding:1px 4px;">Offline</span>
+                        {% endif %}
+                        {% if ag.documentation_url %}
+                            <a href="{{ ag.documentation_url }}" target="_blank" rel="noopener noreferrer"
+                               title="Lihat dokumentasi sesi ini" style="font-size:0.7rem; line-height:1;">
+                                <i class="ri-image-2-line text-primary"></i>
+                            </a>
+                        {% endif %}
+                    </div>
                 </th>
             {% endfor %}
 

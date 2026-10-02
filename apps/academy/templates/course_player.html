@@ -214,7 +214,7 @@
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-announcement">
                 <i class="tf-icons ri-notification-3-line me-2"></i> <span class="d-none d-sm-block">Info</span>
                 {% if course.announcements.count > 0 %}
-                     <div class="badge bg-warning rounded-pill ms-auto" style="font-size: 0.6rem;">{{ course.announcements.count }}</div>
+                     <div class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">{{ course.announcements.count }}</div>
                 {% endif %}
               </button>
             </li>
@@ -358,47 +358,64 @@
                                     </p>
                                 </div>
                                 {% if active_item.file_instruction %}
-                                    <a href="{{ active_item.file_instruction.url }}" class="btn btn-warning text-white shadow-sm" target="_blank">
+                                    <a href="{{ active_item.file_instruction.url }}" class="btn btn-success text-white" target="_blank">
                                         <i class="ri-download-cloud-2-line me-1"></i> Download File
                                     </a>
                                 {% endif %}
                             </div>
-                        </div>
 
-                        <div class="card-body pt-3">
-                            <div class="course-content-body mb-6">
-                                {{ active_item.description|safe|linebreaks }}
-                                <hr class="my-6">
-                                <h5>Pengumpulan Tugas</h5>
-                                
-                                {% if submission %}
-                                    <div class="alert alert-success d-flex align-items-start" role="alert">
-                                        <div class="w-100">
-                                            <h6 class="alert-heading mb-1">Status: Terkirim</h6>
-                                            <p class="mb-1">
-                                                <small>Waktu: {{ submission.updated_at|date:"d M Y, H:i" }}</small><br>
-                                                {% if submission.submitted_link %}
-                                                    <div class="mt-2 p-2 bg-white rounded border d-inline-block">
-                                                        <i class="ri-link me-1 text-primary"></i>
-                                                        <a href="{{ submission.submitted_link }}" target="_blank" class="fw-bold">{{ submission.submitted_link|truncatechars:30 }}</a>
-                                                    </div>
-                                                {% endif %}
-                                            </p>
-                                            {% if submission.score is not None %}
-                                                <hr>
-                                                <div class="d-flex justify-content-between">
-                                                    <span class="fw-bold text-primary">Nilai: {{ submission.score }}</span>
-                                                    <span class="fst-italic text-muted">{{ submission.feedback|default:"-" }}</span>
+                            {% if submission %}
+                                <div class="py-3">
+
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="ri-checkbox-circle-fill text-success"></i>
+                                        <span class="fw-semibold">Tugas telah dikirim</span>
+                                    </div>
+
+                                    <div class="text-muted small mb-2">
+                                        {{ submission.updated_at|date:"d M Y, H:i" }}
+                                    </div>
+
+                                    {% if submission.submitted_link %}
+                                        <a href="{{ submission.submitted_link }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="small btn btn-sm btn-primary">
+                                            <i class="ri-external-link-line me-1"></i>
+                                            Lihat tugas
+                                        </a>
+                                    {% endif %}
+
+                                    {% if submission.score is not None %}
+                                        <div class="mt-3 pt-3 border-top">
+                                            <span class="fw-semibold">
+                                                Nilai: {{ submission.score }}
+                                            </span>
+
+                                            {% if submission.feedback %}
+                                                <div class="text-muted small mt-1">
+                                                    {{ submission.feedback|linebreaksbr }}
                                                 </div>
-                                            {% else %}
-                                                <div class="text-muted small fst-italic mt-2">Menunggu penilaian.</div>
                                             {% endif %}
                                         </div>
-                                    </div>
-                                {% endif %}
+                                    {% else %}
+                                        <div class="text-muted small mt-3">
+                                            Menunggu penilaian dosen.
+                                        </div>
+                                    {% endif %}
 
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+                        <div class="p-4 rounded border border-1 border-opacity-25 mt-3">
+                            <div class="course-content-body mb-6">
+                                <h4 class="mb-2 fw-bold">Instruksi</h4>
+                                {{ active_item.description|safe|linebreaks }}
+                                <hr class="my-6">
                                 {% if not is_overdue or active_item.allow_late_submission %}
-                                    <div class="card bg-lighter border p-4 mt-3">
+
                                         <form method="post" action="{% url 'course-player-assignment' course.uuid active_item.id %}">
                                             {% csrf_token %}
                                             <div class="mb-3">
@@ -411,9 +428,11 @@
                                             </div>
                                             <button type="submit" class="btn btn-primary">Kirim Tugas</button>
                                         </form>
-                                    </div>
+
                                 {% elif not submission %}
-                                    <div class="alert alert-danger mt-3">Waktu pengumpulan telah habis.</div>
+                                    <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">
+                                        <i class="ri-time-line me-1"></i>Waktu pengumpulan telah habis.
+                                    </small>
                                 {% endif %}
                             </div>
                         </div>
@@ -588,9 +607,8 @@
 
         <div class="tab-pane fade" id="navs-announcement" role="tabpanel">
             <div class="card shadow-none">
-                <div class="card-body">
+                <div class="card-body px-0 pt-0">
                     <div class="d-flex align-items-center justify-content-between mb-4">
-                        <h5 class="mb-0">Papan Pengumuman</h5>
                         <span class="badge bg-label-primary rounded-pill">{{ announcements.count }} Info</span>
                     </div>
 
@@ -633,7 +651,7 @@
                                         </small>
                                     </div>
 
-                                    <div class="bg-lighter rounded p-3 text-body">
+                                    <div class="bg-white rounded p-3 text-body">
                                         {{ info.content|linebreaks }}
                                     </div>
                                 </div>
@@ -658,28 +676,33 @@
 
           <div class="tab-pane fade" id="navs-attendance" role="tabpanel">
             <div class="card shadow-none">
-                <div class="card-body">
+                <div class="card-body px-0 pt-0">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0">Rekap Kehadiran</h5>
+                        <div>
+                                <p class="text-muted mb-0">Rekap Kehadiran</p>
+                        </div>
+                            
                         <span class="badge bg-label-primary">Total Hadir: {{ total_hadir|default:"0" }}</span>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover table-bordered">
+                        <table class="table table-hover table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th>Pertemuan</th>
                                     <th>Tanggal</th>
-                                    <th>Status</th>
+                                    <th class="text-center">Status</th>
                                     <th>Keterangan</th>
-                                    <th>Jam</th>
+                                    <th class="text-center">Jam</th>
+                                    <th class="text-center">GMeet</th>
+                                    <th class="text-center">Attachment</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in attendance_report %}
                                 <tr>
-                                    <td><strong>{{ item.agenda_title|truncatechars:30 }}</strong></td>
-                                    <td>{{ item.agenda_date|date:"d M Y" }}</td>
-                                    <td>
+                                    <td style="white-space: nowrap;"><strong>{{ item.agenda_title|truncatechars:30 }}</strong></td>
+                                    <td class="text-nowrap">{{ item.agenda_date|date:"d M Y" }}</td>
+                                    <td class="text-center">
                                         {% if item.status == 'present' %}<span class="badge bg-success">Hadir</span>
                                         {% elif item.status == 'sick' %}<span class="badge bg-warning">Sakit</span>
                                         {% elif item.status == 'absent' %}<span class="badge bg-danger">Alpa</span>
@@ -688,12 +711,38 @@
                                         {% else %}<span class="badge bg-secondary">Belum Absen</span>{% endif %}
                                     </td>
                                     <td>{{ item.notes|default:"-" }}</td>
-                                    <td>{{ item.created_at|date:"H:i" }}</td>
+                                    <td class="text-center text-nowrap">{{ item.created_at|date:"H:i"|default:"-" }}</td>
+                                    <td class="text-center">
+                                        {% if item.is_online and item.meeting_url %}
+                                            <a href="{{ item.meeting_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info">
+                                                <i class="ri-video-chat-line me-1"></i>Join
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.documentation_url %}
+                                            <a href="{{ item.documentation_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                                                <i class="ri-links-line me-1"></i>Lihat
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="ri-calendar-check-line ri-2x d-block mb-2"></i>
+                                        Belum ada data kehadiran tercatat.
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+
                 </div>
             </div>
           </div>
@@ -929,13 +978,12 @@
 
         <div class="tab-pane fade" id="navs-groups" role="tabpanel">
             <div class="card shadow-none">
-                <div class="card-body">
+                <div class="card-body px-0 pt-0">
                     
                     {% if my_group %}
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div>
-                                <h4 class="mb-1 text-primary">{{ my_group.name }}</h4>
-                                <p class="text-muted mb-0">Daftar anggota tim Anda untuk tugas kolaborasi.</p>
+                                <p class="text-muted mb-0">Daftar anggota tim <strong>{{ my_group.name }}</strong> untuk tugas kolaborasi.</p>
                             </div>
                             <span class="badge bg-label-primary rounded-pill">
                                 {{ group_members.count }} Anggota

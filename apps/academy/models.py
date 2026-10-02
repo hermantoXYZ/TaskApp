@@ -1,5 +1,6 @@
 
 # Create your models here.
+from django.db.models import enums
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
@@ -248,6 +249,7 @@ class CourseAgenda(models.Model):
     location = models.CharField(max_length=255, blank=True)
     is_online = models.BooleanField(default=False)
     meeting_url = models.URLField(blank=True, help_text='Link Zoom/GMeet')
+    documentation_url = models.URLField(blank=True, null=True)
     learning_outcome = models.TextField(blank=True, null=True, help_text="Capaian Pembelajaran")
     teaching_method = models.CharField(max_length=100, blank=True, null=True, help_text="Metode Pengajaran")
     created_by = models.ForeignKey(UserDosen, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_agendas', help_text="Dosen yang membuat agenda")

@@ -277,6 +277,9 @@ class CoursePlayerView(StudentsRequiredMixin, AcademyView):
                 'check_in_time': att_record.check_in_time if att_record else None,
                 'notes': att_record.notes if att_record else None,
                 'created_at': att_record.created_at if att_record else None,
+                'documentation_url': agenda.documentation_url if agenda.documentation_url else None,
+                'meeting_url': agenda.meeting_url if agenda.meeting_url else None,
+                'is_online': agenda.is_online,
             })
 
         is_overdue = False
