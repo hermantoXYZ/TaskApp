@@ -1772,11 +1772,17 @@ class CourseGroupDetailView(DosenRequiredMixin, AcademyView):
     def get(self, request, group_id, *args, **kwargs):
         group = get_object_or_404(CourseGroup, id=group_id)
         assigned_ids = CourseGroupMember.objects.filter(group__course=group.course).values_list('participant_id', flat=True)
-        available_participants = CourseParticipant.objects.filter(course=group.course).exclude(id__in=assigned_ids)
+        available_participants = CourseParticipant.objects.filter(
+            course=group.course
+        ).exclude(
+            id__in=assigned_ids
+        ).select_related(
+            'mahasiswa__nim', 'mahasiswa__prodi'
+        ).order_by('mahasiswa__nim__first_name', 'mahasiswa__nim__username')
 
         return self.render_to_response(self.get_context_data(
             group=group,
-            members=group.members.all().select_related('participant__mahasiswa'),
+            members=group.members.all().select_related('participant__mahasiswa__nim', 'participant__mahasiswa__prodi'),
             available_participants=available_participants
         ))
 
@@ -1785,20 +1791,41 @@ class CourseGroupDetailView(DosenRequiredMixin, AcademyView):
 
         # === TAMBAH ANGGOTA ===
         if 'add_member' in request.POST:
-            participant_id = request.POST.get('participant_id')
-            role = request.POST.get('role', 'member')
-            if participant_id:
-                participant = get_object_or_404(CourseParticipant, id=participant_id)
-                
-                with transaction.atomic():
-                    CourseGroupMember.objects.create(group=group, participant=participant, role=role)
-                    try:
-                        chat_room = ChatRoom.objects.get(group=group)
-                        chat_room.participants.add(participant.mahasiswa.nim)
-                    except ChatRoom.DoesNotExist:
-                        pass 
+            participant_ids = request.POST.getlist('participant_id')
+            if not participant_ids:
+                single_id = request.POST.get('participant_id')
+                if single_id:
+                    participant_ids = [single_id]
 
-                messages.success(request, "Anggota berhasil ditambahkan.")
+            role = request.POST.get('role', 'member')
+            if participant_ids:
+                added_count = 0
+                with transaction.atomic():
+                    for idx, p_id in enumerate(participant_ids):
+                        if not p_id:
+                            continue
+                        participant = get_object_or_404(CourseParticipant, id=p_id)
+                        # Jika role leader tapi dipilih banyak, jadikan yang pertama sebagai leader dan sisanya member
+                        current_role = role if (role != 'leader' or idx == 0) else 'member'
+                        _, created = CourseGroupMember.objects.get_or_create(
+                            group=group, 
+                            participant=participant, 
+                            defaults={'role': current_role}
+                        )
+                        if created:
+                            added_count += 1
+                            try:
+                                chat_room = ChatRoom.objects.get(group=group)
+                                chat_room.participants.add(participant.mahasiswa.nim)
+                            except ChatRoom.DoesNotExist:
+                                pass 
+
+                if added_count > 1:
+                    messages.success(request, f"{added_count} mahasiswa berhasil ditambahkan ke kelompok.")
+                elif added_count == 1:
+                    messages.success(request, "Mahasiswa berhasil ditambahkan ke kelompok.")
+                else:
+                    messages.info(request, "Mahasiswa terpilih sudah menjadi anggota kelompok ini.")
 
         elif 'remove_member' in request.POST:
             member_id = request.POST.get('member_id')

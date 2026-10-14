@@ -3,6 +3,50 @@
 
 {% block title %}{{ group.name }} - Detail Kelompok{% endblock %}
 
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/select2/select2.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_css %}
+<style>
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: rgba(105, 108, 255, 0.16) !important;
+    border-color: transparent !important;
+    color: #696cff !important;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.8125rem;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #696cff !important;
+    margin-right: 4px;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ff3e1d !important;
+}
+.select2-dropdown {
+    border-radius: 0.375rem !important;
+    box-shadow: 0 0.25rem 1rem rgba(161, 172, 184, 0.45) !important;
+    border: 1px solid #d9dee3 !important;
+    z-index: 1055 !important;
+}
+.select2-results__option--highlighted {
+    background-color: rgba(105, 108, 255, 0.08) !important;
+    color: inherit !important;
+}
+.modal-participant-table-wrapper {
+    max-height: 380px;
+    overflow-y: auto;
+}
+</style>
+{% endblock page_css %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -23,13 +67,20 @@
 
 <div class="row g-4">
     
+    <!-- DAFTAR ANGGOTA KELOMPOK -->
     <div class="col-lg-8">
         <div class="card h-100">
-            <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Anggota Kelompok ({{ members.count }})</h5>
+            <div class="card-header border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h5 class="mb-0">Anggota Kelompok (<span id="memberCount">{{ members.count }}</span>)</h5>
+                {% if members %}
+                <div class="input-group input-group-merge input-group-sm" style="max-width: 240px;">
+                    <span class="input-group-text"><i class="ri-search-line"></i></span>
+                    <input type="text" id="memberSearchInput" class="form-control" placeholder="Cari di kelompok...">
+                </div>
+                {% endif %}
             </div>
             <div class="table-responsive text-nowrap">
-                <table class="table table-hover">
+                <table class="table table-hover" id="memberTable">
                     <thead>
                         <tr>
                             <th>Mahasiswa</th>
@@ -40,24 +91,26 @@
                     </thead>
                     <tbody>
                         {% for member in members %}
-                        <tr>
+                        <tr class="member-row">
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="avatar avatar-sm me-2">
                                         <span class="avatar-initial rounded-circle bg-label-primary">
-                                            {{ member.participant.mahasiswa.nim.first_name|slice:":1" }}
+                                            {{ member.participant.mahasiswa.nim.first_name|slice:":1"|upper }}
                                         </span>
                                     </div>
                                     <div class="d-flex flex-column">
-                                        <span class="fw-bold text-heading">{{ member.participant.mahasiswa.nim.first_name }} {{ member.participant.mahasiswa.last_name }}</span>
-                                        <small class="text-muted">{{ member.participant.mahasiswa.prodi.nama_prodi }}</small>
+                                        <span class="fw-bold text-heading">
+                                            {{ member.participant.mahasiswa.nim.first_name }}
+                                        </span>
+                                        <small class="text-muted">{{ member.participant.mahasiswa.prodi.nama_prodi|default:"-" }}</small>
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ member.participant.mahasiswa.nim.username }}</td>
+                            <td><span class="font-monospace fw-semibold">{{ member.participant.mahasiswa.nim.username }}</span></td>
                             <td>
                                 {% if member.role == 'leader' %}
-                                    <span class="badge bg-label-warning">Ketua</span>
+                                    <span class="badge bg-label-warning"><i class="ri-crown-line me-1"></i> Ketua</span>
                                 {% else %}
                                     <span class="badge bg-label-secondary">Anggota</span>
                                 {% endif %}
@@ -74,7 +127,7 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr>
+                        <tr class="empty-row">
                             <td colspan="4" class="text-center py-5 text-muted">
                                 <i class="ri-user-unfollow-line ri-3x mb-2"></i>
                                 <p class="mb-0">Belum ada anggota di kelompok ini.</p>
@@ -87,11 +140,20 @@
         </div>
     </div>
 
+    <!-- PANEL KANAN: TAMBAH ANGGOTA & PENGATURAN -->
     <div class="col-lg-4">
         
-        <div class="card mb-4">
-            <div class="card-header bg-label-primary">
-                <h5 class="mb-0 text-primary"><i class="ri-user-add-line me-2"></i> Tambah Anggota</h5>
+        <!-- CARD TAMBAH ANGGOTA -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-label-primary d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-primary">
+                    <i class="ri-user-add-line me-1"></i> Tambah Anggota
+                </h5>
+                {% if available_participants %}
+                <button type="button" class="btn btn-sm btn-primary py-1 px-2" data-bs-toggle="modal" data-bs-target="#modalBatchSelectParticipants" title="Buka tabel untuk memilih mahasiswa">
+                    <i class="ri-table-line me-1"></i> Buka Tabel
+                </button>
+                {% endif %}
             </div>
             <div class="card-body pt-4">
                 <form method="POST">
@@ -99,38 +161,50 @@
                     <input type="hidden" name="add_member" value="1">
                     
                     <div class="mb-3">
-                        <label class="form-label">Pilih Mahasiswa</label>
-                        <select name="participant_id" class="form-select select2" required>
-                            <option value="" selected disabled>-- Pilih Mahasiswa --</option>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label mb-0" for="participant_select">Cari / Pilih Mahasiswa</label>
+                            <span class="badge bg-label-secondary font-monospace" style="font-size: 10px;">
+                                {{ available_participants|length }} Mahasiswa
+                            </span>
+                        </div>
+                        <select name="participant_id" id="participant_select" class="form-select select2" multiple required>
                             {% for p in available_participants %}
-                                <option value="{{ p.id }}">
-                                    {{ p.mahasiswa.nim }} - {{ p.mahasiswa.first_name }}
+                                <option value="{{ p.id }}" 
+                                        data-nim="{{ p.mahasiswa.nim.username }}" 
+                                        data-name="{{ p.mahasiswa.nim.first_name }}" 
+                                        data-prodi="{{ p.mahasiswa.prodi.nama_prodi|default:'' }}">
+                                    {{ p.mahasiswa.nim.username }} - {{ p.mahasiswa.nim.first_name }}{% if p.mahasiswa.nim.last_name %} {{ p.mahasiswa.nim.last_name }}{% endif %}{% if p.mahasiswa.prodi %} ({{ p.mahasiswa.prodi.nama_prodi }}){% endif %}
                                 </option>
-                            {% empty %}
-                                <option disabled>Semua mahasiswa sudah punya kelompok</option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">Hanya menampilkan mahasiswa yang belum masuk kelompok manapun.</div>
+                        <div class="form-text d-flex justify-content-between mt-1">
+                            <span class="text-muted"><i class="ri-search-line me-1"></i> Ketik NIM atau Nama</span>
+                            <span class="text-primary fw-medium">Bisa pilih > 1</span>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Peran</label>
-                        <select name="role" class="form-select">
-                            <option value="member">Anggota</option>
+                        <label class="form-label" for="roleSelect">Peran</label>
+                        <select name="role" id="roleSelect" class="form-select">
+                            <option value="member" selected>Anggota</option>
                             <option value="leader">Ketua</option>
                         </select>
+                        <div id="leaderHint" class="form-text text-warning d-none">
+                            <i class="ri-information-line me-1"></i> Jika peran Ketua dipilih dengan multiple mahasiswa, hanya mahasiswa pertama yang dijadikan Ketua (sisanya Anggota).
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100" {% if not available_participants %}disabled{% endif %}>
-                        Tambahkan
+                        <i class="ri-user-add-line me-1"></i> Tambahkan ke Kelompok
                     </button>
                 </form>
             </div>
         </div>
 
+        <!-- CARD PENGATURAN KELOMPOK -->
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Pengaturan Kelompok</h5>
+                <h5 class="mb-0"><i class="ri-settings-4-line me-1"></i> Pengaturan Kelompok</h5>
             </div>
             <div class="card-body">
                 <form method="POST">
@@ -149,7 +223,7 @@
 
                 <hr class="my-4">
 
-                <div class="alert alert-danger mb-3 p-3">
+                <div class="alert alert-danger mb-0 p-3">
                     <h6 class="alert-heading fw-bold mb-1"><i class="ri-alarm-warning-line me-1"></i> Hapus Kelompok</h6>
                     <small class="d-block mb-3">Tindakan ini tidak dapat dibatalkan. Anggota akan dikeluarkan otomatis.</small>
                     
@@ -162,10 +236,268 @@
                     </form>
                 </div>
 
-
             </div>
         </div>
 
     </div>
 </div>
+
+<!-- MODAL FILTER & PILIH MAHASISWA DARI TABEL -->
+<div class="modal fade" id="modalBatchSelectParticipants" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0">
+                        <i class="ri-user-search-line me-1 text-primary"></i> Pilih Mahasiswa dari Daftar
+                    </h5>
+                    <small class="text-muted">Cari dan centang mahasiswa yang ingin dimasukkan ke kelompok <strong>{{ group.name }}</strong></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="add_member" value="1">
+                
+                <div class="modal-body">
+                    <!-- Search & Filter Controls -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-7">
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="ri-search-line"></i></span>
+                                <input type="text" id="modalSearchInput" class="form-control" placeholder="Ketik NIM, Nama, atau Program Studi untuk memfilter...">
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <label class="input-group-text" for="modalRoleSelect">Peran</label>
+                                <select name="role" id="modalRoleSelect" class="form-select">
+                                    <option value="member" selected>Anggota</option>
+                                    <option value="leader">Ketua</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllModal">
+                            <label class="form-check-label fw-medium" for="selectAllModal">
+                                Pilih Semua yang Tampil
+                            </label>
+                        </div>
+                        <span class="badge bg-label-primary fs-7" id="modalSelectedCount">0 mahasiswa dipilih</span>
+                    </div>
+
+                    <div class="table-responsive border rounded modal-participant-table-wrapper">
+                        <table class="table table-sm table-hover align-middle mb-0" id="modalParticipantTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 44px;" class="text-center">#</th>
+                                    <th>NIM</th>
+                                    <th>Nama Mahasiswa</th>
+                                    <th>Program Studi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in available_participants %}
+                                <tr class="modal-participant-row" data-search="{{ p.mahasiswa.nim.username|lower }} {{ p.mahasiswa.nim.first_name|lower }} {{ p.mahasiswa.prodi.nama_prodi|default:''|lower }}">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input participant-checkbox" name="participant_id" value="{{ p.id }}" id="chk_{{ p.id }}">
+                                    </td>
+                                    <td>
+                                        <label for="chk_{{ p.id }}" class="mb-0 fw-bold text-primary font-monospace" style="cursor: pointer;">
+                                            {{ p.mahasiswa.nim.username }}
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <label for="chk_{{ p.id }}" class="d-flex align-items-center mb-0" style="cursor: pointer;">
+                                            <span class="avatar avatar-xs me-2">
+                                                <span class="avatar-initial rounded-circle bg-label-primary">
+                                                    {{ p.mahasiswa.nim.first_name|slice:":1"|upper }}
+                                                </span>
+                                            </span>
+                                            <span class="fw-medium text-heading">
+                                                {{ p.mahasiswa.nim.first_name }}
+                                            </span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-secondary">
+                                            {{ p.mahasiswa.prodi.nama_prodi|default:"-" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        Semua mahasiswa di kelas ini sudah tergabung dalam kelompok.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitModal" disabled>
+                        <i class="ri-user-add-line me-1"></i> Tambahkan Mahasiswa Terpilih
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
+
+{% block page_js %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    const $participantSelect = $('#participant_select');
+
+    if ($participantSelect.length && $.fn.select2) {
+        // Custom formatting untuk pilihan mahasiswa di dropdown
+        function formatParticipantOption(item) {
+            if (!item.id) {
+                return item.text;
+            }
+            var $elem = $(item.element);
+            var nim = $elem.data('nim') || '';
+            var name = $elem.data('name') || item.text;
+            var prodi = $elem.data('prodi') || '';
+            var initial = name.trim().charAt(0).toUpperCase() || '?';
+
+            return $(`
+                <div class="d-flex align-items-center py-1">
+                    <div class="avatar avatar-xs me-2 flex-shrink-0">
+                        <span class="avatar-initial rounded-circle bg-label-primary fw-semibold" style="font-size: 10px;">
+                            ${initial}
+                        </span>
+                    </div>
+                    <div class="d-flex flex-column text-start overflow-hidden">
+                        <span class="fw-medium text-heading text-truncate" style="font-size: 13px;">${name}</span>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="badge bg-label-secondary p-0 px-1 font-monospace" style="font-size: 10px;">${nim}</span>
+                            ${prodi ? `<small class="text-muted text-truncate" style="font-size: 11px;">• ${prodi}</small>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        function formatParticipantSelection(item) {
+            if (!item.id) {
+                return item.text;
+            }
+            var $elem = $(item.element);
+            var nim = $elem.data('nim') || '';
+            var name = $elem.data('name') || item.text;
+            return nim ? `${nim} - ${name}` : item.text;
+        }
+
+        // Custom matcher untuk searching berdasarkan NIM, Nama, dan Prodi secara realtime
+        function customMatcher(params, data) {
+            if ($.trim(params.term) === '') {
+                return data;
+            }
+            var term = params.term.toLowerCase();
+            var $elem = $(data.element);
+            var nim = String($elem.data('nim') || '').toLowerCase();
+            var name = String($elem.data('name') || '').toLowerCase();
+            var prodi = String($elem.data('prodi') || '').toLowerCase();
+            var text = String(data.text || '').toLowerCase();
+
+            if (nim.indexOf(term) > -1 || name.indexOf(term) > -1 || prodi.indexOf(term) > -1 || text.indexOf(term) > -1) {
+                return data;
+            }
+            return null;
+        }
+
+        $participantSelect.wrap('<div class="position-relative"></div>').select2({
+            placeholder: '-- Ketik NIM atau Nama Mahasiswa --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $participantSelect.parent(),
+            templateResult: formatParticipantOption,
+            templateSelection: formatParticipantSelection,
+            matcher: customMatcher
+        });
+    }
+
+    // Role select change hint
+    $('#roleSelect').on('change', function() {
+        if ($(this).val() === 'leader') {
+            $('#leaderHint').removeClass('d-none');
+        } else {
+            $('#leaderHint').addClass('d-none');
+        }
+    });
+
+    // Modal table search and select logic
+    const $modalSearchInput = $('#modalSearchInput');
+    const $modalRows = $('.modal-participant-row');
+    const $selectAllModal = $('#selectAllModal');
+    const $participantCheckboxes = $('.participant-checkbox');
+    const $selectedCountText = $('#modalSelectedCount');
+    const $btnSubmitModal = $('#btnSubmitModal');
+
+    function updateModalState() {
+        const checkedCount = $participantCheckboxes.filter(':checked').length;
+        $selectedCountText.text(checkedCount + ' mahasiswa dipilih');
+        $btnSubmitModal.prop('disabled', checkedCount === 0);
+
+        // Update selectAll checkbox state based on visible checkboxes
+        const $visibleCheckboxes = $modalRows.filter(':visible').find('.participant-checkbox');
+        if ($visibleCheckboxes.length > 0) {
+            const allVisibleChecked = $visibleCheckboxes.length === $visibleCheckboxes.filter(':checked').length;
+            $selectAllModal.prop('checked', allVisibleChecked);
+        } else {
+            $selectAllModal.prop('checked', false);
+        }
+    }
+
+    if ($modalSearchInput.length) {
+        $modalSearchInput.on('input', function() {
+            const keyword = $(this).val().toLowerCase().trim();
+            $modalRows.each(function() {
+                const searchData = $(this).data('search') || '';
+                if (keyword === '' || searchData.indexOf(keyword) > -1) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+            updateModalState();
+        });
+    }
+
+    if ($selectAllModal.length) {
+        $selectAllModal.on('change', function() {
+            const isChecked = $(this).is(':checked');
+            $modalRows.filter(':visible').find('.participant-checkbox').prop('checked', isChecked);
+            updateModalState();
+        });
+    }
+
+    $participantCheckboxes.on('change', function() {
+        updateModalState();
+    });
+
+    // In-table search for existing members (Left card)
+    const $memberSearchInput = $('#memberSearchInput');
+    const $memberRows = $('#memberTable tbody tr.member-row');
+    if ($memberSearchInput.length) {
+        $memberSearchInput.on('input', function() {
+            const q = $(this).val().toLowerCase().trim();
+            $memberRows.each(function() {
+                const text = $(this).text().toLowerCase();
+                $(this).toggle(q === '' || text.indexOf(q) > -1);
+            });
+        });
+    }
+});
+</script>
+{% endblock page_js %}
