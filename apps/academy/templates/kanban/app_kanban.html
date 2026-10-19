@@ -32,11 +32,25 @@
 
 {% block page_js %}
 {{ block.super }}
-<script src="{% static 'js/app-kanban-kanban.js' %}"></script>
+<script src="{% static 'js/app-kanban-kanban.js' %}?v=1.3"></script>
 {% endblock page_js %}
 
 {% block content %}
 <meta name="csrf-token" content="{{ csrf_token }}">
+<style>
+  .bg-label-pink { background-color: rgba(233,30,140,.16); color: #e91e8c; }
+  .bg-label-teal { background-color: rgba(0,158,251,.16); color: #009efb; }
+  .kanban-item { border-left: 3px solid transparent; transition: border-color 0.2s, background 0.2s; }
+  .kanban-item[data-badge="primary"]   { background: rgba(115,103,240,0.07); border-left-color: #7367f0; }
+  .kanban-item[data-badge="success"]   { background: rgba(40,199,111,0.08);  border-left-color: #28c76f; }
+  .kanban-item[data-badge="danger"]    { background: rgba(234,84,85,0.08);   border-left-color: #ea5455; }
+  .kanban-item[data-badge="warning"]   { background: rgba(255,159,67,0.08);  border-left-color: #ff9f43; }
+  .kanban-item[data-badge="info"]      { background: rgba(0,207,232,0.08);   border-left-color: #00cfe8; }
+  .kanban-item[data-badge="secondary"] { background: rgba(168,170,174,0.07); border-left-color: #a8aaae; }
+  .kanban-item[data-badge="dark"]      { background: rgba(75,75,75,0.07);    border-left-color: #4b4b4b; }
+  .kanban-item[data-badge="pink"]      { background: rgba(233,30,140,0.07);  border-left-color: #e91e8c; }
+  .kanban-item[data-badge="teal"]      { background: rgba(0,158,251,0.07);   border-left-color: #009efb; }
+</style>
 <div class="app-kanban" data-boards-url="#" data-tasks-url="#">
   <!-- Add new board -->
   <div class="row">
@@ -95,15 +109,15 @@
             </div>
             <div class="form-floating form-floating-outline mb-5">
               <select class="select2 select2-label form-select" id="label">
-                <option value="">— Tanpa Label —</option>
-                <option data-color="bg-label-success" value="P0">P0</option>
-                <option data-color="bg-label-warning" value="P1">P1</option>
-                <option data-color="bg-label-secondary" value="P2">P2</option>
-                <option data-color="bg-label-danger" value="P3">P3</option>
-                <option data-color="bg-label-info" value="P4">P4</option>
-                <option data-color="bg-label-primary" value="P5">P5</option>
+                <option value="">— Tanpa Status —</option>
+                <option data-color="bg-label-success" value="Approved">Approved</option>
+                <option data-color="bg-label-danger" value="Rejected">Rejected</option>
+                <option data-color="bg-label-warning" value="Prioritas">Prioritas</option>
+                <option data-color="bg-label-info" value="On Review">On Review</option>
+                <option data-color="bg-label-primary" value="In Progress">In Progress</option>
+                <option data-color="bg-label-secondary" value="Pending">Pending</option>
               </select>
-              <label for="label"> label</label>
+              <label for="label">Status</label>
             </div>
             <!-- Assignees multi-select -->
             <div class="mb-5">
@@ -294,4 +308,13 @@
     </div>
   </div>
 </div>
+<script>
+document.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (e.target.type === 'file' && file && file.size > 202400) {
+        alert(`Ukuran file "${file.name}" maksimal 200 KB.`);
+        e.target.value = '';
+    }
+});
+</script>
 {% endblock %}

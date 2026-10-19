@@ -104,7 +104,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_task_v1',
+        'NAME': 'db_task_v3',
         'USER': 'root',
         'PASSWORD': 'root_password_anda',
         'HOST': '127.0.0.1',

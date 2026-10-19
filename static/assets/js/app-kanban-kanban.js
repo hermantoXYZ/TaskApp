@@ -99,6 +99,61 @@
   let activeTaskId = null;     // UUID task yang sedang diedit di sidebar
   let activeBoardId = null;     // UUID board task tsb
 
+  // ─── Peta Status → label_color (sinkron dengan opsi di HTML) ─────────────────
+  const STATUS_COLOR_MAP = {
+    'Approved': 'bg-label-success',
+    'Rejected': 'bg-label-danger',
+    'Prioritas': 'bg-label-warning',
+    'On Review': 'bg-label-info',
+    'In Progress': 'bg-label-primary',
+    'Pending': 'bg-label-secondary',
+  };
+
+  /** Ambil label_color dari status value */
+  function statusToColor(status) {
+    if (!status) return '';
+    return STATUS_COLOR_MAP[status] || 'bg-label-primary';
+  }
+
+  // ─── Peta label_color → hex (untuk inline style kanban-item) ──────────────────
+  const COLOR_HEX_MAP = {
+    'bg-label-primary': '#7367f0',
+    'bg-label-success': '#28c76f',
+    'bg-label-danger': '#ea5455',
+    'bg-label-warning': '#ff9f43',
+    'bg-label-info': '#00cfe8',
+    'bg-label-secondary': '#a8aaae',
+    'bg-label-dark': '#4b4b4b',
+    'bg-label-pink': '#e91e8c',
+    'bg-label-teal': '#009efb',
+  };
+
+  /** Terapkan background tint + border kiri ke elemen .kanban-item */
+  function applyItemStyle(el, labelColor) {
+    const hex = labelColor ? COLOR_HEX_MAP[labelColor] : null;
+    if (hex) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      el.style.borderLeft = `3px solid ${hex}`;
+      el.style.background = `rgba(${r},${g},${b},0.08)`;
+      el.style.transition = 'background 0.2s, border-color 0.2s';
+    } else {
+      el.style.borderLeft = '';
+      el.style.background = '';
+    }
+  }
+
+  /** Terapkan style ke semua item yang sudah dirender berdasarkan boardsData */
+  function applyAllItemStyles() {
+    document.querySelectorAll('.kanban-item').forEach(el => {
+      const taskId = el.getAttribute('data-eid');
+      let task = null;
+      boardsData.forEach(b => { const t = b.tasks.find(t => t.id === taskId); if (t) task = t; });
+      if (task) applyItemStyle(el, task.label_color);
+    });
+  }
+
   // ─── Fetch boards dari Django ────────────────────────────────────────────────
   try {
     boardsData = await apiGet('/api/kanban/boards/');
@@ -126,7 +181,7 @@
     }));
   }
 
-  /** Konversi label_color "bg-label-primary" → "primary" */
+  /** Konversi label_color "bg-label-primary" → "primary" (untuk badge CSS class) */
   function labelColor2Badge(lc) {
     if (!lc) return 'primary';
     return lc.replace('bg-label-', '');
@@ -162,7 +217,7 @@
       html += `<div class='d-flex justify-content-end mb-1'>${renderDropdown()}</div>`;
     }
     html += `<span class='kanban-text'>${escHtml(task.title)}</span>`;
-    
+
     let ts = '';
     if (task.creator_name) ts += `By: <span class='fw-medium text-body'>${escHtml(task.creator_name)}</span>`;
     if (task.created_at) ts += ts ? `<br>Created: ${task.created_at}` : `Created: ${task.created_at}`;
@@ -257,17 +312,19 @@
     });
   }
 
-  // ─── Select2 label ───────────────────────────────────────────────────────────
+  // ─── Select2 status ──────────────────────────────────────────────────────────
   if (select2El.length) {
     function renderLabels(option) {
       if (!option.id) return option.text;
-      return "<div class='badge " + $(option.element).data('color') + " rounded-pill'> " + option.text + '</div>';
+      // Ambil warna dari STATUS_COLOR_MAP berdasarkan value status
+      const colorClass = STATUS_COLOR_MAP[option.id] || 'bg-label-primary';
+      return "<div class='badge " + colorClass + " rounded-pill'> " + option.text + '</div>';
     }
     select2El.each(function () {
       var $this = $(this);
       select2Focus($this);
       $this.wrap("<div class='position-relative'></div>").select2({
-        placeholder: 'Select Label',
+        placeholder: 'Select Status',
         dropdownParent: $this.parent(),
         templateResult: renderLabels,
         templateSelection: renderLabels,
@@ -275,6 +332,7 @@
       });
     });
   }
+
 
   // ─── Select2 AJAX Assignees ──────────────────────────────────────────────────
   const $assigneeSel = $('#kanban-assignees');
@@ -465,6 +523,10 @@
             'data-task-id': newTask.id,
           });
 
+          // Terapkan style pada item baru
+          const newEl = document.querySelector(`.kanban-item[data-eid="${newTask.id}"]`);
+          if (newEl) applyItemStyle(newEl, newTask.label_color);
+
           // pasang event dropdown di item baru
           attachDropdownEvents(boardId);
           addNew.remove();
@@ -597,10 +659,8 @@
       if (!activeTaskId) return;
       const title = kanbanSidebar.querySelector('#title').value.trim();
       const dueDate = kanbanSidebar.querySelector('#due-date').value;
-      const label = $('.kanban-update-item-sidebar').find(select2El).val();
-      const labelColor = label
-        ? 'bg-label-' + ($('.kanban-update-item-sidebar').find(`#label option[value="${label}"]`).data('color') || label).replace('bg-label-', '')
-        : 'bg-label-primary';
+      const label = $('.kanban-update-item-sidebar').find(select2El).val() || '';
+      const labelColor = statusToColor(label);
       const comments = quillEditor ? quillEditor.root.innerHTML : '';
 
       if (!title) { alert('Judul tidak boleh kosong.'); return; }
@@ -612,8 +672,8 @@
         const formData = new FormData();
         formData.append('title', title);
         if (dueDate) formData.append('due_date', dueDate);
-        if (label) formData.append('label', label);
-        if (labelColor) formData.append('label_color', labelColor);
+        formData.append('label', label);
+        formData.append('label_color', labelColor);
         if (comments) formData.append('comments', comments);
 
         // Ambil assignee IDs dari Select2
@@ -637,6 +697,10 @@
         const itemEl = document.querySelector(`.kanban-item[data-eid="${activeTaskId}"]`);
         if (itemEl) {
           itemEl.innerHTML = buildItemHTML(updated);
+          // Terapkan background + border sesuai label_color dari DB
+          applyItemStyle(itemEl, updated.label_color);
+          // Sync data-badge agar CSS background ikut berubah
+          itemEl.setAttribute('data-badge', labelColor2Badge(updated.label_color));
           attachDropdownEvents(null);
           // Re-init tooltips untuk avatar baru
           itemEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -781,6 +845,7 @@
   }
 
   setupBoardTitles();
+  applyAllItemStyles(); // terapkan warna item setelah kanban dirender
 
   // ─── Add New Board Form submit ───────────────────────────────────────────────
   if (kanbanAddNewBoard) {

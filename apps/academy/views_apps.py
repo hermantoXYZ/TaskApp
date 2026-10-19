@@ -217,7 +217,15 @@ class KanbanTaskDetailView(LoginRequiredMixin, View):
 
     def _get_task(self, request, task_id):
         task = get_object_or_404(KanbanTask, id=task_id)
-        if task.board.user_id != request.user.id and not task.assignees.filter(id=request.user.id).exists():
+        user = request.user
+
+        is_board_owner   = task.board.user_id == user.id
+        is_task_assignee = task.assignees.filter(id=user.id).exists()
+        is_board_member  = KanbanTask.objects.filter(
+            board=task.board, assignees=user
+        ).exists()
+
+        if not (is_board_owner or is_task_assignee or is_board_member):
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied("You don't have permission to edit this task.")
         return task
